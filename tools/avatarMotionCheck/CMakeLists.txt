@@ -1,0 +1,11 @@
+add_executable(avatarMotionCheck main.cpp)
+target_link_libraries(avatarMotionCheck PRIVATE avatarMotionUsdBinding avatarVrmUsdBinding avatarMotionAdapter)
+if(AVATAR_BUILD_VRM_ADAPTER)
+    target_compile_definitions(avatarMotionCheck PRIVATE AR_CHECK_VRM)
+    target_link_libraries(avatarMotionCheck PRIVATE avatarVrmAdapter)
+endif()
+if(WIN32)
+    add_custom_command(TARGET avatarMotionCheck POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:avatarMotionCheck>)
+endif()
+install(TARGETS avatarMotionCheck RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

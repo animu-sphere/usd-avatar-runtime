@@ -97,3 +97,8 @@ skeleton/Humanoid result, not real motion input or real-avatar
 LookAt/Expression conformance. Those bindings, output target extraction,
 connector intake, rendering, all evidence milestones and ABI freeze remain
 open in the [roadmap](../roadmap/current.md).
+
+Subsequent [USD motion binding](MOTION_USD_BINDING.md) evidence adds seven
+real VRMA clips driving this same avatar's Humanoid pose, with all-joint owner
+parity and reset/retention. The earlier constructed-clip result above remains
+scoped as recorded; real-avatar LookAt/Expression and rendering remain open.

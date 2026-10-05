@@ -13,11 +13,11 @@ Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
-| motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping and constructed motion-to-state parity on one private avatar; real motion, full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
+| motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping plus seven real VRMA clips on one private avatar via owned USD clip/source rest, with all-joint parity and reset/retention; full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [USD motion binding](../architecture/MOTION_USD_BINDING.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; full expression/LookAt/output extraction pending | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
-| capture, replay, inspection and benchmarks | proposed; not implemented | [recording/replay](../design/RECORDING_AND_REPLAY.md) |
+| capture, replay, inspection and benchmarks | opt-in local avatar/motion pose parity checker implemented; recording, comprehensive inspection/replay and benchmarks pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md), [recording/replay](../design/RECORDING_AND_REPLAY.md) |
 | multi-avatar execution and parallel scheduling | independent instances tested under serial execution; parallel scheduling pending | [overview](../architecture/OVERVIEW.md) |
 | OST composition and published runtime packages | local CMake install/export tested; OST composition and publication not configured | [layout](../architecture/PROJECT_LAYOUT.md) |
 | supported native/Web/WASM/XR targets | local Windows x64/MSVC direct prototype evidence only; no other target validation | [roadmap](../roadmap/current.md) |
@@ -76,8 +76,8 @@ configuration resolves no `vrmRig` target.
 | `adapters.motion_pose` | independent owner sampling/retarget numeric parity at `1e-6`; explicit clip/runtime clock scale/offset; interpolation and boundary hold; root delta, undriven nonidentity rest rotation and nonunit scale; owner/runtime slot remapping; empty clip absence; required/unbound bone diagnostics; pose-only scalar/gaze diagnostics; invalid configuration/layout/joint/parent/time failure and same-frame retry; downstream failure rollback; reset, independent instances and snapshots retained past runtime destruction; input assembler ownership/copy lifetime, explicit native/runtime mapping, source/actor/sample clocks, frame/USD metadata, absent/zero/unclamped weights, world-point origin/absence and host-selected stale validity, unmapped-field reporting, malformed channels/mappings/context/clock rejection and corrected retry; with VRM enabled, constructed partial-rig motion -> assembled input + working head -> LookAt -> Expression numeric parity with the owner's VRM required-bone set and reversed selection order, scalar/gaze precedence, stale held gaze with usable scalars and absent-input baseline |
 | `adapters.motion_installed` | separate configure/build using installed `AvatarRuntime` `motion` component and adapter headers/static library; repeats input assembly and lifetime checks; optional `motion vrm` consumer repeats composition, explicit-zero clearing and reset checks; core-only consumer in the same install does not resolve providers |
 
-This is immutable constructed-clip/rig composition evidence. Actual motion
-captures, complete real-avatar expression/LookAt bindings, live connector intake,
+This is immutable constructed-clip/rig composition evidence. Complete
+real-avatar expression/LookAt bindings, live connector intake,
 multi-source selection and retained source metadata remain unvalidated; milestones A/B/C and
 Runtime Phase A stay open.
 
@@ -98,7 +98,7 @@ configuration still passes its three tests and resolves no owner dependency.
 
 This generic binder test is constructed USD stage and explicit-role mapping
 evidence. Separate schema-derived and local real-avatar evidence is scoped below.
-Expression/LookAt/material/deformation extraction, real motion, connectors,
+Expression/LookAt/material/deformation extraction, connectors,
 rendering and all evidence milestones remain open.
 
 The extended USD/motion/VRM Release configuration also consumes installed
@@ -122,6 +122,33 @@ A private user-supplied VRM was opened through installed `usdVrmFileFormat`
 zero unsupported roles, constructed root/head motion numeric owner parity
 at `1e-6`, and retained snapshot use after runtime destruction. Its path,
 hash and local command provenance are kept in ignored build evidence.
-This establishes one real-avatar skeleton/Humanoid result. Real motion input,
-real-avatar expression/LookAt effects, renderer output, milestones and ABI
-freeze remain unvalidated.
+This run establishes one real-avatar skeleton/Humanoid result using a
+constructed clip. Real-avatar expression/LookAt effects, renderer output,
+milestones and ABI freeze remain unvalidated.
+
+The [USD motion clip binding](../architecture/MOTION_USD_BINDING.md) subsequently
+adds real-motion pose evidence on this avatar. On the same date/toolchain with
+installed local `motionUsd` 0.5.3 and `usdVrmaFileFormat` 0.10.0 resources,
+the extended configuration passes all thirteen tests, adding:
+
+| Test | Evidence |
+| --- | --- |
+| `adapters.motion_usd_clip` | owner stage reading plus source-rest connection; source height subtraction into target rest, source rotation/ancestry, seconds/rate and optional metadata, owned copy/stage lifetime, invalid units/axis/rate/placement/rest/animation and duplicate semantic-role rejection |
+| `adapters.motion_usd_installed` | separately built installed `motion_usd` consumer with transitive generic USD binding; no sampling or VRM evaluator/schema import |
+
+The opt-in `avatarMotionCheck` applies all seven supplied VRMA MotionPack clips
+to 128 target joints using 51 schema roles, checking 4,129 imported keys and
+their midpoints/holds plus resets (8,272 frames). Maximum TRS component error
+is `1.403972313e-7`, below `1e-6`; all clips alter numeric pose on 51
+joints and pass retained snapshot checks after reset/runtime destruction.
+Owner diagnostics preserve unbound driven `upperChest` and the intentional
+boundary holds; no error diagnostic occurs. Files are read in place, and paths,
+hashes and command logs stay in ignored build evidence. No asset is copied,
+authored, redistributed or added to default tests. This is real-motion/avatar
+Humanoid pose composition evidence. Real-avatar LookAt/Expression and output
+binding extraction, live connectors, renderer output, milestones and freeze
+remain open.
+
+A fresh motion-USD-only Release configuration passes seven tests without
+importing `motionSampling`, `vrmRig` or `vrmSchema`. The default core-only
+configuration still passes three tests without importing USD/provider targets.

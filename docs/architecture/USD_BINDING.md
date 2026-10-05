@@ -123,6 +123,6 @@ check bounded affine roundoff without changing authored matrices.
 Schema-derived Humanoid discovery and one local real-avatar skeleton result
 are recorded by the separate [VRM USD binding](VRM_USD_BINDING.md).
 Format identity, expression/material/deformation bindings,
-LookAt configuration discovery, actual motion clips, connector intake and
+LookAt configuration discovery, connector intake and
 renderer consumption remain open. No milestone or ABI freeze follows from
 this scoped binding evidence; see the [roadmap](../roadmap/current.md).

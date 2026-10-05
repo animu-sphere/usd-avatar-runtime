@@ -196,3 +196,9 @@ This proves owner-library composition with constructed input/bindings; it does
 not prove real clip/VRM asset correctness, connector intake/mapping, full Humanoid
 conformance, renderer output or ABI freeze. Package/toolchain evidence is in
 the [capability matrix](../reference/CAPABILITY_MATRIX.md).
+
+The separate [USD motion clip binding](MOTION_USD_BINDING.md) now connects
+actual owner-imported clips and source rest to this adapter. Its opt-in tool
+validates seven real clips on one real-avatar schema-derived Humanoid layout;
+this extends pose integration evidence without closing real-avatar
+LookAt/Expression, connectors, rendering or milestone acceptance.
