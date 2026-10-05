@@ -24,6 +24,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
 | [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | optional owner clip sampling/retarget registration, host scalar/gaze input assembly, pose binding, clocks and VRM composition evidence |
 | [Scoped USD skeleton binding](architecture/USD_BINDING.md) | owned authored skeleton baseline, explicit owner Humanoid mapping, metre conversion and rigid root placement |
+| [Scoped VRM USD Humanoid binding](architecture/VRM_USD_BINDING.md) | owner schema discovery, skeleton relationship resolution, standard role mapping and local asset evidence limits |
 
 ## Contracts
 

@@ -73,7 +73,9 @@ rigs, including undriven nonidentity rest. The optional
 joint layout, converts rest translations to metres and folds rigid skeleton
 placement into baseline roots. Motion applies the same explicit placement
 once after owner retargeting. Constructed USD composition is tested; actual
-VRM Humanoid discovery and real-avatar conformance remain open under RT-O4.
+The optional [VRM USD binding](../architecture/VRM_USD_BINDING.md) supplies
+schema-derived Humanoid mappings with one local real-avatar skeleton result.
+Complete real-avatar expression/LookAt/output conformance remains open under RT-O4.
 
 Blend shapes use `(mesh_id, target_id)`; material values use
 `(material_id, input_id)` with scalar, vec3 or vec4 type fixed by the layout;

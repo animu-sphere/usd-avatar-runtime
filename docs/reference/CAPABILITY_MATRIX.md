@@ -13,8 +13,8 @@ Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
-| motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; actual clip/avatar USD/Humanoid discovery, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [dependencies](../architecture/DEPENDENCIES.md) |
-| USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; constructed USD -> motion -> VRM parity; actual format/schema discovery and avatar conformance pending | [USD binding](../architecture/USD_BINDING.md) |
+| motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping and constructed motion-to-state parity on one private avatar; real motion, full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
+| USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; full expression/LookAt/output extraction pending | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
 | capture, replay, inspection and benchmarks | proposed; not implemented | [recording/replay](../design/RECORDING_AND_REPLAY.md) |
@@ -77,7 +77,7 @@ configuration resolves no `vrmRig` target.
 | `adapters.motion_installed` | separate configure/build using installed `AvatarRuntime` `motion` component and adapter headers/static library; repeats input assembly and lifetime checks; optional `motion vrm` consumer repeats composition, explicit-zero clearing and reset checks; core-only consumer in the same install does not resolve providers |
 
 This is immutable constructed-clip/rig composition evidence. Actual motion
-captures, USD Humanoid discovery, real-avatar bindings, live connector intake,
+captures, complete real-avatar expression/LookAt bindings, live connector intake,
 multi-source selection and retained source metadata remain unvalidated; milestones A/B/C and
 Runtime Phase A stay open.
 
@@ -96,6 +96,32 @@ configuration still passes its three tests and resolves no owner dependency.
 | `adapters.usd_skeleton` | authored default-time joint/rest extraction through the motion owner's `BuildSkeletonDescriptor`; explicit owner Humanoid mapping; nested rigid placement, centimetre-to-metre conversion, multiple roots, auxiliary/nonuniform-scale rest; invalid layout/path/mapping/rest/topology/matrix rejection; owned copies surviving stage edits/destruction and retained output surviving runtime destruction; with motion/VRM enabled, root-motion placement once per frame, empty clip returning to placed baseline, reset/repeated-frame behavior and bone LookAt numeric owner parity at `1e-6` |
 | `adapters.usd_installed` | separately configured consumer requesting installed `usd` component, optionally `motion vrm`, repeating binding/composition checks without source-tree headers or libraries |
 
-This is constructed USD stage and explicit-role mapping evidence. Actual VRM
-schema/Humanoid discovery, expression/LookAt/material/deformation extraction,
-real assets, connectors, rendering and all evidence milestones remain open.
+This generic binder test is constructed USD stage and explicit-role mapping
+evidence. Separate schema-derived and local real-avatar evidence is scoped below.
+Expression/LookAt/material/deformation extraction, real motion, connectors,
+rendering and all evidence milestones remain open.
+
+The extended USD/motion/VRM Release configuration also consumes installed
+`vrmSchema` 0.10.0, enabling `AVATAR_BUILD_VRM_USD_BINDING`. On the same
+date/toolchain, all eleven tests pass, adding:
+
+| Test | Evidence |
+| --- | --- |
+| `adapters.vrm_usd_humanoid` | all standard motion roles resolved through installed applied schema and owner vocabulary; partial/empty role maps and custom-role reporting; root-scoped discovery and explicit selection; reference remapping and forwarded skeleton relationships; malformed/schema/relationship/joint rejection; immutable copy/stage lifetime and retained state; constructed root movement/head rotation/all-joint TRS parity with the owner at `1e-6` when motion is enabled |
+| `adapters.vrm_usd_installed` | separate installed `vrm_usd` consumer resolving the generic USD binding transitively and repeating discovery/ownership/parity checks |
+
+A fresh schema-only Release configuration passes seven tests without importing
+`motionSampling` or `vrmRig`. Its installed `usd` consumer also imports no
+`vrmSchema`. The default core-only Release configuration still passes three
+tests without importing any provider or USD target.
+
+Generic USD tests now include homogeneous-column roundoff acceptance within
+`1e-12`, rejection above that tolerance and unchanged authored matrices.
+A private user-supplied VRM was opened through installed `usdVrmFileFormat`
+0.10.0 without copying or authoring it: 128 joints, 51 mapped standard roles,
+zero unsupported roles, constructed root/head motion numeric owner parity
+at `1e-6`, and retained snapshot use after runtime destruction. Its path,
+hash and local command provenance are kept in ignored build evidence.
+This establishes one real-avatar skeleton/Humanoid result. Real motion input,
+real-avatar expression/LookAt effects, renderer output, milestones and ABI
+freeze remain unvalidated.

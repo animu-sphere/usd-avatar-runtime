@@ -18,12 +18,19 @@ void require(bool condition, const char* code, const std::string& subject) {
 }
 // The owner decomposition intentionally removes shear. Reject anything the
 // dense TRS boundary cannot reproduce before calling the owner.
-void validateMatrix(const pxr::GfMatrix4d& m, const std::string& subject, bool rigid) {
+void validateMatrix(pxr::GfMatrix4d& m, const std::string& subject, bool rigid) {
     for (int r = 0; r < 4; ++r)
         for (int c = 0; c < 4; ++c)
             require(std::isfinite(m[r][c]), "USD_BINDING_NONFINITE", subject);
-    require(m[0][3] == 0 && m[1][3] == 0 && m[2][3] == 0 && m[3][3] == 1,
-            "USD_BINDING_NONAFFINE", subject);
+    // Imported parent-local transforms may contain inverse/multiply roundoff
+    // in the homogeneous column. Canonicalize only a tightly bounded residual
+    // before owner decomposition; perspective remains unsupported.
+    for (int r = 0; r < 4; ++r) {
+        const double expected = r == 3 ? 1.0 : 0.0;
+        require(std::abs(m[r][3] - expected) <= 1e-12,
+                "USD_BINDING_NONAFFINE", subject);
+        m[r][3] = expected;
+    }
     pxr::GfVec3d rows[3];
     for (int r = 0; r < 3; ++r) {
         rows[r] = pxr::GfVec3d(m[r][0], m[r][1], m[r][2]);

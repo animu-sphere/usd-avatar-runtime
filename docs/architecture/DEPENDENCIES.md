@@ -16,6 +16,8 @@ maps selected owner scalar/gaze fields through a host-side input assembler.
 The optional [`avatarUsdBinding`](USD_BINDING.md) reads USD skeleton/rest and
 placement into owned baseline and motion-owner values, using installed
 `motionRetarget` with `usdSkel`/`usdGeom`; it adds no core dependency.
+The optional [`avatarVrmUsdBinding`](VRM_USD_BINDING.md) adds installed
+`vrmSchema` only to a separate schema discovery target above the generic binder.
 MMD/connector adapters and OST composition remain unconfigured.
 
 ## 1. Owners

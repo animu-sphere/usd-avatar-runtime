@@ -8,7 +8,8 @@ owner: usd-avatar-runtime
 The optional `avatarUsdBinding` target reads a composed `UsdSkelSkeleton` at
 default time into owned runtime baseline and motion-owner configuration values.
 It addresses the skeleton portion of RT-O4. It is not a full VRM binding
-adapter or real-avatar acceptance evidence.
+adapter. The separate [VRM USD Humanoid binding](VRM_USD_BINDING.md) supplies
+schema-derived mappings and records scoped local real-avatar evidence.
 
 ## Dependencies and build
 
@@ -66,7 +67,10 @@ Z-up/basis conversion is not implemented.
 Missing/mismatched rest arrays, empty/duplicate/invalid joint paths, parent
 ordering/topology disagreement, duplicate roles/targets, missing mapped joints,
 non-finite or out-of-owner-float-range rest values, zero scale, reflection,
-perspective and shear beyond `1e-6` are rejected. Positive nonuniform rest scale
+homogeneous-column deviations beyond `1e-12` and shear beyond `1e-6` are
+rejected. Accepted homogeneous-column roundoff is canonicalized to `(0,0,0,1)`
+in private binding storage before decomposition; authored values stay unchanged.
+Positive nonuniform rest scale
 is preserved without half narrowing. The owner float decomposition is
 normalized to the runtime quaternion tolerance.
 
@@ -114,8 +118,11 @@ empty-clip baseline, repeat/reset behavior and bone LookAt numeric parity with
 the installed owner evaluator at `1e-6`. `adapters.usd_installed` repeats these
 checks through a separately configured installed consumer.
 
-These tests construct USD stages and supply explicit mappings. VRM schema
-Humanoid discovery, format identity, expression/material/deformation bindings,
-LookAt configuration discovery, actual clip/avatar assets, connector intake and
+These tests construct USD stages and supply explicit mappings; they also
+check bounded affine roundoff without changing authored matrices.
+Schema-derived Humanoid discovery and one local real-avatar skeleton result
+are recorded by the separate [VRM USD binding](VRM_USD_BINDING.md).
+Format identity, expression/material/deformation bindings,
+LookAt configuration discovery, actual motion clips, connector intake and
 renderer consumption remain open. No milestone or ABI freeze follows from
 this scoped binding evidence; see the [roadmap](../roadmap/current.md).
