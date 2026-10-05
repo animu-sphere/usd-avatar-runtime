@@ -10,7 +10,9 @@ has no external provider, OpenUSD, renderer or OpenExec dependency. It exports
 an experimental installable CMake package. The optional
 [`avatarVrmAdapter`](VRM_ADAPTER.md) consumes the installed `vrmRig` package,
 with transitive `motionCore`/OpenUSD dependencies isolated from runtime core.
-Other provider adapters and OST composition remain unconfigured.
+The optional [`avatarMotionAdapter`](MOTION_ADAPTER.md) consumes installed
+`motionSampling`/`motionRetarget` packages with the same core isolation.
+MMD/connector adapters and OST composition remain unconfigured.
 
 ## 1. Owners
 

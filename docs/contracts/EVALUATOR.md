@@ -81,8 +81,11 @@ expression resolver and writes resolved effects once. Expression rigs feed
 named contributions to the resolver; bone rigs write eye rotations composed
 with bound authored rest rotations and declare pose writes. Constructed-rig
 parity tests validate both types, including working head pose from an earlier
-base-pose evaluator. MMD and actual motion/avatar
-plans still require conformance evidence before freeze.
+base-pose evaluator. The optional [motion adapter](../architecture/MOTION_ADAPTER.md)
+executes owner clip sampling/retarget atomically in `AR_PHASE_RETARGET` and
+supplies an explicit predecessor for VRM. Constructed-rig tests verify owner
+motion -> working head -> LookAt -> Expression numeric parity. MMD and actual
+motion/avatar bindings still require conformance evidence before freeze.
 
 ## 2. Registration descriptor
 

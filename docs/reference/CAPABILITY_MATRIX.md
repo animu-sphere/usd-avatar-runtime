@@ -9,11 +9,11 @@ Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 | --- | --- | --- |
 | implementation direction | adopted documentation; real-provider/fast-path integration prioritized before freeze | [design policy](../design/DESIGN_POLICY.md), [near-term direction](../design/NEAR_TERM_PLAN.md) |
 | runtime architecture and layout | one reusable `avatarRuntime` target; further component split proposed | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
-| input/evaluated-state contracts | experimental revision-3 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version and active capabilities; owner motion mapping, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
+| input/evaluated-state contracts | experimental revision-3 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version and active capabilities; configured owner clip-to-pose mapping implemented; motion observation/channel/gaze assembly, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
-| motion/VRM/MMD/connector integration | optional installed `vrmRig` expression + expression/bone LookAt adapter; world/joint-local points and directions through owner APIs, explicit input/layout/output and eye/rest binding and diagnostics; constructed-rig numeric parity tested; real-avatar USD/joint/rest binding, Humanoid/motion/connectors and MMD pending | [VRM adapter](../architecture/VRM_ADAPTER.md), [dependencies](../architecture/DEPENDENCIES.md) |
+| motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> VRM and gaze-space numeric parity tested; actual clip/avatar USD/Humanoid discovery, motion channel/gaze assembly, connectors and MMD pending | [motion adapter](../architecture/MOTION_ADAPTER.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
 | capture, replay, inspection and benchmarks | proposed; not implemented | [recording/replay](../design/RECORDING_AND_REPLAY.md) |
@@ -59,3 +59,23 @@ both pass; the adapter build consumes its installed headers/library.
 This is real-library adapter evidence with test input and constructed rig
 configuration. It is not real VRM asset/motion/connector evidence, independently
 validated owner semantics, renderer output, milestone acceptance or ABI freeze.
+
+The motion/VRM Release build was checked on the same date/toolchain using
+separately built/installed local `motionSampling` and `motionRetarget` 0.5.3,
+installed `motionCore` 0.5.0, the direction-capable local `vrmRig` 0.10.0 above
+and OpenUSD 26.08. `ctest --test-dir build/motion-vrm --output-on-failure`
+passes all seven core/VRM/motion tests, adding:
+
+Fresh core-only and motion-only Release configurations also pass their three
+and five tests respectively, including installed consumers. Motion-only
+configuration resolves no `vrmRig` target.
+
+| Test | Evidence |
+| --- | --- |
+| `adapters.motion_pose` | independent owner sampling/retarget numeric parity at `1e-6`; explicit clip/runtime clock scale/offset; interpolation and boundary hold; root delta, undriven nonidentity rest rotation and nonunit scale; owner/runtime slot remapping; empty clip absence; required/unbound bone diagnostics; unsupported scalar/gaze diagnostics; invalid configuration/layout/joint/parent/time failure and same-frame retry; downstream failure rollback; reset, independent instances and snapshots retained past runtime destruction; with VRM enabled, constructed partial-rig motion -> working head -> LookAt -> Expression numeric parity with the owner's VRM required-bone set and reversed selection order |
+| `adapters.motion_installed` | separate configure/build using installed `AvatarRuntime` `motion` component and adapter headers/static library; optional `motion vrm` consumer repeats composition checks; core-only consumer in the same install does not resolve providers |
+
+This is immutable constructed-clip/rig composition evidence. Actual motion
+captures, USD Humanoid discovery, real-avatar bindings, motion scalar/gaze
+input assembly and connector intake remain unvalidated; milestones A/B/C and
+Runtime Phase A stay open.

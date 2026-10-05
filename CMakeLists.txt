@@ -3,6 +3,7 @@ project(UsdAvatarRuntime VERSION 0.1.0 LANGUAGES C CXX)
 
 option(AVATAR_BUILD_TESTS "Build contract and direct execution tests" ${PROJECT_IS_TOP_LEVEL})
 option(AVATAR_BUILD_VRM_ADAPTER "Build the optional vrmRig registration adapter" OFF)
+option(AVATAR_BUILD_MOTION_ADAPTER "Build the optional motion sampling/retarget adapter" OFF)
 add_library(avatarRuntime SHARED libs/avatarRuntime/runtime.cpp)
 add_library(AvatarRuntime::avatarRuntime ALIAS avatarRuntime)
 target_compile_features(avatarRuntime PRIVATE cxx_std_17)
@@ -43,4 +44,8 @@ endif()
 
 if(AVATAR_BUILD_VRM_ADAPTER)
     add_subdirectory(adapters/vrm)
+endif()
+
+if(AVATAR_BUILD_MOTION_ADAPTER)
+    add_subdirectory(adapters/motion)
 endif()
