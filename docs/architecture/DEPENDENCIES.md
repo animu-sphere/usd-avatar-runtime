@@ -11,7 +11,8 @@ an experimental installable CMake package. The optional
 [`avatarVrmAdapter`](VRM_ADAPTER.md) consumes the installed `vrmRig` package,
 with transitive `motionCore`/OpenUSD dependencies isolated from runtime core.
 The optional [`avatarMotionAdapter`](MOTION_ADAPTER.md) consumes installed
-`motionSampling`/`motionRetarget` packages with the same core isolation.
+`motionSampling`/`motionRetarget` packages with the same core isolation and
+maps selected owner scalar/gaze fields through a host-side input assembler.
 MMD/connector adapters and OST composition remain unconfigured.
 
 ## 1. Owners

@@ -55,7 +55,10 @@ Different avatar bindings require different adapter objects/evaluator IDs.
 With the optional [motion clip pose adapter](MOTION_ADAPTER.md), supply the
 motion evaluator ID in `after`. The constructed integration test proves that
 LookAt reads its retargeted working head and Expression resolves the resulting
-contributions once; USD Humanoid discovery and real-avatar conformance remain open.
+contributions once. The motion target's host input assembler supplies explicit
+scalar/gaze identities from a selected owner pose; tests cover LookAt
+precedence over mapped scalars and host-selected stale gaze. USD Humanoid
+discovery and real-avatar conformance remain open.
 
 Each input mapping selects exactly `(source, actor, channel)` and names the
 owner expression verbatim. The adapter does not invent a semantic vocabulary.

@@ -39,9 +39,14 @@ This is constructed-binding evidence, not actual connector/asset mapping evidenc
 The optional [motion clip pose adapter](../architecture/MOTION_ADAPTER.md) now
 samples and retargets immutable owner clips into dense rig pose, with explicit
 clock/joint/parent bindings and constructed motion -> VRM LookAt/Expression
-numeric parity. Motion channel/gaze input assembly, actual clip/avatar binding,
-USD Humanoid discovery and connectors remain step 2/3 work; this does not close
+numeric parity. Actual clip/avatar binding, USD Humanoid discovery and
+connectors remain step 2/3 work; this does not close
 milestone A.
+Host-side motion input assembly now explicitly maps selected owner scalar
+channels and world gaze points into owned `AvatarInputFrame` arrays. Constructed
+motion -> assembled input -> VRM composition validates clocks, absence/zero,
+LookAt precedence and host-selected stale gaze; real capture/avatar bindings,
+connector intake, multi-source selection and retained provenance remain open.
 A USD binding adapter builds instance configuration for avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation targets. Integration diagnostics must
@@ -117,8 +122,9 @@ These completed foundations are recorded in the
 
 Remaining implementation/review work before Phase A acceptance:
 
-- Extend the scoped owner clip-to-pose adapter with motion channel/gaze input
-  assembly and real bindings; validate the revision-3 gaze spaces and
+- Validate the scoped owner clip-to-pose and channel/gaze input assembly with
+  real bindings; extend explicit multi-source selection and connector intake;
+  validate the revision-3 gaze spaces and
   observation validity against actual connector/motion/VRM mappings;
   establish semantic intent/mapping precedence using real bindings (RT-O1/RT-O2).
 - Validate actual motion/VRM/MMD adapters against phase dependencies, particularly

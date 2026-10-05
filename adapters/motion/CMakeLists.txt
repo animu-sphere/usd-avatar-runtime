@@ -1,6 +1,6 @@
 find_package(motionSampling CONFIG REQUIRED)
 find_package(motionRetarget 0.5.3 CONFIG REQUIRED)
-add_library(avatarMotionAdapter STATIC clipPoseAdapter.cpp)
+add_library(avatarMotionAdapter STATIC clipPoseAdapter.cpp inputAssembler.cpp)
 add_library(AvatarRuntime::avatarMotionAdapter ALIAS avatarMotionAdapter)
 target_compile_features(avatarMotionAdapter PUBLIC cxx_std_17)
 set_target_properties(avatarMotionAdapter PROPERTIES POSITION_INDEPENDENT_CODE ON)

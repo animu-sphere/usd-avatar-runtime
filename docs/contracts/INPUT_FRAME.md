@@ -151,6 +151,17 @@ callback; host input assembly must map them separately. Actual motion/connector
 observation transport, actor selection and retained source provenance remain
 open. This scoped path does not complete input composition.
 
+The same optional target now supplies host-side `InputAssembler`: explicit
+owner channel mappings produce attributed scalar inputs, and the owner's
+optional gaze point produces a world-point observation. It owns frame arrays
+and strings, preserves the selected pose timestamp and supplied clocks, and
+reports unmapped fields to the host. Null/missing fields remain absent; zero
+remains present. Gaze validity is explicitly valid or host-selected stale,
+without deriving source policy from owner sample status. The context must have
+empty arrays; multi-source merging/arbitration, live connector intake and
+retained owner metadata remain open. See the
+[assembly boundary](../architecture/MOTION_ADAPTER.md#host-input-assembly).
+
 The runtime bridge binds source actors to avatar instances, selects a declared
 input snapshot, and delegates generic sampling/blending to motion evaluators.
 Device decoding, source normalization and connector buffering remain upstream.

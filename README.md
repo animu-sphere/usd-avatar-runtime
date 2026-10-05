@@ -87,9 +87,11 @@ snapshots, including world/joint-local point/direction input. Direction support
 requires an owner install with `VRMRIG_LOOKAT_DIRECTION_API`.
 Its constructed-rig tests do not establish real-avatar acceptance.
 An optional [motion clip pose adapter](docs/architecture/MOTION_ADAPTER.md)
-connects installed owner sampling/retargeting to runtime pose and validates
-motion -> VRM LookAt/Expression with constructed bindings. Real-avatar
-USD/Humanoid binding, motion channel/gaze input assembly, connector adapters,
+connects installed owner sampling/retargeting to runtime pose. Its host-side
+input assembler maps selected motion scalar channels and world gaze points
+to owned input frames, validating motion -> input -> VRM LookAt/Expression
+with constructed bindings. Real-avatar USD/Humanoid binding, multi-source
+input selection, connector adapters,
 Hydra, OpenExec and OST composition remain unimplemented.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.
