@@ -9,6 +9,10 @@
 #include <stdexcept>
 #include <tuple>
 
+#if !defined(VRMRIG_LOOKAT_DIRECTION_API) || VRMRIG_LOOKAT_DIRECTION_API < 1
+#error "avatarVrmAdapter requires vrmRig with EvaluateDirection support; rebuild/install the owner package"
+#endif
+
 namespace avatarVrm {
 namespace {
 bool valid(const InputIdentity& i) {
@@ -110,6 +114,24 @@ struct ExpressionAdapter::Impl {
             ? "avatar.vrm.lookAt.bone" : "avatar.vrm.lookAt.expression", 1});
     }
 
+    ArStatus worldPose(const ArEvaluationContext& c, uint32_t joint, bool translation,
+                       const char* scaleCode, pxr::GfVec3d& position, pxr::GfQuatd& rotation) const {
+        const auto& v = *c.working;
+        std::vector<uint32_t> chain;
+        for (int32_t i = int32_t(joint); i >= 0; i = v.joints[i].parent_index) chain.push_back(uint32_t(i));
+        position = pxr::GfVec3d(0);
+        rotation = pxr::GfQuatd(1);
+        for (auto i = chain.rbegin(); i != chain.rend(); ++i) {
+            const auto& t = v.joints[*i].local;
+            for (double scale : t.scale)
+                if (std::abs(scale - 1.0) > 1e-6)
+                    return failure(c, scaleCode, v.joints[joint].joint_id, "LookAt reference ancestry must have unit scale");
+            if (translation) position += rotation.Transform(pxr::GfVec3d(t.translation[0], t.translation[1], t.translation[2]));
+            rotation = (rotation * quaternion(t)).GetNormalized();
+        }
+        return AR_OK;
+    }
+
     ArStatus evaluate(const ArEvaluationContext& c, const ArStateWriter& writer) const {
         const auto& v = *c.working;
         if (!v.layout_id || config.layoutId != v.layout_id || config.layoutVersion != v.layout_version)
@@ -182,33 +204,44 @@ struct ExpressionAdapter::Impl {
             if (selected && selected->validity != AR_OBSERVATION_VALID) {
                 emit(c, "VRM_ADAPTER_GAZE_UNAVAILABLE", config.gaze.channel, "Stale/unavailable gaze contributes no LookAt output");
             } else if (selected) {
-                if (selected->kind != AR_GAZE_POINT || selected->space != AR_GAZE_RUNTIME_WORLD)
-                    return failure(c, "VRM_ADAPTER_GAZE_SPACE", config.gaze.channel, "This adapter requires a runtime-world gaze point");
+                const bool direction = selected->kind == AR_GAZE_DIRECTION;
                 const auto head = jointIndex(v, config.headSkeleton, config.headJoint);
                 if (head == v.joint_count)
                     return failure(c, "VRM_ADAPTER_HEAD", config.headJoint, "Bound head joint is missing");
-                std::vector<uint32_t> chain;
-                for (int32_t i = int32_t(head); i >= 0; i = v.joints[i].parent_index) chain.push_back(uint32_t(i));
                 pxr::GfQuatd rotation(1.0);
                 pxr::GfVec3d position(0.0);
-                for (auto i = chain.rbegin(); i != chain.rend(); ++i) {
-                    const auto& t = v.joints[*i].local;
-                    for (double scale : t.scale)
-                        if (std::abs(scale - 1.0) > 1e-6)
-                            return failure(c, "VRM_ADAPTER_HEAD_SCALE", config.headJoint, "LookAt head ancestry must have unit scale");
-                    position += rotation.Transform(pxr::GfVec3d(t.translation[0], t.translation[1], t.translation[2]));
-                    rotation = (rotation * quaternion(t)).GetNormalized();
+                auto status = worldPose(c, head, !direction, "VRM_ADAPTER_HEAD_SCALE", position, rotation);
+                if (status != AR_OK) return status;
+                pxr::GfVec3d target(selected->value[0], selected->value[1], selected->value[2]);
+                if (selected->space == AR_GAZE_JOINT_LOCAL) {
+                    const auto reference = jointIndex(v, selected->skeleton_id, selected->joint_id);
+                    if (reference == v.joint_count)
+                        return failure(c, "VRM_ADAPTER_GAZE_JOINT", selected->joint_id, "Bound gaze reference joint is missing");
+                    pxr::GfVec3d referencePosition;
+                    pxr::GfQuatd referenceRotation;
+                    status = worldPose(c, reference, !direction, "VRM_ADAPTER_GAZE_SCALE", referencePosition, referenceRotation);
+                    if (status != AR_OK) return status;
+                    target = referenceRotation.Transform(target);
+                    if (!direction) target += referencePosition;
                 }
                 for (int i = 0; i < 3; ++i)
-                    if (!narrowable(position[i]) || !narrowable(selected->value[i]))
+                    if (!narrowable(position[i]) || !narrowable(target[i]))
                         return failure(c, "VRM_ADAPTER_RANGE", config.headJoint, "Head/target cannot be represented by owner float values");
                 vrmRig::LookAtInput input;
                 input.timestamp = c.input->evaluation_seconds;
                 input.head.position = pxr::GfVec3f(position);
                 input.head.orientation = pxr::GfQuatf(rotation);
-                input.target = pxr::GfVec3f(float(selected->value[0]), float(selected->value[1]), float(selected->value[2]));
                 vrmRig::LookAtDiagnostics diagnostics;
-                auto result = gaze->Evaluate(input, &diagnostics);
+                vrmRig::ResolvedLookAt result;
+                if (direction) {
+                    // Core has already checked the unit vector. Remove allowed
+                    // double norm error before float marshalling so rounding
+                    // cannot turn a valid boundary sample into invalid gaze.
+                    result = gaze->EvaluateDirection(pxr::GfVec3f(target.GetNormalized()), input.head, input.timestamp, &diagnostics);
+                } else {
+                    input.target = pxr::GfVec3f(target);
+                    result = gaze->Evaluate(input, &diagnostics);
+                }
                 for (const auto& warning : diagnostics.warnings) emit(c, "VRM_LOOKAT_WARNING", config.headJoint, warning);
                 for (const auto& eye : result.eyeRotations) {
                     const auto binding = std::find_if(config.eyes.begin(), config.eyes.end(),
@@ -224,8 +257,8 @@ struct ExpressionAdapter::Impl {
                     auto local = v.joints[index].local;
                     for (int i = 0; i < 3; ++i) local.rotation[i] = eyeRotation.GetImaginary()[i];
                     local.rotation[3] = eyeRotation.GetReal();
-                    const auto status = writer.set_joint(writer.context, index, &local);
-                    if (status != AR_OK) return status;
+                    const auto eyeStatus = writer.set_joint(writer.context, index, &local);
+                    if (eyeStatus != AR_OK) return eyeStatus;
                 }
                 for (const auto& value : result.expressions.entries) {
                     if (weights.Find(value.name))

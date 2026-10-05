@@ -29,8 +29,9 @@ struct ExpressionAdapterConfig {
     vrmRig::ExpressionRig expressions;
     std::vector<ExpressionInputBinding> inputs;
     std::vector<MorphBinding> morphs;
-    // Optional expression- or bone-driven LookAt. Accepts runtime-world
-    // points only and unit-scale head ancestry; unsupported inputs fail visibly.
+    // Optional expression- or bone-driven LookAt. Points/directions in world
+    // or bound joint-local space; head/reference ancestry must have unit scale.
+    // Directions use orientation only, with no positional eye parallax.
     std::optional<vrmRig::LookAtRig> lookAt;
     InputIdentity gaze;
     std::string headSkeleton, headJoint;

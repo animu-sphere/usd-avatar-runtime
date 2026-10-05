@@ -19,8 +19,9 @@ The full logical contract and RT-O1/RT-O2 remain open.
 
 The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now selects scalar
 and gaze identities explicitly and marshals named expression weights to the
-owner's `MotionChannelSet`. Its expression-driven LookAt subset accepts valid
-runtime-world points; other spaces/kinds fail visibly, and stale/unavailable
+owner's `MotionChannelSet`. Both LookAt types accept valid world/joint-local
+points and directions using current working rig transforms and the owner's
+point/direction entry points; scaled ancestry fails visibly, and stale/unavailable
 gaze contributes nothing. This does not establish connector/motion mappings
 or narrow the revision-3 input transport contract.
 
@@ -133,6 +134,9 @@ This is an input composition boundary, not a new motion value: an owner
 `MotionPose::lookAtTarget` maps to a valid world-space **point**, preserving its
 timestamp and optional absence. A direction must not be assigned to that point
 field without an explicit owner-supported conversion using the bound avatar.
+The VRM adapter uses the additive owner `EvaluateDirection` API for directions;
+it does not assign them to `MotionPose::lookAtTarget` or invent a target distance.
+Direction evaluation uses the head orientation without positional eye parallax.
 Real motion/connector/VRM mapping evidence, tracking-specific validity and
 resolved gaze result/provenance records remain open before freeze.
 

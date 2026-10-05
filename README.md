@@ -83,7 +83,9 @@ mapping, preserving revision 2's retained layout/input/capability metadata.
 Revision-1/2 providers and consumers must rebuild.
 An optional [VRM adapter](docs/architecture/VRM_ADAPTER.md) connects installed
 owner expression and both LookAt evaluator types to pose/morph/material
-snapshots. Its constructed-rig tests do not establish real-avatar acceptance.
+snapshots, including world/joint-local point/direction input. Direction support
+requires an owner install with `VRMRIG_LOOKAT_DIRECTION_API`.
+Its constructed-rig tests do not establish real-avatar acceptance.
 Motion/Humanoid/connector adapters, Hydra, OpenExec and OST
 composition are not implemented.
 
