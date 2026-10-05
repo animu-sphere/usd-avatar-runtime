@@ -1,7 +1,7 @@
 # usd-avatar-runtime
 
-The avatar evaluation composition and orchestration layer for the
-animu-sphere ecosystem.
+The format-independent avatar evaluation IR, lifecycle and orchestration layer
+for the animu-sphere ecosystem.
 
 ## Scope
 
@@ -52,7 +52,10 @@ public C headers. Additional component targets remain a
 
 Start at [docs/](docs/README.md). The
 [design policy](docs/design/DESIGN_POLICY.md) preserves the supplied
-implementation direction. The [roadmap](docs/roadmap/README.md) gives the
+implementation direction. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
+prioritizes real motion -> VRM -> evaluated state -> `hydra-toon` fast-path,
+then MMD validation of the shared scheduler/state model before ABI freeze.
+Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the
 implementation sequence and acceptance criteria; the
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) records what exists.
 
@@ -74,7 +77,9 @@ rollback, instance isolation, retained snapshots and an external build against
 the installed `AvatarRuntime::avatarRuntime` CMake target. See
 [the ABI](docs/contracts/ABI.md) and
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) for exact coverage.
-The headers are experimental revision 1; Runtime Phase A is still open.
+The headers are experimental revision 2; Runtime Phase A is still open.
+Revision 2 adds retained layout identity, input revision and active capabilities
+to snapshots; revision-1 providers/consumers must rebuild.
 Motion/gaze adapters, Hydra, OpenExec and OST composition are not implemented.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.

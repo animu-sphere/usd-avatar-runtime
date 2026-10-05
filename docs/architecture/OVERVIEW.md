@@ -9,6 +9,12 @@ This is the target architecture, following
 [design policy sections 1–4 and 17](../design/DESIGN_POLICY.md).
 Implementation status is the [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
+The [near-term direction](../design/NEAR_TERM_PLAN.md) prioritizes real motion
+-> VRM Humanoid/LookAt/Expression -> evaluated state -> `hydra-toon` fast-path,
+then MMD under the same scheduler/state model. Runtime Phases A/B overlap to
+validate and correct contracts before freeze. OpenExec, full Hydra publication
+and physics are not prerequisites for that serial direct slice.
+
 ## 1. Composition and evaluation
 
 ```text
@@ -29,6 +35,13 @@ and static values. A binding adapter reads those declarations into evaluation
 data. Format-specific interpretation stays with the format owner.
 High-frequency resolved values live in runtime buffers and output overlays.
 Only explicit recording/baking authoring writes those results back to USD.
+
+The planned USD binding adapter builds instance configuration from avatar root,
+skeleton/joint mapping, format identity, expression bindings, LookAt
+configuration and material/deformation target identities. It preserves owner
+semantics and validates layout/version identity and invalidation before frames.
+It is distinct from high-frequency value publication; revision 2 currently
+accepts caller-supplied layouts and has no USD binding adapter.
 
 ## 2. Instances and resources
 

@@ -46,6 +46,11 @@ typedef struct ArStateView {
     uint32_t material_count;
     const ArVisibility* visibility;
     uint32_t visibility_count;
+    const char* layout_id; /* copied opaque binding identity; not reset generation */
+    uint64_t layout_version; /* nonzero; identifies channel order/types/parents */
+    uint64_t input_revision; /* echoes ArInputFrame; 0 = unspecified */
+    const ArCapability* capabilities; /* active set; retained with snapshot */
+    uint32_t capability_count;
 } ArStateView;
 
 /* All writer operations are scoped to one callback. Errors also latch a frame

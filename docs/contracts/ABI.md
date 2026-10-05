@@ -6,20 +6,25 @@ owner: usd-avatar-runtime
 # Cross-package ABI
 
 This document develops [design policy section 9](../design/DESIGN_POLICY.md).
-The first implementation exposes experimental revision 1 through
+The direct implementation exposes experimental revision 2 through
 [`api.h`](../../include/avatarRuntime/api.h). `arGetApi` is the only exported
 runtime entry point; it fills the caller's `ArRuntimeApi` function table.
 This is a tested prototype, not an ecosystem ABI freeze. Motion/gaze marshalling,
 checkpoint restore and real-provider conformance remain Runtime Phase A gates.
+Under the [near-term direction](../design/NEAR_TERM_PLAN.md#2-contract-validation-before-freeze),
+Phase A/B integration precedes freeze: real VRM and MMD evidence must inform
+the revision, phase model, state representation, capability meanings and
+lifecycle. Separately compiled synthetic providers alone do not establish
+a freeze candidate.
 
 ## 1. Representation
 
-Implemented revision-1 rules:
+Implemented revision-2 rules:
 
 - Windows uses `__cdecl` and default compiler packing. Descriptors/views begin
   with `uint32_t struct_size` and `abi_version`; fixed value records and writer
   tables are versioned by their enclosing contract. All required fields of
-  revision 1 must fit. Unknown larger tails are ignored/left untouched; any
+  revision 2 must fit. Unknown larger tails are ignored/left untouched; any
   different revision is rejected before reading the descriptor body.
 - Initialize descriptors to zero, then set `AR_HEADER(Type)`. `arGetApi` takes
   an explicit revision and output capacity. No packed structs, STL, USD types,
@@ -36,6 +41,15 @@ Implemented revision-1 rules:
 - Registration copies descriptor identities, dependencies and capabilities;
   instance creation copies the authored output layout and initial values.
   Provider `user_data` and callback code remain borrowed.
+
+Revision 2 changes `ArInstanceDesc`, `ArInputFrame` and `ArStateView` to add
+required binding layout ID/version, input revision and snapshot-associated
+active capabilities. Revision 1 is rejected at table and descriptor/view
+negotiation; this is an experimental breaking change, not a compatible tail
+extension or an ABI freeze. Providers/consumers must rebuild with revision-2
+headers and supply nonempty layout ID/nonzero version on instance creation.
+The function table has the same operations. ABI revision is independent of
+the experimental CMake package version.
 
 Before freeze, review the selected layout/alignment, calling convention and
 minimum-size rules with real provider adapters. C++ conveniences remain a layer
@@ -62,7 +76,10 @@ The prototype implements the following lifetime model:
 Snapshot storage contains copied values/identities and no provider-private
 pointers. It survives instance/runtime destruction; keep the runtime library
 loaded until the final snapshot release. Capability views are borrowed until
-instance destruction and remain unchanged by reset. Hosts must coordinate
+instance destruction and remain unchanged by reset. Capabilities obtained
+through a retained snapshot instead share that snapshot's lifetime, as do
+layout identity/version and input revision. The snapshot never borrows its
+capability strings from a provider or destroyed instance. Hosts must coordinate
 release/destruction with readers. All API calls are serialized in this initial
 implementation, including calls for different runtime objects; parallel
 scheduling and cancellation are future work. A callback must not wait for a
@@ -77,7 +94,7 @@ Runtime entry points catch allocation/implementation exceptions. Provider and
 diagnostic callbacks must not throw. Unexpected evaluator exceptions are caught
 as a defensive measure and abort the transaction. `end_frame` and destruction
 are contractually infallible; an exception during commit/abort poisons the
-instance and requires reset. Revision 1 does not promise recovery from an
+instance and requires reset. Revision 2 does not promise recovery from an
 arbitrary provider violating its lifecycle contract.
 
 ## 3. Compatibility and portability

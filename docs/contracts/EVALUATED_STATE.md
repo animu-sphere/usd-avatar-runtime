@@ -8,11 +8,17 @@ owner: usd-avatar-runtime
 `EvaluatedAvatarState` is the logical resolved result for one avatar and frame.
 It is the common boundary for Hydra, direct consumers and capture, following
 [design policy section 6](../design/DESIGN_POLICY.md).
+The adopted [near-term direction](../design/NEAR_TERM_PLAN.md#4-central-evaluated-state-ir)
+positions it as the central runtime IR, validated first by real VRM evaluators
+and the `hydra-toon` fast-path, then by MMD before freeze.
 
 Experimental [`state.h`](../../include/avatarRuntime/state.h) implements a
 complete snapshot subset: parent-local rig transforms, blend-shape weights,
 typed material input overrides and visibility. Other typed deformation outputs
-and real-provider layout conformance remain open before freeze.
+and real-provider layout conformance remain open before freeze. Revision 2 adds
+explicit layout/version identity, host input revision and retained active
+capabilities. Expression/gaze result records and snapshot-retained diagnostics
+remain target requirements below, not fields already present in `ArStateView`.
 
 ## 1. State groups
 
@@ -20,8 +26,11 @@ and real-provider layout conformance remain open before freeze.
 | --- | --- |
 | pose | evaluated transforms/root placement in an explicitly bound skeleton layout |
 | deformation | blend-shape weights and typed additional deformation channels |
+| expression | resolved semantic/native/custom identity, weight, arbitration result and availability with source/provenance |
+| gaze / LookAt | resolved eye rotation, head contribution, expression contribution and clamped/rejected/unavailable status |
 | appearance | typed material input overrides and visibility |
-| identity | instance, frame, evaluation instant, binding generation and channel layouts |
+| identity | instance, frame, evaluation instant, binding generation, layout/version, source/input revision and active capability set |
+| diagnostics / provenance | evaluation status and provider/source context associated with the same frame |
 
 The conceptual `AvatarPoseState { MotionPose pose; }` in the policy is not a
 decision that semantic humanoid pose alone can represent every final rig.
@@ -33,8 +42,13 @@ Target identifiers must distinguish skeletons, joints, meshes, morph targets,
 materials and visibility targets without exposing renderer resource handles.
 Binding changes invalidate the layout explicitly. Sparse/dense representation,
 units, transform space and update semantics must be chosen before ABI freeze.
+Contract review must explicitly distinguish local/model/world transforms,
+missing joints from identity transforms, and skeleton layout/version changes
+from configuration/reset generations. The first ABI prioritizes clear
+semantics over internal efficiency; the scoped prototype choice below remains
+subject to real-provider conformance.
 
-Revision 1 binds a dense array of all rig joints, including auxiliary joints.
+Revision 2 binds a dense array of all rig joints, including auxiliary joints.
 Each carries `(skeleton_id, joint_id)`, a parent index (`-1` or an earlier joint
 in the same skeleton), translation, rotation and scale. Translations are metres;
 values use the canonical motion basis, right-handed +Y up/+Z forward. Rotations
@@ -71,6 +85,21 @@ Bone effects must be consolidated into final pose once. An expression-based
 LookAt contribution goes through the format's expression resolver once;
 publication must not add it a second time.
 
+Expression output cannot be only an unattributed float array. Its target
+contract distinguishes common semantic identity from native/custom identity,
+weight, source/provenance, arbitration outcome and availability (RT-O2/RT-O4).
+It should accommodate VRM presets, MMD morphs and application facial channels
+through owner mappings, without copying format semantics into core. Resolved
+expression records expose evaluation results; renderers consume their resolved
+deformation/appearance effects without applying arbitration again.
+
+Gaze input is owned by the [input contract](INPUT_FRAME.md). Output describes
+resolved eye rotations, head and expression contributions, and whether the
+request was clamped, rejected or unavailable. VRM LookAt remains an owner
+evaluator; the runtime supplies input, order, state and publication. A status
+record must not instruct a consumer to perform LookAt itself. The representation
+and relation to consolidated pose/expression channels remain RT-O4 work.
+
 Material overrides reference canonical, typed material input identities;
 the renderer realizes those values in its own material system. An output
 channel is not a common shading model or a new USD toon schema. Additional
@@ -103,6 +132,31 @@ increases the generation without changing layout; structural rebinding currently
 requires a new instance. Old retained snapshots keep their original identity
 and values through subsequent frames/reset/destruction. Snapshot lifetime is
 defined in [ABI section 2](ABI.md#2-lifetime-and-calls).
+
+Revision 2 requires the binding host to supply a nonempty opaque UTF-8
+`ArInstanceDesc.layout_id` and nonzero `layout_version`. The runtime copies these
+and exposes them on every working/prior/published view, even when the evaluator
+has no state domains. The tuple identifies channel identities/order, joint
+parents, value types and structural binding mappings; changing those
+requires a new version or ID and currently a new instance. The host owns that
+identity assignment. Runtime validation does not detect a host reusing the same
+tuple for different layouts. Consumers must also bind the instance identity;
+matching tuples across instances are not permission to mix their values.
+
+Reset changes configuration generation while preserving layout identity/version
+and active capabilities. Value-only updates preserve the tuple. Initial-state
+metadata is ignored: instance descriptor metadata and negotiated capabilities
+are authoritative. A zero input revision means the host supplied no revision;
+otherwise snapshots echo the selected input's revision as defined by the
+[input contract](INPUT_FRAME.md#1-logical-contents).
+
+Active capabilities are sorted by ID and immutable. Their array and strings,
+and the layout ID string, remain valid until the last snapshot reference is
+released, including through reset and instance/runtime destruction. Metadata
+storage is shared immutably across frames; it holds no provider-private pointers.
+Diagnostic records still use callback-scoped delivery and are not retained in
+the snapshot. Real-provider layout conformance, expression/gaze results and
+full provenance remain RT-O4/RT-O7 work before freeze.
 
 Validation covers finite transforms/values, channel type/shape, target layout
 and version compatibility. Unsupported effects are diagnosed via

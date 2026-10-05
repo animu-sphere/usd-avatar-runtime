@@ -1,4 +1,5 @@
 #include "avatarRuntime/api.h"
+#include <cstddef>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -28,10 +29,11 @@ struct Fixture {
     ArMaterialInput material{"material", "test:color", AR_VALUE_VEC4, 0, {1,1,1,1}};
     ArVisibility visibility{"mesh", 1};
     Fixture() { CHECK(api.create_runtime(&runtime) == AR_OK); }
-    ~Fixture() { CHECK(api.destroy_runtime(runtime) == AR_OK); }
+    ~Fixture() { if (runtime) CHECK(api.destroy_runtime(runtime) == AR_OK); }
     ArInstanceDesc desc(const std::vector<const char*>& selected) {
         ArInstanceDesc d{AR_HEADER(ArInstanceDesc)};
         d.generation = 1; d.evaluators = selected.data(); d.evaluator_count = uint32_t(selected.size());
+        d.layout_id = "test.layout"; d.layout_version = 1;
         d.initial_state = {AR_HEADER(ArStateView)};
         d.initial_state.joints = joints; d.initial_state.joint_count = 2;
         d.initial_state.blend_shapes = &shape; d.initial_state.blend_shape_count = 1;
@@ -61,17 +63,32 @@ void add(Fixture& f, const ArEvaluatorDesc& d) { CHECK(api.register_evaluator(f.
 
 void negotiation() {
     ArRuntimeApi invalid{};
-    CHECK(arGetApi(2, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
-    CHECK(arGetApi(1, sizeof(invalid) - 1, &invalid) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(AR_ABI_VERSION + 1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(AR_ABI_VERSION, sizeof(invalid) - 1, &invalid) == AR_INCOMPATIBLE_ABI);
     struct Extended { ArRuntimeApi table; uint64_t tail; } extended{};
     extended.tail = 0x12345678;
-    CHECK(arGetApi(1, sizeof(extended), &extended.table) == AR_OK && extended.tail == 0x12345678);
+    CHECK(arGetApi(AR_ABI_VERSION, sizeof(extended), &extended.table) == AR_OK && extended.tail == 0x12345678);
     Fixture f; auto d = evaluator("a"); d.struct_size -= 1;
     CHECK(api.register_evaluator(f.runtime, &d, nullptr) == AR_INCOMPATIBLE_ABI);
     d = evaluator("a"); add(f, d);
     CHECK(api.register_evaluator(f.runtime, &d, nullptr) == AR_DUPLICATE_ID);
     auto instance = f.make({"a"});
+    auto legacy = f.desc({}); legacy.abi_version = 1; ArInstance rejected = 999;
+    CHECK(api.create_instance(f.runtime, &legacy, nullptr, &rejected) == AR_INCOMPATIBLE_ABI && rejected == 0);
+    legacy.abi_version = AR_ABI_VERSION; legacy.struct_size = uint32_t(offsetof(ArInstanceDesc, layout_id));
+    CHECK(api.create_instance(f.runtime, &legacy, nullptr, &rejected) == AR_INCOMPATIBLE_ABI && rejected == 0);
     Fixture other; auto input = frame(1); ArSnapshot snapshot = 999;
+    auto oldInput = input; oldInput.abi_version = 1;
+    CHECK(api.evaluate_frame(f.runtime, instance, &oldInput, nullptr, &snapshot) == AR_INCOMPATIBLE_ABI && snapshot == 0);
+    oldInput.abi_version = AR_ABI_VERSION; oldInput.struct_size = uint32_t(offsetof(ArInputFrame, input_revision));
+    CHECK(api.evaluate_frame(f.runtime, instance, &oldInput, nullptr, &snapshot) == AR_INCOMPATIBLE_ABI && snapshot == 0);
+    CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &snapshot) == AR_OK);
+    ArStateView oldView{AR_HEADER(ArStateView)}; oldView.abi_version = 1;
+    CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
+    oldView.abi_version = AR_ABI_VERSION; oldView.struct_size = uint32_t(offsetof(ArStateView, layout_id));
+    CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
+    CHECK(api.release_snapshot(snapshot) == AR_OK);
     CHECK(api.evaluate_frame(other.runtime, instance, &input, nullptr, &snapshot) == AR_INVALID_HANDLE && snapshot == 0);
     CHECK(api.destroy_instance(f.runtime, instance) == AR_OK);
     CHECK(api.destroy_instance(f.runtime, instance) == AR_INVALID_HANDLE);
@@ -350,8 +367,91 @@ void deterministicFrames() {
     }
 }
 
+struct MetadataProbe {
+    uint64_t priorRevision = 0;
+    bool hasPrior = false;
+    bool fail = false;
+    static ArStatus AR_CALL evaluate(void* p, void*, const ArEvaluationContext* ctx, const ArStateWriter*) {
+        const auto& probe = *static_cast<MetadataProbe*>(p);
+        CHECK(ctx->working->input_revision == ctx->input->input_revision);
+        CHECK(std::string(ctx->working->layout_id) == "test.layout" && ctx->working->layout_version == 7);
+        CHECK(ctx->working->capability_count == 2 && ctx->working->joint_count == 0);
+        CHECK((ctx->prior != nullptr) == probe.hasPrior);
+        if (ctx->prior) CHECK(ctx->prior->input_revision == probe.priorRevision && ctx->prior->layout_version == 7);
+        return probe.fail ? AR_PROVIDER_ERROR : AR_OK;
+    }
+};
+
+void snapshotIdentity() {
+    Fixture f; MetadataProbe probe;
+    auto e = evaluator("metadata"); e.user_data = &probe; e.evaluate = MetadataProbe::evaluate;
+    char capabilityId[] = "test.z";
+    ArCapability supplied[]{{capabilityId, 3}, {"test.a", 2}};
+    e.supplies = supplied; e.supply_count = 2; add(f, e);
+    std::vector<const char*> selected{"metadata"}; auto d = f.desc(selected);
+    char layoutId[] = "test.layout";
+    d.layout_id = layoutId; d.layout_version = 7;
+    ArCapability bound[]{{"test.optional", 1}, supplied[0], supplied[1]};
+    d.bound_capabilities = bound; d.bound_capability_count = 3;
+    /* Only descriptor metadata is authoritative. Initial-state metadata is ignored. */
+    d.initial_state.layout_id = reinterpret_cast<const char*>(1);
+    d.initial_state.capabilities = reinterpret_cast<const ArCapability*>(1);
+    d.initial_state.capability_count = 999; d.initial_state.layout_version = 99;
+    d.initial_state.input_revision = 999;
+    ArInstance id = 0; Log log; auto sink = log.sink();
+    CHECK(api.create_instance(f.runtime, &d, &sink, &id) == AR_OK);
+    CHECK(log.codes == std::vector<std::string>{"runtime.capability.inactive"});
+    layoutId[0] = 'X'; capabilityId[0] = 'X'; bound[1].version = 99;
+    auto input = frame(1); input.input_revision = 77;
+    ArSnapshot first, second, reset, retry, rebound;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &first) == AR_OK);
+    const auto original = view(first);
+    CHECK(std::string(original.layout_id) == "test.layout" && original.layout_version == 7);
+    CHECK(original.input_revision == 77 && original.capability_count == 2);
+    CHECK(std::string(original.capabilities[0].id) == "test.a" && original.capabilities[0].version == 2);
+    CHECK(std::string(original.capabilities[1].id) == "test.z" && original.capabilities[1].version == 3);
+    const ArCapability* active; uint32_t count;
+    CHECK(api.get_capabilities(f.runtime, id, &active, &count) == AR_OK && count == 2);
+    CHECK(std::string(active[1].id) == "test.z" && active[1].version == 3);
+    probe.hasPrior = true; probe.priorRevision = 77;
+    input.frame_id = 2;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &second) == AR_OK);
+    CHECK(view(second).input_revision == 77 && view(second).generation == 1);
+    CHECK(api.reset_instance(f.runtime, id, 2) == AR_OK);
+    probe.hasPrior = false; input = frame(1, 0, 2); input.input_revision = 3;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &reset) == AR_OK);
+    CHECK(view(reset).generation == 2 && view(reset).layout_version == 7 && view(reset).input_revision == 3);
+    probe.hasPrior = true; probe.priorRevision = 3; probe.fail = true;
+    input.frame_id = 2; input.input_revision = 88; retry = 999;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &retry) == AR_PROVIDER_ERROR && retry == 0);
+    probe.fail = false; input.input_revision = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &retry) == AR_OK);
+    CHECK(view(retry).input_revision == 0 && view(reset).input_revision == 3);
+    /* Structure change uses a new instance/version; reset alone preserved layout. */
+    d = f.desc({}); d.layout_version = 8; f.joints[1].joint_id = "newAuxiliary";
+    ArInstance other;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &other) == AR_OK);
+    input = frame(1); input.input_revision = 4;
+    CHECK(api.evaluate_frame(f.runtime, other, &input, nullptr, &rebound) == AR_OK);
+    CHECK(view(rebound).layout_version == 8 && view(rebound).instance != original.instance);
+    CHECK(std::string(view(rebound).joints[1].joint_id) == "newAuxiliary" && view(rebound).capability_count == 0);
+    CHECK(api.destroy_runtime(f.runtime) == AR_OK); f.runtime = 0;
+    /* Previously returned pointers, not only fresh views, remain readable. */
+    CHECK(std::string(original.layout_id) == "test.layout" && original.input_revision == 77);
+    CHECK(std::string(original.capabilities[1].id) == "test.z" && original.capabilities[1].version == 3);
+    CHECK(std::string(original.joints[1].joint_id) == "auxiliary");
+    for (auto snapshot : {first, second, reset, retry, rebound}) CHECK(api.release_snapshot(snapshot) == AR_OK);
+}
+
 void validation() {
     Fixture f; ArInstance id; auto d = f.desc({});
+    d.layout_id = nullptr;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_ARGUMENT);
+    d.layout_id = "";
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_ARGUMENT);
+    d.layout_id = "test.layout"; d.layout_version = 0;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_ARGUMENT);
+    d.layout_version = 1;
     f.joints[0].local.rotation[3] = 0;
     CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
     f.joints[0].local.rotation[3] = 1; f.joints[1].parent_index = 1;
@@ -367,6 +467,6 @@ void validation() {
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     negotiation(); planning(); capabilities(); transactions(); orderedRollbackAndPoisoning();
-    inputsAndSnapshots(); deterministicFrames(); validation();
+    inputsAndSnapshots(); deterministicFrames(); snapshotIdentity(); validation();
     std::cout << "Runtime contract checks passed\n";
 }

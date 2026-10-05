@@ -140,10 +140,23 @@ bool materialValid(const ArMaterialInput& m) {
     return true;
 }
 
+struct Layout {
+    std::string id;
+    uint64_t version;
+    std::map<std::string, uint32_t> active;
+    std::vector<ArCapability> capabilities;
+    Layout(const char* layoutId, uint64_t layoutVersion, std::map<std::string, uint32_t>&& support)
+        : id(layoutId), version(layoutVersion), active(std::move(support)) {
+        for (const auto& c : active) capabilities.push_back({c.first.c_str(), c.second});
+    }
+};
+
 struct State {
     ArInstance instance = 0;
     uint64_t frame = 0, generation = 0;
     double seconds = 0;
+    uint64_t inputRevision = 0;
+    std::shared_ptr<const Layout> layout;
     std::vector<std::string> strings;
     std::vector<ArJoint> joints;
     std::vector<ArBlendShape> shapes;
@@ -168,12 +181,19 @@ struct State {
             auto x = v.visibility[i]; x.target_id = copyId(x.target_id); visibility.push_back(x);
         }
     }
-    State(const State& other) : State(other.view()) {}
+    State(const State& other) : State(other.view()) {
+        inputRevision = other.inputRevision; layout = other.layout;
+    }
     State(State&&) = default;
     State& operator=(const State&) = delete;
     ArStateView view(ArDomain domains = AR_DOMAIN_ALL) const {
         ArStateView v{AR_HEADER(ArStateView)};
         v.instance = instance; v.frame_id = frame; v.generation = generation; v.evaluation_seconds = seconds;
+        v.input_revision = inputRevision;
+        if (layout) {
+            v.layout_id = layout->id.c_str(); v.layout_version = layout->version;
+            v.capabilities = layout->capabilities.data(); v.capability_count = uint32_t(layout->capabilities.size());
+        }
         if (domains & AR_DOMAIN_POSE) { v.joints = joints.data(); v.joint_count = uint32_t(joints.size()); }
         if (domains & AR_DOMAIN_DEFORMATION) { v.blend_shapes = shapes.data(); v.blend_shape_count = uint32_t(shapes.size()); }
         if (domains & AR_DOMAIN_MATERIAL) { v.materials = materials.data(); v.material_count = uint32_t(materials.size()); }
@@ -259,8 +279,6 @@ struct Instance {
     uint64_t generation;
     State baseline;
     std::vector<BoundEvaluator> plan;
-    Capabilities active;
-    std::vector<ArCapability> capabilityView;
     std::shared_ptr<const State> prior;
     bool poisoned = false;
     Instance(uint64_t g, const ArStateView& v) : generation(g), baseline(v) {}
@@ -505,11 +523,12 @@ ArStatus AR_CALL createInstance(ArRuntime h, const ArInstanceDesc* desc, const A
         if (!out) return AR_INVALID_ARGUMENT;
         requireHeader(desc, d);
         if (!desc->generation) d.fail(AR_INVALID_ARGUMENT, "runtime.generation.invalid", "Generation must be nonzero");
+        requireId(desc->layout_id, d);
+        if (!desc->layout_version) d.fail(AR_INVALID_ARGUMENT, "runtime.layout.version", "Layout version must be nonzero", desc->layout_id);
         validateState(desc->initial_state, d);
         Capabilities active; auto ordered = makePlan(r, *desc, d, active);
         auto inst = std::make_unique<Instance>(desc->generation, desc->initial_state);
-        inst->active = std::move(active);
-        for (const auto& c : inst->active) inst->capabilityView.push_back({c.first.c_str(), c.second});
+        inst->baseline.layout = std::make_shared<const Layout>(desc->layout_id, desc->layout_version, std::move(active));
         const auto id = newHandle(); d.instance = id;
         inst->baseline.instance = id; inst->baseline.generation = desc->generation;
         for (auto* e : ordered) inst->plan.push_back({e, nullptr});
@@ -546,6 +565,7 @@ ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* i
         if (inst.poisoned) d.fail(AR_INVALID_STATE, "runtime.lifecycle.poisoned", "Provider violated infallible lifecycle; reset required");
         validateInput(input, inst, d);
         State work(inst.baseline); work.frame = input->frame_id; work.seconds = input->evaluation_seconds;
+        work.inputRevision = input->input_revision;
         Transaction transaction(inst);
         for (auto& b : inst.plan) {
             auto& e = *b.evaluator; d.evaluator = e.id.c_str(); d.origin = e.provider.c_str(); d.phase = e.callbacks.phase;
@@ -613,7 +633,8 @@ ArStatus AR_CALL getCapabilities(ArRuntime h, ArInstance id, const ArCapability*
     return boundary([&]() -> ArStatus {
         if (!out || !count) return AR_INVALID_ARGUMENT;
         std::lock_guard<std::mutex> lock(apiMutex); auto& inst = instance(runtime(h), id);
-        *out = inst.capabilityView.data(); *count = uint32_t(inst.capabilityView.size()); return AR_OK;
+        const auto& capabilities = inst.baseline.layout->capabilities;
+        *out = capabilities.data(); *count = uint32_t(capabilities.size()); return AR_OK;
     });
 }
 } // namespace
