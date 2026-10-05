@@ -103,14 +103,17 @@ parity. The optional [USD motion clip binding](docs/architecture/MOTION_USD_BIND
 connects installed `motionUsd` reading and source rest to pose evaluation.
 Its opt-in `avatarMotionCheck` tool validates seven real VRMA clips on that
 avatar with all-joint numeric parity, reset and retained snapshots. Real-avatar
-Full real-motion-to-Expression composition and renderer evidence remain open. The optional
+Native VRMA expression/gaze intake and renderer evidence remain open. The optional
 [USD LookAt binding](docs/architecture/VRM_LOOKAT_USD_BINDING.md) now extracts
 owner range maps and head/eye/rest configuration into the VRM adapter. One
 private avatar's Expression-type LookAt has test-gaze owner-weight parity;
 the separate [Expression binding](docs/architecture/VRM_EXPRESSION_USD_BINDING.md)
 now extracts actual morph/material targets and supplies a complete baseline.
 That avatar's 18 expressions and 48 morph slots have test scalar/gaze owner
-parity; material targets have constructed-USD evidence. Full real-motion-to-LookAt
-flow remains open.
+parity; material targets have constructed-USD evidence. `avatarMotionCheck --vrm`
+now composes seven real motion clips with those actual bindings and explicit
+host gaze/expression probes, checking all pose/morph output and retained state.
+The common motion reader does not yet convert native VRMA expression/gaze
+attributes, so this remains host test input evidence.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.

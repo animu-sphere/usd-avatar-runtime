@@ -90,9 +90,12 @@ owner-weight parity at `1e-6`, reset and retained state after stage/runtime
 destruction. Paths/hashes and commands remain in ignored build evidence; no
 asset is copied or included in default tests.
 
-This validates one real-avatar LookAt configuration with test gaze. Actual
-real-avatar bone-eye conformance, real-motion
-composition, connectors, rendering, milestones and ABI freeze remain open in
+This validates one real-avatar LookAt configuration with test gaze. The
+[motion parity tool](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) additionally
+checks that test gaze against the head pose from seven real clips, using actual
+expression outputs and an independent owner head calculation. Native VRMA
+gaze/expression intake, real-avatar bone-eye conformance, connectors, rendering,
+milestones and ABI freeze remain open in
 the [roadmap](../roadmap/current.md).
 Actual expression/output extraction and test-gaze composition now have scoped
 evidence in the separate Expression binding document.

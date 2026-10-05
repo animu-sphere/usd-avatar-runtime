@@ -109,4 +109,6 @@ avatar's Expression-type gaze configuration and owner-weight parity with test
 gaze and constructed output sinks. Subsequent
 [Expression binding](VRM_EXPRESSION_USD_BINDING.md) evidence adds actual
 expression/morph target extraction and test-gaze/scalar output parity.
-Complete real-motion-to-LookAt/Expression composition remains open.
+The [motion checker](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) now composes
+real clip pose with actual LookAt/Expression bindings and explicit host probes;
+native VRMA expression/gaze intake remains open.

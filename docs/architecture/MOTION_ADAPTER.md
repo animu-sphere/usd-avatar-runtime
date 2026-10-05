@@ -200,5 +200,6 @@ the [capability matrix](../reference/CAPABILITY_MATRIX.md).
 The separate [USD motion clip binding](MOTION_USD_BINDING.md) now connects
 actual owner-imported clips and source rest to this adapter. Its opt-in tool
 validates seven real clips on one real-avatar schema-derived Humanoid layout;
-this extends pose integration evidence without closing real-avatar
-LookAt/Expression, connectors, rendering or milestone acceptance.
+its VRM mode additionally composes that pose with actual-avatar LookAt/Expression
+bindings and explicit host scalar/gaze probes. Native VRMA expression/gaze
+intake, connectors, rendering and milestone acceptance remain open.
