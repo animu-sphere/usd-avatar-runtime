@@ -13,6 +13,21 @@ implement experimental registration, phase barriers and explicit predecessor
 dependencies. This does not freeze RT-O3: actual motion/VRM/MMD adapter plans
 still need conformance evidence.
 
+The [near-term direction](../design/NEAR_TERM_PLAN.md#5-validate-evaluator-dependencies)
+requires real-provider validation during overlapping Runtime Phases A/B:
+
+```text
+VRM: motion pose -> humanoid resolution -> LookAt -> expression arbitration
+                                                    -> final state
+MMD: base pose -> bone morph -> control / IK -> physics boundary
+                                               -> final pose / morph state
+```
+
+These dependencies validate or correct the proposed phases below. MMD is a
+second-family test of the scheduler's generality; do not freeze a VRM-only
+model. A physics boundary can be tested without integrating a full physics
+backend in the initial slice. Real owner calls may combine substeps atomically.
+
 ## 1. Initial phase sequence
 
 Numeric positions preserve the policy's conceptual order. They are not frozen

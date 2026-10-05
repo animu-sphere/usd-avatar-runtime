@@ -28,6 +28,10 @@ The adopted [design policy](../design/DESIGN_POLICY.md) preserves the original
 interfaces. Focused proposals develop them and become binding only with
 reviewed decisions and implementation evidence.
 
+The adopted [near-term direction](../design/NEAR_TERM_PLAN.md) refines the
+original phase sequence. Keep integration priorities and freeze gates aligned
+with it without treating planned channels or milestones as implemented support.
+
 Design, architecture and contract documents carry front matter with `owner`
 and `status`. Use `proposed` for unresolved target designs, `accepted` for
 adopted direction, and `binding` only for an implemented/validated contract.

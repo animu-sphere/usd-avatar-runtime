@@ -8,6 +8,21 @@ owner: usd-avatar-runtime
 This document develops [design policy sections 11–12](../design/DESIGN_POLICY.md).
 All paths consume one [evaluated state](../contracts/EVALUATED_STATE.md).
 
+The [near-term direction](../design/NEAR_TERM_PLAN.md#6-first-renderer-consumer)
+selects `hydra-toon` direct/fast-path as the first renderer consumer. Connect it
+before full Hydra publication to validate state semantics and measure latency,
+copy cost and allocations without first freezing locators/Scene Index structure.
+This direct consumer work feeds Runtime Phase A/B contract correction.
+
+```text
+                     +-- fast/direct API -> hydra-toon (first consumer)
+EvaluatedAvatarState +-- Hydra adapter --> render delegates (later)
+                     +-- recording/bake
+```
+
+Hydra and direct consumers share frame/state identity and evaluated values.
+Hydra publication is transport, not a second evaluation of avatar semantics.
+
 ## 1. Hydra
 
 ```text
@@ -58,6 +73,15 @@ An initial adapter to `hydra-toon` must be agreed with that repository's
 [scope policy](https://github.com/animu-sphere/hydra-toon/blob/main/docs/design/INTEGRATION_SCOPE_POLICY.md).
 Existing fast-input support is not evidence of this common-state API.
 
+The initial retained-snapshot adapter updates resolved pose, morph/deformation,
+expression effects, appearance and visibility. Gaze arrives as resolved
+pose/expression effects and result metadata under the state contract. Consumers
+do not interpret VRM LookAt, expression arbitration, MMD morph semantics, IK
+or retargeting. Test layout change versus value-only update explicitly; a reset
+generation alone must not imply changed topology. Measure latency, bytes/copies
+and allocations with the actual input/state/layout and renderer configuration.
+These are planned adapter requirements, not existing renderer support.
+
 ## 3. Recording, baking and export
 
 Capture observes the same resolved snapshot plus evaluation provenance;
@@ -75,6 +99,12 @@ and deliver each resulting snapshot to both adapters. Compare the resulting
 joint transforms, deformation values, material overrides, visibility and
 target identity before judging rendered output. Require consistent diagnostics
 for unsupported effects.
+
+For the first slice, compare evaluator reference results with the retained
+snapshot and fast-path mapped values for pose, expression and gaze, including
+their resolved deformation/appearance contributions. Later feed those same
+snapshots to the Hydra adapter. Shared state semantics must be established
+before transport parity; pixel parity stays in renderer tests.
 
 Also test value-only updates, structural rebinding, absent/zero channels and
 retained output lifetime. Parity criteria specify numeric tolerances per value

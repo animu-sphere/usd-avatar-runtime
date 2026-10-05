@@ -46,7 +46,7 @@ This describes a logical transaction. The scoped prototype rules below define
 buffer ownership and calls; final ABI freeze still needs provider conformance.
 Output adapters must not trigger evaluation again.
 
-In revision 1, `evaluate_frame` validates the input and starts a fresh authored
+In revision 2, `evaluate_frame` validates the input and starts a fresh authored
 baseline, then calls `begin_frame`/`evaluate` in plan order. Stateful providers
 stage private changes during these callbacks. `end_frame(commit=0)` runs in
 reverse begin order after any failure, including failure of `begin_frame`
@@ -89,6 +89,13 @@ state/generation survive. Success replaces private state and clears prior-frame
 history. `destroy_state` must safely accept a null/partially created state after
 failed creation. Changed layouts/plans currently require a new instance;
 checkpoint restore is not implemented. Retained snapshots survive either path.
+
+Binding layout ID/version and negotiated active capabilities remain unchanged
+by reset and are retained with each snapshot. The selected input revision is
+copied into working/published state; prior state retains its own successful
+input revision. A failed attempt cannot replace that prior metadata. Layout
+changes require a new instance and host-assigned layout ID/version, independently
+of a reset generation; see the [state contract](../contracts/EVALUATED_STATE.md#3-snapshot-rules).
 
 ## 4. Concurrency
 

@@ -16,7 +16,9 @@ typedef struct ArInstanceDesc {
     uint32_t bound_capability_count;
     const ArCapability* required_capabilities;
     uint32_t required_capability_count;
-    ArStateView initial_state; /* complete authored baseline; identity ignored */
+    ArStateView initial_state; /* complete authored baseline; identity/capability metadata ignored */
+    const char* layout_id; /* required opaque UTF-8 identity, copied at creation */
+    uint64_t layout_version; /* required nonzero; reset does not change layout */
 } ArInstanceDesc;
 
 typedef struct ArRuntimeApi {
@@ -36,7 +38,8 @@ typedef struct ArRuntimeApi {
 } ArRuntimeApi;
 
 /* Only this symbol crosses the shared-library boundary. Caller owns out_api;
-   size must cover the complete revision-1 table. Larger tails are untouched. */
+   size must cover the complete revision-2 table. Larger tails are untouched.
+   Revision 1 is rejected: descriptors and state/input views changed layout. */
 AR_EXPORT ArStatus AR_CALL arGetApi(uint32_t version, uint32_t size, ArRuntimeApi* out_api);
 
 #ifdef __cplusplus

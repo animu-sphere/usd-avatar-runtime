@@ -15,6 +15,11 @@ owner: usd-avatar-runtime
 > the canonical motion clock; see [input time mapping](../contracts/INPUT_FRAME.md#2-time-and-coordinate-boundaries).
 > Current implementation facts belong to the
 > [capability matrix](../reference/CAPABILITY_MATRIX.md).
+>
+> The [near-term direction](NEAR_TERM_PLAN.md), also supplied on 2026-10-05,
+> refines section 20's sequencing: Runtime Phases A/B overlap, the first slice
+> uses VRM and `hydra-toon` fast-path, MMD validates generality, and ABI freeze
+> follows real-provider evidence. Original section numbers remain preserved.
 
 # usd-avatar-runtime — Implementation and Extension Policy
 
@@ -632,6 +637,11 @@ Keep OST composition metadata separate from reusable runtime libraries.
 ---
 
 ## 20. Recommended Milestones
+
+The phases below are work areas, not strict serial gates. The adopted
+[near-term direction](NEAR_TERM_PLAN.md) and [current roadmap](../roadmap/current.md)
+prioritize real-provider validation during Runtime Phase A and direct renderer
+consumption before full Hydra publication.
 
 ### Phase A — Freeze contracts
 

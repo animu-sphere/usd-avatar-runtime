@@ -43,7 +43,7 @@ features. Missing required support prevents the plan/output binding from
 activating. Optional unsupported outputs follow an explicit host policy and
 produce diagnostics. Never rely on compile-time VRM/MMD assumptions alone.
 
-Revision 1 computes active support as the intersection of selected providers'
+Revision 2 computes active support as the intersection of selected providers'
 supplied tokens and the instance's explicitly bound tokens at the **same
 nonzero version**. Required instance/evaluator capabilities must occur in that
 intersection; conflicting versions supplied by selected providers are rejected.
@@ -52,6 +52,12 @@ warning. `get_capabilities` returns the active set sorted by ID; installation or
 registration alone does not enable a feature. The application must declare the
 bound set honestly; the runtime cannot infer rig support without a binding
 adapter. Output-consumer negotiation is still Runtime Phase C work.
+
+The same active set is exposed on working/prior views and retained snapshots.
+Snapshot capability values/strings remain valid after instance destruction
+until the last snapshot release; `get_capabilities` remains an instance-borrowed
+query. Reset changes generation without changing the set. See
+[snapshot identity and lifetime](EVALUATED_STATE.md#3-snapshot-rules).
 
 ## 2. Diagnostic context
 
@@ -69,7 +75,7 @@ intent, unsupported outputs, invalid contracts, dependency cycles, conflicting
 writes and non-finite transforms. Deterministic ordering and overflow/drop
 behavior must be specified; logging must not block the frame on external I/O.
 
-Revision 1 delivers synchronous diagnostic callbacks in validation/plan order,
+Revision 2 delivers synchronous diagnostic callbacks in validation/plan order,
 preserves provider `origin`, `code`, `subject`, message and status, and stamps
 the active evaluator/instance/frame/phase. Runtime composition records use
 `runtime.*` codes. Records and strings are borrowed only during the callback;
@@ -82,6 +88,14 @@ fail the frame. Severity never decides success: callback statuses and state
 validation decide it. Missing mappings/stale-source diagnostics still require
 actual provider/connector adapters; timings, hashes and trace tooling are future
 work.
+
+The near-term adapters must also diagnose missing joint bindings, unsupported
+expression channels, invalid gaze space, stale connector input, evaluator
+capability mismatch, layout mismatch and unsupported output channels. Preserve
+owner codes/provenance and frame identity so consumers receive an explained
+evaluation result rather than guessing avatar-semantic failures. This expands
+integration coverage; it does not claim new implemented diagnostic codes or
+snapshot-retained diagnostic records in revision 2.
 
 ## 3. Observation hooks
 

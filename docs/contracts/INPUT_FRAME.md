@@ -10,8 +10,9 @@ evaluation. It is renderer- and format-independent. This document develops
 [design policy section 5](../design/DESIGN_POLICY.md); it defines no final struct.
 
 The experimental [`input.h`](../../include/avatarRuntime/input.h) implements
-frame identity/generation, evaluation seconds, optional USD time mapping and
-source-attributed scalar channels. This subset is not a second motion model:
+frame identity/generation, evaluation seconds, optional USD time mapping,
+source-attributed scalar channels and host input revision. This subset is not
+a second motion model:
 motion pose/clip values and gaze space descriptors are still unimplemented.
 The full logical contract and RT-O1/RT-O2 remain open.
 
@@ -32,6 +33,16 @@ Connector frames/observations consume
 [`motion-connectors`' contract](https://github.com/animu-sphere/motion-connectors/blob/main/docs/design/CONNECTOR_CONTRACT.md).
 This wrapper adds composition context, not another pose or tracker taxonomy.
 
+Revision 2 adds `input_revision`: a host-assigned revision for the selected
+source observations and mapping configuration. Zero means unspecified. It is
+independent of frame ID and evaluation time; evaluating the same selected source
+snapshot at a later instant may retain the revision. The host must change it
+when selected observation/mapping content changes and interpret it within the
+instance/configuration generation. The runtime echoes it into working and
+published views and preserves each prior successful frame's revision. It does
+not infer revision from arrival order, enforce monotonicity, cache evaluation
+by revision or treat revision equality as full frame equality.
+
 ## 2. Time and coordinate boundaries
 
 Canonical motion timestamps are seconds under the motion owner's contract.
@@ -50,7 +61,15 @@ requires the bound head transform, not a guessed VRM range-map result.
 Exact time/space descriptors are `RT-O1` in the
 [roadmap](../roadmap/current.md#open-decisions).
 
-In revision 1, each scalar records its source/actor/channel identity, source
+Near-term gaze input must distinguish target position, target direction,
+head-relative and eye-relative observations, with explicit source clock and
+validity. Missing/unavailable data is not an identity rotation or a valid zero
+target. These descriptors are pending ABI work; the scalar subset below does
+not implement them. Resolved eye/head/expression contributions and
+clamped/rejected/unavailable results belong to the
+[evaluated-state contract](EVALUATED_STATE.md), not this input intent.
+
+In revision 2, each scalar records its source/actor/channel identity, source
 seconds and an explicit positive affine clock mapping:
 `runtime_sample_seconds = source_seconds * clock_scale + clock_offset`.
 The evaluation instant stays separate. When present, the USD mapping is

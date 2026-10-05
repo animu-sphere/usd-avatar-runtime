@@ -25,5 +25,6 @@ typedef struct ArInputFrame {
     double usd_time_code_offset;
     const ArScalarInput* scalars;
     uint32_t scalar_count;
+    uint64_t input_revision; /* host-selected source/mapping revision; 0 = unspecified */
 } ArInputFrame;
 #endif

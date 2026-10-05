@@ -52,6 +52,12 @@ Generic motion values are consumed from their owner. Cross-package ABI views
 must be explicitly mapped to them, rather than defining a competing joint
 vocabulary, coordinate basis, sampler or recording format.
 
+The near-term integration order is VRM, motion/connector completion,
+`hydra-toon` direct consumption, then MMD generality validation. These adapters
+are the evidence needed to correct/freeze the common contract; core remains
+independent of provider-private types. See the
+[implementation sequence](../roadmap/current.md#near-term-implementation-sequence).
+
 ## 3. Integration questions
 
 - The renderer's existing authored-stage boundary and late-input interfaces
@@ -71,3 +77,22 @@ vocabulary, coordinate basis, sampler or recording format.
 When an owner lacks an output or a callable evaluator boundary, document the
 gap and extend that owner's contract. Do not fill it with a private second
 implementation here.
+
+## 4. Physics boundary
+
+```text
+avatar pre-physics evaluation
+              |
+shared physics world / usd-stage-runner / physics runtime
+              |
+        physics result
+              |
+avatar post-physics evaluation -> EvaluatedAvatarState
+```
+
+This is the intended ownership boundary, not an implemented physics adapter.
+The runtime owns avatar evaluation order. Physics backend/world lifetime,
+fixed timestep and shared-world stepping ownership remain RT-O6 decisions.
+Format-specific MMD/VRM physics semantics remain with their owners. Validate
+this boundary in the MMD slice without requiring full physics integration or
+putting a solver/world into runtime core.
