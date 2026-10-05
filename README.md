@@ -90,7 +90,11 @@ An optional [motion clip pose adapter](docs/architecture/MOTION_ADAPTER.md)
 connects installed owner sampling/retargeting to runtime pose. Its host-side
 input assembler maps selected motion scalar channels and world gaze points
 to owned input frames, validating motion -> input -> VRM LookAt/Expression
-with constructed bindings. Real-avatar USD/Humanoid binding, multi-source
+with constructed bindings. An optional
+[USD skeleton binding](docs/architecture/USD_BINDING.md) reads authored
+joint/rest layout into owned baseline and motion-owner values with explicit
+Humanoid mappings, metre conversion and rigid placement. Real-avatar VRM
+schema/Humanoid discovery, multi-source
 input selection, connector adapters,
 Hydra, OpenExec and OST composition remain unimplemented.
 

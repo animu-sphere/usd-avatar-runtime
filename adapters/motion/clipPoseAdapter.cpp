@@ -1,4 +1,6 @@
 #include "avatarMotion/ClipPoseAdapter.h"
+#include "pxr/base/gf/quatd.h"
+#include "pxr/base/gf/rotation.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -25,6 +27,15 @@ void validate(const ClipPoseAdapterConfig& c) {
             "Motion adapter requires evaluator/layout/skeleton identity");
     require(std::isfinite(c.clockScale) && c.clockScale > 0 && std::isfinite(c.clockOffset),
             "Motion clip clock mapping must be finite with positive scale");
+    double norm = 0;
+    for (double value : c.rootPlacement.rotation) {
+        require(std::isfinite(value), "Root placement rotation must be finite");
+        norm += value * value;
+    }
+    require(std::abs(norm - 1) <= 1e-6, "Root placement rotation must be unit length");
+    for (int k = 0; k < 3; ++k)
+        require(std::isfinite(c.rootPlacement.translation[k]) && c.rootPlacement.scale[k] == 1,
+                "Root placement must be finite and rigid");
     const auto& joints = c.skeleton.GetJoints();
     require(!joints.empty() && joints.size() <= size_t(std::numeric_limits<int32_t>::max()) &&
             c.jointIds.size() == joints.size() && c.skeleton.IsTopologicallyOrdered(),
@@ -165,6 +176,19 @@ struct ClipPoseAdapter::Impl {
                 local.scale[k] = joints[i].restScale[k];
             }
             local.rotation[3] = pose.rotations[i].GetReal();
+            if (joints[i].parent < 0) {
+                const auto& p = config.rootPlacement;
+                const pxr::GfQuatd placement(p.rotation[3], pxr::GfVec3d(p.rotation[0], p.rotation[1], p.rotation[2]));
+                const auto translation = pxr::GfRotation(placement.GetNormalized()).TransformDir(
+                    pxr::GfVec3d(local.translation[0], local.translation[1], local.translation[2]));
+                const auto rotation = (placement.GetNormalized() * pxr::GfQuatd(
+                    local.rotation[3], pxr::GfVec3d(local.rotation[0], local.rotation[1], local.rotation[2]))).GetNormalized();
+                for (int k = 0; k < 3; ++k) {
+                    local.translation[k] = translation[k] + p.translation[k];
+                    local.rotation[k] = rotation.GetImaginary()[k];
+                }
+                local.rotation[3] = rotation.GetReal();
+            }
             const auto status = writer.set_joint(writer.context, indices[i], &local);
             if (status != AR_OK) return status;
         }

@@ -21,6 +21,9 @@ struct ClipPoseAdapterConfig {
     std::vector<std::string> jointIds;
     // runtime_seconds = clip_seconds * clockScale + clockOffset.
     double clockScale = 1.0, clockOffset = 0.0;
+    // Rigid skeleton-to-runtime-world placement, applied once to each root
+    // after owner retargeting. Source/target rest remain skeleton-local.
+    ArTransform rootPlacement{{0, 0, 0}, {0, 0, 0, 1}, {1, 1, 1}};
     std::vector<std::string> after;
 };
 

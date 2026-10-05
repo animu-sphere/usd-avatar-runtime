@@ -47,7 +47,8 @@ above the unchanged C ABI, without a cross-toolchain C++ ABI guarantee.
 copies an owner `MotionClip`, `SkeletonDescriptor`, `RetargetMap`, source/reference
 rest and `RetargetOptions`, plus evaluator/layout/skeleton identity, a runtime
 joint ID for every owner joint slot, explicit clock mapping and predecessors.
-The host supplies the bindings; this adapter does not read a USD stage or
+The host supplies the bindings, optionally from the
+[USD skeleton binding](USD_BINDING.md); this evaluator does not read a USD stage or
 infer humanoid roles from joint names. A VRM host supplies its owner's
 `vrmRig::GetRequiredBones()` through `RetargetOptions::requiredBones`; the
 motion adapter contains no VRM rule or dependency.
@@ -88,7 +89,13 @@ full motion observation/provenance transport remains open under RT-O1/RT-O2.
 Every callback verifies layout ID/version, all mapped runtime joints and exact
 owner/runtime parent relationships. Owner slot order need not equal runtime
 slot order. Root joints must be runtime-world roots; an extra avatar-placement
-parent requires a future explicit placement boundary and is currently rejected.
+parent is rejected. `rootPlacement` supplies a finite rigid skeleton-to-world
+transform with a unit quaternion and identity scale. After owner retargeting,
+each root translation is rotated and translated by that placement, and each
+root rotation is premultiplied and normalized. Descendants and owner rest
+correction remain skeleton-local. Identity placement is the default. An empty
+clip leaves the already placed authored baseline untouched; placement is never
+accumulated across frames. USD binding supplies this placement explicitly.
 
 The owner retarget replaces translation/rotation for every mapped joint and
 carries the owner's float rest scale into the double runtime transform without
