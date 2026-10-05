@@ -1,4 +1,5 @@
 #include "avatarMotion/ClipPoseAdapter.h"
+#include "avatarMotion/InputAssembler.h"
 #ifdef AR_TEST_VRM
 #include "avatarVrm/ExpressionAdapter.h"
 #include "vrmRig/RequiredBones.h"
@@ -184,9 +185,98 @@ void rollback() {
     CHECK(api.evaluate_frame(f.runtime,id,&input,nullptr,&next) == AR_OK); parity(view(next),config(),11);
     CHECK(api.release_snapshot(first) == AR_OK && api.release_snapshot(next) == AR_OK);
 }
+avatarMotion::InputAssemblerConfig inputConfig() {
+    avatarMotion::InputAssemblerConfig c;
+    c.source = "test"; c.actor = "actor"; c.clockScale = 2; c.clockOffset = 10;
+    c.channels = {{"happy", "face:happy"}, {"lookRight", "face:lookRight"}, {"absent", "face:absent"}};
+    c.gazeChannel = "gaze:point";
+    return c;
+}
+void inputAssembly() {
+    // Return an owned frame after all source/config/assembler storage dies.
+    const auto owned = [] {
+        auto c = inputConfig(); avatarMotion::InputAssembler assembler(c);
+        motion::MotionPose pose; pose.timestamp = 0.25;
+        pose.channels.Set("happy", 0); pose.channels.Set("lookRight", 1.5f);
+        pose.channels.Set("nativeUnmapped", -0.25f); pose.lookAtTarget = pxr::GfVec3f(0);
+        auto context = frame(1,11); context.has_usd_mapping = 1;
+        context.usd_time_codes_per_second = 30; context.usd_time_code_offset = 7;
+        return assembler.Assemble(&pose,context);
+    }();
+    auto copy = owned; const auto& input = copy.View();
+    CHECK(input.scalar_count == 2 && input.gaze_count == 1);
+    CHECK(input.scalars[0].value == 0 && input.scalars[1].value == 1.5);
+    CHECK(std::string(input.scalars[0].source_id) == "test" && std::string(input.scalars[0].actor_id) == "actor");
+    CHECK(std::string(input.scalars[0].channel_id) == "face:happy");
+    CHECK(input.scalars[0].source_seconds == 0.25 && input.scalars[0].clock_scale == 2 && input.scalars[0].clock_offset == 10);
+    CHECK(input.evaluation_seconds == 11 && input.input_revision == 8 && input.frame_id == 1 && input.generation == 1);
+    CHECK(input.has_usd_mapping == 1 && input.usd_time_codes_per_second == 30 && input.usd_time_code_offset == 7);
+    const auto& gaze = input.gazes[0];
+    CHECK(gaze.kind == AR_GAZE_POINT && gaze.space == AR_GAZE_RUNTIME_WORLD && gaze.validity == AR_OBSERVATION_VALID);
+    CHECK(!gaze.skeleton_id && !gaze.joint_id && gaze.value[0] == 0 && gaze.value[1] == 0 && gaze.value[2] == 0);
+    CHECK(gaze.source_seconds == 0.25 && gaze.clock_scale == 2 && gaze.clock_offset == 10);
+    CHECK(copy.UnmappedChannels() == std::vector<std::string>{"nativeUnmapped"} && !copy.HasUnmappedGaze());
+    Fixture fixture; const auto id = fixture.make(); ArSnapshot snapshot = 0;
+    CHECK(api.evaluate_frame(fixture.runtime,id,&input,nullptr,&snapshot) == AR_OK);
+    CHECK(view(snapshot).input_revision == 8); CHECK(api.release_snapshot(snapshot) == AR_OK);
+
+    avatarMotion::InputAssembler assembler(inputConfig());
+    auto context = frame(2,12);
+    auto missing = assembler.Assemble(nullptr,context);
+    CHECK(!missing.View().scalar_count && !missing.View().scalars && !missing.View().gaze_count && !missing.View().gazes);
+    motion::MotionPose pose; pose.timestamp = 1;
+    auto absent = assembler.Assemble(&pose,context);
+    CHECK(!absent.View().scalar_count && !absent.View().gaze_count);
+    pose.lookAtTarget = pxr::GfVec3f(1,2,3);
+    auto stale = assembler.Assemble(&pose,context,AR_OBSERVATION_STALE);
+    CHECK(stale.View().gazes[0].validity == AR_OBSERVATION_STALE && stale.View().gazes[0].value[2] == 3);
+    auto noGaze = inputConfig(); noGaze.gazeChannel.clear();
+    auto unmapped = avatarMotion::InputAssembler(noGaze).Assemble(&pose,context);
+    CHECK(unmapped.HasUnmappedGaze() && !unmapped.View().gaze_count);
+    // A later assembly does not mutate an earlier borrowed view.
+    CHECK(owned.View().scalars[1].value == 1.5 && owned.View().gazes[0].value[2] == 0);
+
+    auto rejectsConfig = [](avatarMotion::InputAssemblerConfig c) {
+        bool threw = false; try { avatarMotion::InputAssembler rejected(c); }
+        catch (const std::invalid_argument&) { threw = true; } CHECK(threw);
+    };
+    auto c = inputConfig(); c.channels.push_back(c.channels.front()); rejectsConfig(c);
+    c = inputConfig(); c.channels[1].channel = c.channels[0].channel; rejectsConfig(c);
+    c = inputConfig(); c.gazeChannel = c.channels[0].channel; rejectsConfig(c);
+    c = inputConfig(); c.channels[0].channel = "missingNamespace"; rejectsConfig(c);
+    c = inputConfig(); c.gazeChannel = "gaze:"; rejectsConfig(c);
+    c = inputConfig(); c.source.clear(); rejectsConfig(c);
+    c = inputConfig(); c.actor = std::string("actor\0hidden",12); rejectsConfig(c);
+    c = inputConfig(); c.clockScale = 0; rejectsConfig(c);
+    c = inputConfig(); c.clockOffset = std::numeric_limits<double>::infinity(); rejectsConfig(c);
+    auto rejectsSample = [&](motion::MotionPose p, ArInputFrame f, uint32_t validity = AR_OBSERVATION_VALID) {
+        bool threw = false; try { auto rejected = assembler.Assemble(&p,f,validity); }
+        catch (const std::invalid_argument&) { threw = true; } CHECK(threw);
+    };
+    auto invalid = pose; invalid.timestamp = std::numeric_limits<double>::max(); rejectsSample(invalid,context);
+    invalid = pose; invalid.channels.entries = {{"z",1},{"a",1}}; rejectsSample(invalid,context);
+    invalid = pose; invalid.channels.entries = {{"a",1},{"a",1}}; rejectsSample(invalid,context);
+    invalid = pose; invalid.channels.Set("ignored",std::numeric_limits<float>::quiet_NaN()); rejectsSample(invalid,context);
+    invalid = pose; (*invalid.lookAtTarget)[0] = std::numeric_limits<float>::infinity(); rejectsSample(invalid,context);
+    rejectsSample(pose,context,AR_OBSERVATION_UNAVAILABLE);
+    auto invalidFrame = context; invalidFrame.scalars = input.scalars; invalidFrame.scalar_count = input.scalar_count;
+    rejectsSample(pose,invalidFrame);
+    invalidFrame = context; invalidFrame.abi_version = 2; rejectsSample(pose,invalidFrame);
+    invalidFrame = context; invalidFrame.struct_size = 0; rejectsSample(pose,invalidFrame);
+    invalidFrame = context; invalidFrame.frame_id = 0; rejectsSample(pose,invalidFrame);
+    invalidFrame = context; invalidFrame.evaluation_seconds = std::numeric_limits<double>::infinity(); rejectsSample(pose,invalidFrame);
+    invalidFrame = context; invalidFrame.has_usd_mapping = 1; rejectsSample(pose,invalidFrame);
+    // Invalid assembly has no source cursor/state; corrected input can retry.
+    CHECK(assembler.Assemble(&pose,context).View().gaze_count == 1);
+}
 #ifdef AR_TEST_VRM
 void vrmSequence() {
     auto c = config(); c.options.requiredBones = vrmRig::GetRequiredBones();
+    for (size_t i = 0; i < c.clip.samples.size(); ++i) {
+        c.clip.samples[i].channels.Set("happy", float(i));
+        c.clip.samples[i].channels.Set("lookRight", 0.9f);
+        c.clip.samples[i].lookAtTarget = pxr::GfVec3f(2,1.7f,float(i*2));
+    }
     Fixture f(c);
     avatarVrm::ExpressionAdapterConfig face;
     face.evaluatorId = "vrm.face"; face.layoutId = c.layoutId; face.layoutVersion = c.layoutVersion;
@@ -195,13 +285,14 @@ void vrmSequence() {
     gaze.horizontalInner.outputScale = gaze.horizontalOuter.outputScale = 1;
     gaze.verticalUp.outputScale = gaze.verticalDown.outputScale = 1;
     face.lookAt = gaze; face.gaze = {"test", "actor", "gaze:point"};
-    for (const char* name : {"lookLeft","lookRight","lookUp","lookDown"}) {
+    face.inputs = {{{"test","actor","face:happy"},"happy"}, {{"test","actor","face:lookRight"},"lookRight"}};
+    for (const char* name : {"lookLeft","lookRight","lookUp","lookDown","happy"}) {
         vrmRig::ExpressionDefinition e; e.name = name; e.morphTargets.push_back({name,1}); CHECK(face.expressions.Add(e));
         face.morphs.push_back({name,"mesh",name});
     }
     avatarVrm::ExpressionAdapter adapter(face); auto d = adapter.Descriptor();
     CHECK(api.register_evaluator(f.runtime,&d,nullptr) == AR_OK);
-    ArBlendShape morphs[]{{"mesh","lookLeft",0},{"mesh","lookRight",0},{"mesh","lookUp",0},{"mesh","lookDown",0}};
+    ArBlendShape morphs[]{{"mesh","lookLeft",0},{"mesh","lookRight",0},{"mesh","lookUp",0},{"mesh","lookDown",0},{"mesh","happy",0.25}};
     const char* selected[]{"vrm.face","motion.body"}; // Deliberately reverse registration/selection order.
     std::vector<ArCapability> capabilities{f.adapter.Descriptor().supplies[0]};
     capabilities.insert(capabilities.end(),d.supplies,d.supplies+d.supply_count);
@@ -210,21 +301,23 @@ void vrmSequence() {
     instance.evaluators = selected; instance.evaluator_count = 2;
     instance.bound_capabilities = capabilities.data(); instance.bound_capability_count = uint32_t(capabilities.size());
     instance.initial_state = {AR_HEADER(ArStateView)}; instance.initial_state.joints = f.joints; instance.initial_state.joint_count = 4;
-    instance.initial_state.blend_shapes = morphs; instance.initial_state.blend_shape_count = 4;
+    instance.initial_state.blend_shapes = morphs; instance.initial_state.blend_shape_count = 5;
     ArInstance id = 0; CHECK(api.create_instance(f.runtime,&instance,nullptr,&id) == AR_OK);
-    ArGazeInput target{"test","actor","gaze:point",AR_GAZE_POINT,AR_GAZE_RUNTIME_WORLD,
-                        AR_OBSERVATION_VALID,nullptr,nullptr,{2,1.7,1},0,1,0};
-    auto input = frame(1,11); input.gazes = &target; input.gaze_count = 1;
+    avatarMotion::InputAssembler assembler(inputConfig());
+    const auto sample = motion::SampleClip(c.clip,0.5); CHECK(sample);
+    const auto assembled = assembler.Assemble(&*sample.pose,frame(1,11));
+    const auto& input = assembled.View();
     Log log; auto sink = log.sink(); ArSnapshot s = 0;
     CHECK(api.evaluate_frame(f.runtime,id,&input,&sink,&s) == AR_OK);
     auto output = view(s); parity(output,c,11);
-    const auto sample = motion::SampleClip(c.clip,0.5);
     const auto pose = motion::PoseRetargeter(c.skeleton,c.map,c.sourceRest,c.options).Retarget(*sample.pose);
     vrmRig::LookAtInput ownerInput; ownerInput.timestamp = input.evaluation_seconds;
     CHECK(motion::GetJointWorldTransform(c.skeleton,pose,1,&ownerInput.head.orientation,&ownerInput.head.position));
-    ownerInput.target = pxr::GfVec3f(2,1.7f,1);
+    ownerInput.target = *sample.pose->lookAtTarget;
     const auto looked = vrmRig::LookAtEvaluator(gaze).Evaluate(ownerInput);
-    const auto expected = vrmRig::ExpressionResolver(face.expressions).Resolve(looked.expressions);
+    auto weights = sample.pose->channels;
+    for (const auto& entry : looked.expressions.entries) weights.Set(entry.name,entry.value);
+    const auto expected = vrmRig::ExpressionResolver(face.expressions).Resolve(weights);
     CHECK(!expected.morphTargets.empty());
     for (const auto& effect : expected.morphTargets) {
         auto binding = std::find_if(face.morphs.begin(),face.morphs.end(),[&](const auto& b) { return b.ownerTarget == effect.target; });
@@ -232,7 +325,26 @@ void vrmSequence() {
         CHECK(near(output.blend_shapes[size_t(binding-face.morphs.begin())].weight,effect.weight));
     }
     CHECK(log.has("MOTION_RETARGET_MISSING_REQUIRED_BONE")); // Partial rig does not claim real VRM acceptance.
+    CHECK(log.has("VRM_ADAPTER_GAZE_PRECEDENCE") && near(output.blend_shapes[4].weight,0.5));
     CHECK(api.release_snapshot(s) == AR_OK);
+    // A stale held point is selected by host policy; scalar face input remains
+    // usable and LookAt no longer replaces the explicitly mapped lookRight.
+    const auto held = motion::SampleClip(c.clip,2); CHECK(held.status == motion::PoseSampleStatus::Held);
+    const auto stale = assembler.Assemble(&*held.pose,frame(2,14),AR_OBSERVATION_STALE);
+    // Preserve the owner's restamped sample time, not a guessed boundary key.
+    CHECK(stale.View().scalars[0].source_seconds == held.pose->timestamp && held.pose->timestamp == 2);
+    CHECK(api.evaluate_frame(f.runtime,id,&stale.View(),nullptr,&s) == AR_OK);
+    CHECK(near(view(s).blend_shapes[4].weight,1) && near(view(s).blend_shapes[1].weight,0.9));
+    CHECK(api.release_snapshot(s) == AR_OK);
+    const auto absent = assembler.Assemble(nullptr,frame(3,15));
+    CHECK(api.evaluate_frame(f.runtime,id,&absent.View(),nullptr,&s) == AR_OK);
+    CHECK(near(view(s).blend_shapes[4].weight,0.25)); CHECK(api.release_snapshot(s) == AR_OK);
+    CHECK(api.reset_instance(f.runtime,id,2) == AR_OK);
+    const auto first = motion::SampleClip(c.clip,0); CHECK(first);
+    auto restarted = frame(1,10); restarted.generation = 2;
+    const auto zero = assembler.Assemble(&*first.pose,restarted);
+    CHECK(api.evaluate_frame(f.runtime,id,&zero.View(),nullptr,&s) == AR_OK);
+    CHECK(near(view(s).blend_shapes[4].weight,0)); CHECK(api.release_snapshot(s) == AR_OK);
     // Runtime must be destroyed before either borrowed adapter object.
     CHECK(api.destroy_runtime(f.runtime) == AR_OK); f.runtime = 0;
 }
@@ -240,7 +352,7 @@ void vrmSequence() {
 } // namespace
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION,sizeof(api),&api) == AR_OK);
-    evaluation(); invalidBindings(); unavailableAndDiagnostics(); rollback();
+    evaluation(); invalidBindings(); unavailableAndDiagnostics(); rollback(); inputAssembly();
 #ifdef AR_TEST_VRM
     vrmSequence();
 #endif

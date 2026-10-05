@@ -3,13 +3,15 @@ status: binding
 owner: usd-avatar-runtime
 ---
 
-# Scoped motion clip pose adapter
+# Scoped motion adapters
 
 The optional `avatarMotionAdapter` connects installed `motionSampling` and
 `motionRetarget` owner libraries to the revision-3 runtime. It validates a
 scoped RT-O3/RT-O4 path: immutable clip -> owner sampling -> explicit humanoid
 retarget map -> dense runtime rig pose -> ordered VRM LookAt/Expression.
 Constructed bindings do not establish real-avatar or milestone acceptance.
+The same target also supplies host-side `InputAssembler` for selected owner
+scalar channels and world gaze points, without changing the runtime C ABI.
 
 ## Build and installation
 
@@ -102,12 +104,65 @@ provider origin `usd-motion-plugins.motionRetarget`; the runtime stamps the
 instance/frame/evaluator/phase. Descriptor version records both owner package
 versions. The scoped capability is `avatar.motion.clipPose` version 1.
 
-This adapter publishes pose only. Sampled scalar channels and gaze points emit
+The clip callback publishes pose only. Sampled scalar channels and gaze points emit
 `MOTION_ADAPTER_CHANNELS_UNSUPPORTED` / `MOTION_ADAPTER_GAZE_UNSUPPORTED` and
-require a separate input assembly mapping. Confidence/contact metadata is not
+require the separate host input mapping below. These diagnostics describe the
+pose callback's scope, even when the host has assembled those fields.
+Confidence/contact metadata is not
 published or used to invent a new gating rule. Motion blending, live connector
-assembly, USD/Humanoid binding discovery and typed resolved provenance are
+intake, USD/Humanoid binding discovery and typed resolved provenance are
 still pending.
+
+## Host input assembly
+
+[`InputAssembler`](../../adapters/motion/include/avatarMotion/InputAssembler.h)
+maps an already selected owner `MotionPose` into an owned revision-3 input
+frame. It does not sample, poll a connector, retarget or perform format
+arbitration. Supply explicit source/actor identity, positive affine clock
+mapping, native-channel-to-namespaced-runtime-channel bindings and an optional
+gaze channel. Channel names are verbatim owner names; there is no automatic
+native-to-intent or native-to-VRM conversion. Configure the VRM adapter's
+`inputs` and `gaze` selections against those same runtime identities.
+
+`Assemble(pose, context, gazeValidity)` copies frame identity, generation,
+evaluation seconds, USD mapping and input revision from `context`. Its input
+arrays must be empty; existing inputs are rejected rather than overwritten or
+implicitly merged. The host retains responsibility for multi-source selection
+and composition. A null pose yields empty arrays. Only reported mapped
+channels are emitted, including explicit zero and unclamped weights.
+`lookAtTarget` maps to a runtime-world **point**, preserving origin as a valid
+target and optional absence. No direction, joint reference, space conversion
+or placement adjustment is inferred; the host must supply values in the
+runtime's canonical world basis.
+
+Each observation retains `MotionPose.timestamp`, `clockScale` and
+`clockOffset`; evaluation time remains independent. This preserves the
+timestamp returned by the owner, which may already be restamped by
+`SampleClip`/`ClipSource`. It does not reconstruct original key/arrival times
+from sample status or metadata. When combined with `ClipPoseAdapter`, use the
+same selected clip and clock mapping for host sampling and pose configuration.
+
+Present gaze defaults to `AR_OBSERVATION_VALID`; the host may explicitly
+select `AR_OBSERVATION_STALE` to retain a point while suppressing VRM LookAt.
+Held/extrapolated status and lag do not implicitly classify validity. A null
+pose or missing point is absent, not an invented unavailable observation.
+Scalar validity is not representable in revision 3; hosts must explicitly
+select/drop scalar inputs according to their source policy.
+
+Configuration rejects duplicate native mappings, scalar/gaze identity
+collisions, embedded NULs, missing namespaces and invalid clocks. Assembly
+rejects invalid context/clock numerics, malformed owner channel sets and
+non-finite channel/gaze payloads before returning any frame. Unmapped reported
+channels are available through `UnmappedChannels()` and an unbound point through
+`HasUnmappedGaze()` so the host can diagnose its selection. The helper emits no
+evaluator diagnostics and registers no capability; it runs before evaluation.
+
+`MotionInputFrame` owns all arrays/strings, and copies share immutable storage.
+Its `View()` can be borrowed synchronously by `evaluate_frame` while any frame
+copy remains alive, independently of the source pose/configuration/assembler.
+Later assemblies do not alter earlier views. Invalid assembly throws
+`invalid_argument` and advances no cursor/provider state. There is no
+cross-toolchain C++ ABI guarantee or asynchronous runtime retention.
 
 ## Evidence and limits
 
@@ -118,12 +173,19 @@ It covers held/empty clips, binding failures, source diagnostics, same-frame
 retry, downstream failure rollback, reset, instance isolation and retained
 snapshots past runtime destruction. The installed-consumer test repeats the
 checks using exported targets and installed headers/libraries.
+Input assembly tests cover owned/copy lifetime, origin/absence/zero, unclamped
+weights, explicit identity/clock/USD metadata, stale gaze, unmapped-field
+reporting, malformed bindings/values/context rejection and corrected retry.
 
 When VRM is enabled, the test supplies the owner's required-bone set and orders
 motion -> LookAt -> Expression despite reversed evaluator selection. It compares
-the resolved morphs with owner retarget/world-head/LookAt/resolver calls.
+the resolved morphs with owner sampling/retarget/world-head/LookAt/resolver
+calls, using assembled motion scalar/gaze input. Tests cover gaze precedence
+over mapped look expressions, host-selected stale held gaze with usable
+scalars, absent input restoring the authored expression baseline, and an
+explicit zero clearing that baseline after reset.
 The partial rig intentionally emits missing-required-bone diagnostics.
 This proves owner-library composition with constructed input/bindings; it does
-not prove real clip/VRM asset correctness, connector mapping, full Humanoid
+not prove real clip/VRM asset correctness, connector intake/mapping, full Humanoid
 conformance, renderer output or ABI freeze. Package/toolchain evidence is in
 the [capability matrix](../reference/CAPABILITY_MATRIX.md).

@@ -22,7 +22,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Output paths](architecture/OUTPUT_PATHS.md) | Hydra, direct consumers, bake/export and parity |
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
-| [Scoped motion adapter](architecture/MOTION_ADAPTER.md) | optional owner clip sampling/retarget registration, pose binding, clocks and VRM composition evidence |
+| [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | optional owner clip sampling/retarget registration, host scalar/gaze input assembly, pose binding, clocks and VRM composition evidence |
 
 ## Contracts
 
