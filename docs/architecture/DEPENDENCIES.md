@@ -18,6 +18,10 @@ placement into owned baseline and motion-owner values, using installed
 `motionRetarget` with `usdSkel`/`usdGeom`; it adds no core dependency.
 The optional [`avatarVrmUsdBinding`](VRM_USD_BINDING.md) adds installed
 `vrmSchema` only to a separate schema discovery target above the generic binder.
+The optional [`avatarMotionUsdBinding`](MOTION_USD_BINDING.md) connects installed
+`motionUsd` semantic clip reading and owner source rest to motion evaluation,
+above the generic USD binder. The opt-in `avatarMotionCheck` host composes that
+binding, VRM schema Humanoid discovery and clip pose evaluation.
 MMD/connector adapters and OST composition remain unconfigured.
 
 ## 1. Owners

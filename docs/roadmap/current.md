@@ -31,7 +31,7 @@ A scoped first [VRM registration adapter](../architecture/VRM_ADAPTER.md)
 now executes owner LookAt -> Expression using test input and
 constructed bindings. It validates bone-type eye pose and expression-type
 morph/material effects and the retained snapshot boundary;
-real-avatar/Humanoid/motion integration remains step 2/3
+complete real-avatar LookAt/Expression integration remains step 2/3
 work, and the evidence milestones below are still open.
 World/joint-local points and directions now reach both LookAt types, including
 ordered working-pose transforms and the owner's additive direction entry point.
@@ -39,7 +39,7 @@ This is constructed-binding evidence, not actual connector/asset mapping evidenc
 The optional [motion clip pose adapter](../architecture/MOTION_ADAPTER.md) now
 samples and retargets immutable owner clips into dense rig pose, with explicit
 clock/joint/parent bindings and constructed motion -> VRM LookAt/Expression
-numeric parity. Actual motion clip binding, complete avatar binding and
+numeric parity. Complete avatar binding and
 connectors remain step 2/3 work; this does not close
 milestone A.
 Host-side motion input assembly now explicitly maps selected owner scalar
@@ -64,7 +64,16 @@ roles without joint-name inference. One private avatar validates 128 joints,
 51 roles and constructed motion-to-state parity; affine matrix roundoff from
 that asset is covered by generic binder regression tests. Expression/LookAt
 configuration and material/deformation target extraction remain open; this
-does not establish real-avatar evidence.
+does not establish complete real-avatar evaluation evidence.
+
+The optional [USD motion clip binding](../architecture/MOTION_USD_BINDING.md)
+now connects owner-imported semantic clips and source rest to motion evaluation.
+An opt-in parity tool validates seven real VRMA clips on the same private
+avatar: all target joint TRS, source/runtime clock mapping, boundary holds,
+reset and retained snapshots. The target's missing `upperChest` mapping is
+reported by the owner. This closes the scoped real-clip-to-Humanoid pose gap;
+real-avatar LookAt/Expression/output extraction, connectors and rendering
+remain open, and milestone A is not yet complete.
 
 ## Evidence milestones
 
@@ -176,7 +185,7 @@ The optional adapters implement owner clip sampling/retarget-to-pose and
 expression effects/both LookAt types through installed owner libraries.
 Constructed motion-to-VRM composition is tested, including owned USD skeleton
 baseline and rigid placement from explicit bindings. Remaining VRM work includes
-expression/LookAt/output asset discovery, real motion integration, real-avatar eye/rest conformance,
+expression/LookAt/output asset discovery, complete motion-to-format composition, real-avatar eye/rest conformance,
 actual connector gaze mapping and typed resolved expression/gaze state.
 Do not count constructed rigs as the representative real-avatar evidence required here.
 

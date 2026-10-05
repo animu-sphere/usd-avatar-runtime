@@ -100,6 +100,10 @@ The optional [VRM USD Humanoid binding](docs/architecture/VRM_USD_BINDING.md)
 discovers the owner's applied schema, resolves its skeleton relationship and
 supplies standard role mappings to the generic binder. One privately supplied
 avatar validates skeleton/Humanoid binding and constructed motion-to-state
-parity; real motion and real-avatar LookAt/Expression evidence remain open.
+parity. The optional [USD motion clip binding](docs/architecture/MOTION_USD_BINDING.md)
+connects installed `motionUsd` reading and source rest to pose evaluation.
+Its opt-in `avatarMotionCheck` tool validates seven real VRMA clips on that
+avatar with all-joint numeric parity, reset and retained snapshots. Real-avatar
+LookAt/Expression extraction and renderer evidence remain open.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.
