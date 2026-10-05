@@ -64,6 +64,7 @@ void add(Fixture& f, const ArEvaluatorDesc& d) { CHECK(api.register_evaluator(f.
 void negotiation() {
     ArRuntimeApi invalid{};
     CHECK(arGetApi(1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(2, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(AR_ABI_VERSION + 1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(invalid) - 1, &invalid) == AR_INCOMPATIBLE_ABI);
     struct Extended { ArRuntimeApi table; uint64_t tail; } extended{};
@@ -74,17 +75,27 @@ void negotiation() {
     d = evaluator("a"); add(f, d);
     CHECK(api.register_evaluator(f.runtime, &d, nullptr) == AR_DUPLICATE_ID);
     auto instance = f.make({"a"});
+    auto revisionTwo = evaluator("revision.two"); revisionTwo.abi_version = 2;
+    CHECK(api.register_evaluator(f.runtime, &revisionTwo, nullptr) == AR_INCOMPATIBLE_ABI);
     auto legacy = f.desc({}); legacy.abi_version = 1; ArInstance rejected = 999;
+    CHECK(api.create_instance(f.runtime, &legacy, nullptr, &rejected) == AR_INCOMPATIBLE_ABI && rejected == 0);
+    legacy.abi_version = 2;
     CHECK(api.create_instance(f.runtime, &legacy, nullptr, &rejected) == AR_INCOMPATIBLE_ABI && rejected == 0);
     legacy.abi_version = AR_ABI_VERSION; legacy.struct_size = uint32_t(offsetof(ArInstanceDesc, layout_id));
     CHECK(api.create_instance(f.runtime, &legacy, nullptr, &rejected) == AR_INCOMPATIBLE_ABI && rejected == 0);
     Fixture other; auto input = frame(1); ArSnapshot snapshot = 999;
     auto oldInput = input; oldInput.abi_version = 1;
     CHECK(api.evaluate_frame(f.runtime, instance, &oldInput, nullptr, &snapshot) == AR_INCOMPATIBLE_ABI && snapshot == 0);
+    oldInput.abi_version = 2;
+    CHECK(api.evaluate_frame(f.runtime, instance, &oldInput, nullptr, &snapshot) == AR_INCOMPATIBLE_ABI && snapshot == 0);
+    oldInput.abi_version = AR_ABI_VERSION; oldInput.struct_size = uint32_t(offsetof(ArInputFrame, gazes));
+    CHECK(api.evaluate_frame(f.runtime, instance, &oldInput, nullptr, &snapshot) == AR_INCOMPATIBLE_ABI && snapshot == 0);
     oldInput.abi_version = AR_ABI_VERSION; oldInput.struct_size = uint32_t(offsetof(ArInputFrame, input_revision));
     CHECK(api.evaluate_frame(f.runtime, instance, &oldInput, nullptr, &snapshot) == AR_INCOMPATIBLE_ABI && snapshot == 0);
     CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &snapshot) == AR_OK);
     ArStateView oldView{AR_HEADER(ArStateView)}; oldView.abi_version = 1;
+    CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
+    oldView.abi_version = 2;
     CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
     oldView.abi_version = AR_ABI_VERSION; oldView.struct_size = uint32_t(offsetof(ArStateView, layout_id));
     CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
@@ -367,6 +378,130 @@ void deterministicFrames() {
     }
 }
 
+ArGazeInput gaze() {
+    return {"source", "actor", "intent:gaze", AR_GAZE_POINT, AR_GAZE_RUNTIME_WORLD,
+        AR_OBSERVATION_VALID, nullptr, nullptr, {0, 0, 0}, 2, 2, -1};
+}
+
+struct GazeProbe {
+    const ArInputFrame* expected = nullptr;
+    std::vector<ArGazeInput> observations;
+    int calls = 0;
+    static ArStatus AR_CALL evaluate(void* p, void*, const ArEvaluationContext* ctx, const ArStateWriter*) {
+        auto& probe = *static_cast<GazeProbe*>(p); ++probe.calls;
+        CHECK(ctx->input == probe.expected);
+        CHECK(ctx->working->joint_count == 0); // input references are independent of state read domains
+        const auto& input = *ctx->input;
+        CHECK(input.gaze_count == probe.observations.size());
+        for (uint32_t i = 0; i < input.gaze_count; ++i) {
+            const auto& actual = input.gazes[i]; const auto& expected = probe.observations[i];
+            CHECK(std::string(actual.source_id) == expected.source_id && std::string(actual.actor_id) == expected.actor_id);
+            CHECK(std::string(actual.channel_id) == expected.channel_id);
+            CHECK(actual.kind == expected.kind && actual.space == expected.space && actual.validity == expected.validity);
+            CHECK(actual.skeleton_id == expected.skeleton_id && actual.joint_id == expected.joint_id);
+            for (int k = 0; k < 3; ++k) CHECK(actual.value[k] == expected.value[k]);
+            CHECK(actual.source_seconds == expected.source_seconds && actual.clock_scale == expected.clock_scale &&
+                actual.clock_offset == expected.clock_offset);
+        }
+        if (input.gaze_count) {
+            const auto& g = input.gazes[0];
+            CHECK(std::string(g.source_id) == "source" && std::string(g.actor_id) == "actor");
+            CHECK(std::string(g.channel_id) == "intent:gaze");
+            CHECK(g.source_seconds == 2 && g.clock_scale == 2 && g.clock_offset == -1);
+            CHECK(input.evaluation_seconds == 10); // mapped sample time 3 remains distinct
+        }
+        return AR_OK;
+    }
+};
+
+void gazeInputs() {
+    Fixture f; GazeProbe probe;
+    auto e = evaluator("gaze", AR_PHASE_GAZE); e.user_data = &probe; e.evaluate = GazeProbe::evaluate;
+    add(f, e); auto id = f.make({"gaze"});
+    auto input = frame(1, 10); probe.expected = &input;
+    ArSnapshot snapshot;
+    const auto accept = [&]() {
+        const int before = probe.calls;
+        probe.observations.clear();
+        if (input.gaze_count) probe.observations.assign(input.gazes, input.gazes + input.gaze_count);
+        CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &snapshot) == AR_OK);
+        CHECK(probe.calls == before + 1 && view(snapshot).frame_id == input.frame_id);
+        CHECK(api.release_snapshot(snapshot) == AR_OK); ++input.frame_id;
+    };
+    accept(); // absent observation
+    auto g = gaze(); input.gazes = &g; input.gaze_count = 1;
+    accept(); // the origin is a valid target point
+    g.kind = AR_GAZE_DIRECTION; g.value[2] = 1; accept();
+    g.validity = AR_OBSERVATION_STALE; accept(); // forwarded without dropping/holding
+    g.validity = AR_OBSERVATION_UNAVAILABLE; g.value[2] = 0; accept();
+    g = gaze(); g.space = AR_GAZE_JOINT_LOCAL; g.skeleton_id = "rig"; g.joint_id = "auxiliary";
+    g.value[1] = 2; accept(); // opaque bound joints, no new head/eye vocabulary
+    g.kind = AR_GAZE_DIRECTION; g.value[1] = -1; accept();
+    ArGazeInput multiple[]{g, g, g};
+    multiple[1].source_id = "other-source"; multiple[2].actor_id = "other-actor";
+    input.gazes = multiple; input.gaze_count = 3; accept(); // no implicit arbitration
+}
+
+void gazeValidation() {
+    Control control; Fixture f; std::vector<std::string> events; control.events = &events;
+    add(f, control.descriptor()); auto id = f.make({"counter"});
+    auto input = frame(1); auto g = gaze(); input.gazes = &g; input.gaze_count = 1;
+    ArSnapshot first, retry;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &first) == AR_OK);
+    input.frame_id = 2; input.input_revision = 9; events.clear();
+    const auto reject = [&](ArStatus status, const char* code, const char* subject = "intent:gaze") {
+        Log log; auto sink = log.sink(); retry = 999;
+        CHECK(api.evaluate_frame(f.runtime, id, &input, &sink, &retry) == status && retry == 0);
+        CHECK(log.codes.size() == 1 && log.codes[0] == code && log.subjects[0] == subject);
+        CHECK(log.origins[0] == "usd-avatar-runtime" && log.frames[0] == 2);
+        CHECK(events.empty() && control.commits == 1 && control.aborts == 0);
+        CHECK(view(first).frame_id == 1 && view(first).input_revision == 0);
+    };
+    input.gazes = nullptr; reject(AR_INVALID_ARGUMENT, "runtime.array.invalid", "");
+    input.gazes = &g; input.gaze_count = 1048577; reject(AR_INVALID_ARGUMENT, "runtime.array.invalid", "");
+    input.gaze_count = 1;
+    for (uint32_t unknown : {0u, 99u}) {
+        g.kind = unknown; reject(AR_INVALID_ARGUMENT, "runtime.gaze.kind"); g = gaze();
+        g.space = unknown; reject(AR_INVALID_ARGUMENT, "runtime.gaze.space"); g = gaze();
+        g.validity = unknown; reject(AR_INVALID_ARGUMENT, "runtime.gaze.validity"); g = gaze();
+    }
+    g.channel_id = "gaze"; reject(AR_INVALID_ARGUMENT, "runtime.channel.namespace", "gaze"); g = gaze();
+    g.source_id = ""; reject(AR_INVALID_ARGUMENT, "runtime.identity.invalid", ""); g = gaze();
+    g.actor_id = nullptr; reject(AR_INVALID_ARGUMENT, "runtime.identity.invalid", ""); g = gaze();
+    g.skeleton_id = "rig"; reject(AR_INVALID_ARGUMENT, "runtime.gaze.reference"); g = gaze();
+    g.joint_id = "root"; reject(AR_INVALID_ARGUMENT, "runtime.gaze.reference"); g = gaze();
+    g.space = AR_GAZE_JOINT_LOCAL; g.skeleton_id = "rig"; g.joint_id = "missing";
+    reject(AR_INVALID_ARGUMENT, "runtime.gaze.reference");
+    g.skeleton_id = "other-rig"; g.joint_id = "root"; reject(AR_INVALID_ARGUMENT, "runtime.gaze.reference");
+    g.skeleton_id = nullptr; reject(AR_INVALID_ARGUMENT, "runtime.identity.invalid", ""); g = gaze();
+    for (double invalid : {std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity()}) {
+        g.value[1] = invalid; reject(AR_INVALID_ARGUMENT, "runtime.gaze.numeric"); g = gaze();
+        g.source_seconds = invalid; reject(AR_INVALID_ARGUMENT, "runtime.input.numeric"); g = gaze();
+        g.clock_scale = invalid; reject(AR_INVALID_ARGUMENT, "runtime.input.numeric"); g = gaze();
+        g.clock_offset = invalid; reject(AR_INVALID_ARGUMENT, "runtime.input.numeric"); g = gaze();
+    }
+    for (double invalid : {0.0, -1.0}) {
+        g.clock_scale = invalid; reject(AR_INVALID_ARGUMENT, "runtime.input.numeric"); g = gaze();
+    }
+    g.source_seconds = std::numeric_limits<double>::max(); g.clock_scale = 2;
+    reject(AR_INVALID_ARGUMENT, "runtime.input.numeric"); g = gaze();
+    g.kind = AR_GAZE_DIRECTION; reject(AR_INVALID_ARGUMENT, "runtime.gaze.direction");
+    g.value[2] = 2; reject(AR_INVALID_ARGUMENT, "runtime.gaze.direction");
+    g.value[2] = std::numeric_limits<double>::max(); reject(AR_INVALID_ARGUMENT, "runtime.gaze.direction");
+    g.validity = AR_OBSERVATION_STALE; g.value[2] = 0; reject(AR_INVALID_ARGUMENT, "runtime.gaze.direction");
+    g = gaze(); g.validity = AR_OBSERVATION_UNAVAILABLE; g.value[0] = 1;
+    reject(AR_INVALID_ARGUMENT, "runtime.gaze.unavailable"); g = gaze();
+    ArGazeInput duplicate[]{g, g}; input.gazes = duplicate; input.gaze_count = 2;
+    reject(AR_DUPLICATE_ID, "runtime.input.duplicate"); input.gazes = &g; input.gaze_count = 1;
+    ArScalarInput scalar{"source", "actor", "intent:gaze", 0, 0, 1, 0};
+    input.scalars = &scalar; input.scalar_count = 1; reject(AR_DUPLICATE_ID, "runtime.input.duplicate");
+    input.scalars = nullptr; input.scalar_count = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &retry) == AR_OK);
+    CHECK(control.commits == 2 && control.aborts == 0 && control.priorSeen);
+    CHECK(view(retry).joints[0].local.translation[0] == 2 && view(retry).input_revision == 9);
+    CHECK(api.release_snapshot(first) == AR_OK && api.release_snapshot(retry) == AR_OK);
+}
+
 struct MetadataProbe {
     uint64_t priorRevision = 0;
     bool hasPrior = false;
@@ -467,6 +602,6 @@ void validation() {
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     negotiation(); planning(); capabilities(); transactions(); orderedRollbackAndPoisoning();
-    inputsAndSnapshots(); deterministicFrames(); snapshotIdentity(); validation();
+    inputsAndSnapshots(); deterministicFrames(); gazeInputs(); gazeValidation(); snapshotIdentity(); validation();
     std::cout << "Runtime contract checks passed\n";
 }

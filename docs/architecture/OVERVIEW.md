@@ -40,7 +40,7 @@ The planned USD binding adapter builds instance configuration from avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation target identities. It preserves owner
 semantics and validates layout/version identity and invalidation before frames.
-It is distinct from high-frequency value publication; revision 2 currently
+It is distinct from high-frequency value publication; revision 3 currently
 accepts caller-supplied layouts and has no USD binding adapter.
 
 ## 2. Instances and resources

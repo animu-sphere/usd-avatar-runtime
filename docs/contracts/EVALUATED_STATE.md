@@ -15,9 +15,10 @@ and the `hydra-toon` fast-path, then by MMD before freeze.
 Experimental [`state.h`](../../include/avatarRuntime/state.h) implements a
 complete snapshot subset: parent-local rig transforms, blend-shape weights,
 typed material input overrides and visibility. Other typed deformation outputs
-and real-provider layout conformance remain open before freeze. Revision 2 adds
+and real-provider layout conformance remain open before freeze. Revision 2 introduced
 explicit layout/version identity, host input revision and retained active
-capabilities. Expression/gaze result records and snapshot-retained diagnostics
+capabilities, preserved in revision 3. Typed gaze input does not add resolved
+gaze output fields. Expression/gaze result records and snapshot-retained diagnostics
 remain target requirements below, not fields already present in `ArStateView`.
 
 ## 1. State groups
@@ -48,7 +49,7 @@ from configuration/reset generations. The first ABI prioritizes clear
 semantics over internal efficiency; the scoped prototype choice below remains
 subject to real-provider conformance.
 
-Revision 2 binds a dense array of all rig joints, including auxiliary joints.
+Revision 3 binds a dense array of all rig joints, including auxiliary joints.
 Each carries `(skeleton_id, joint_id)`, a parent index (`-1` or an earlier joint
 in the same skeleton), translation, rotation and scale. Translations are metres;
 values use the canonical motion basis, right-handed +Y up/+Z forward. Rotations
@@ -133,7 +134,7 @@ requires a new instance. Old retained snapshots keep their original identity
 and values through subsequent frames/reset/destruction. Snapshot lifetime is
 defined in [ABI section 2](ABI.md#2-lifetime-and-calls).
 
-Revision 2 requires the binding host to supply a nonempty opaque UTF-8
+Revision 3 requires the binding host to supply a nonempty opaque UTF-8
 `ArInstanceDesc.layout_id` and nonzero `layout_version`. The runtime copies these
 and exposes them on every working/prior/published view, even when the evaluator
 has no state domains. The tuple identifies channel identities/order, joint

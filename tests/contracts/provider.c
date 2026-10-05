@@ -25,6 +25,9 @@ static ArStatus AR_CALL evaluate(void* user, void* state, const ArEvaluationCont
     (void)user;
     c->pending += 1.0;
     t.translation[0] = c->pending + ctx->input->evaluation_seconds;
+    /* Synthetic transport check only; this is not a LookAt algorithm. */
+    if (ctx->input->gaze_count && ctx->input->gazes[0].validity == AR_OBSERVATION_VALID)
+        t.translation[1] = ctx->input->gazes[0].value[0];
     return writer->set_joint(writer->context, 0, &t);
 }
 static void AR_CALL finish(void* user, void* state, uint32_t commit) {

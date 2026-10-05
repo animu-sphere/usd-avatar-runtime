@@ -6,10 +6,10 @@ owner: usd-avatar-runtime
 # Cross-package ABI
 
 This document develops [design policy section 9](../design/DESIGN_POLICY.md).
-The direct implementation exposes experimental revision 2 through
+The direct implementation exposes experimental revision 3 through
 [`api.h`](../../include/avatarRuntime/api.h). `arGetApi` is the only exported
 runtime entry point; it fills the caller's `ArRuntimeApi` function table.
-This is a tested prototype, not an ecosystem ABI freeze. Motion/gaze marshalling,
+This is a tested prototype, not an ecosystem ABI freeze. Owner motion/gaze mapping,
 checkpoint restore and real-provider conformance remain Runtime Phase A gates.
 Under the [near-term direction](../design/NEAR_TERM_PLAN.md#2-contract-validation-before-freeze),
 Phase A/B integration precedes freeze: real VRM and MMD evidence must inform
@@ -19,12 +19,12 @@ a freeze candidate.
 
 ## 1. Representation
 
-Implemented revision-2 rules:
+Implemented revision-3 rules:
 
 - Windows uses `__cdecl` and default compiler packing. Descriptors/views begin
   with `uint32_t struct_size` and `abi_version`; fixed value records and writer
   tables are versioned by their enclosing contract. All required fields of
-  revision 2 must fit. Unknown larger tails are ignored/left untouched; any
+  revision 3 must fit. Unknown larger tails are ignored/left untouched; any
   different revision is rejected before reading the descriptor body.
 - Initialize descriptors to zero, then set `AR_HEADER(Type)`. `arGetApi` takes
   an explicit revision and output capacity. No packed structs, STL, USD types,
@@ -42,11 +42,13 @@ Implemented revision-2 rules:
   instance creation copies the authored output layout and initial values.
   Provider `user_data` and callback code remain borrowed.
 
-Revision 2 changes `ArInstanceDesc`, `ArInputFrame` and `ArStateView` to add
+Revision 2 introduced fields in `ArInstanceDesc`, `ArInputFrame` and `ArStateView` for
 required binding layout ID/version, input revision and snapshot-associated
-active capabilities. Revision 1 is rejected at table and descriptor/view
-negotiation; this is an experimental breaking change, not a compatible tail
-extension or an ABI freeze. Providers/consumers must rebuild with revision-2
+active capabilities. Revision 3 appends typed gaze observations to `ArInputFrame`
+and preserves that snapshot metadata. Revisions 1 and 2 are rejected at table
+and descriptor/view negotiation before reading their bodies. This is an
+experimental breaking change, not a compatible tail extension or an ABI freeze.
+Providers/consumers must rebuild with revision-3
 headers and supply nonempty layout ID/nonzero version on instance creation.
 The function table has the same operations. ABI revision is independent of
 the experimental CMake package version.
@@ -54,6 +56,14 @@ the experimental CMake package version.
 Before freeze, review the selected layout/alignment, calling convention and
 minimum-size rules with real provider adapters. C++ conveniences remain a layer
 above this table, never an exported binary class boundary.
+
+`ArGazeInput` is a fixed value record versioned by its enclosing input frame,
+like `ArScalarInput`; it has no nested header. Its array, identity/reference
+strings and values are borrowed for the same synchronous evaluation lifetime.
+All known revision-3 fields must fit even when `gaze_count` is zero. No gaze
+input pointer is retained by the runtime or snapshot. The
+[input contract](INPUT_FRAME.md#revision-3-gaze-observations) owns its space,
+validity, direction and absence rules.
 
 Existing motion and format libraries may use C++/OpenUSD values internally.
 Provider adapters marshal those values into versioned views; the ABI must
@@ -94,7 +104,7 @@ Runtime entry points catch allocation/implementation exceptions. Provider and
 diagnostic callbacks must not throw. Unexpected evaluator exceptions are caught
 as a defensive measure and abort the transaction. `end_frame` and destruction
 are contractually infallible; an exception during commit/abort poisons the
-instance and requires reset. Revision 2 does not promise recovery from an
+instance and requires reset. Revision 3 does not promise recovery from an
 arbitrary provider violating its lifecycle contract.
 
 ## 3. Compatibility and portability

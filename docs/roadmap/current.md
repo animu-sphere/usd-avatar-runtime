@@ -94,14 +94,16 @@ Documentation adoption alone does not satisfy this phase. Use contract design
 freeze, rather than blocking provider integration on an already frozen ABI.
 
 The first implementation supplies experimental C headers, direct serial
-execution, capability/plan validation, transactional provider state, immutable
+execution, typed gaze observations with explicit space/validity/clocks,
+capability/plan validation, transactional provider state, immutable
 snapshots, reset and separately compiled/installed C provider-consumer evidence.
 These completed foundations are recorded in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md); they are not ABI freeze.
 
 Remaining implementation/review work before Phase A acceptance:
 
-- Marshal owner motion values and define gaze spaces and observation validity;
+- Marshal owner motion values and validate the revision-3 gaze spaces and
+  observation validity against actual connector/motion/VRM mappings;
   establish semantic intent/mapping precedence using real bindings (RT-O1/RT-O2).
 - Validate actual motion/VRM/MMD adapters against phase dependencies, particularly
   atomic MMD control and gaze-to-expression flow (RT-O3).

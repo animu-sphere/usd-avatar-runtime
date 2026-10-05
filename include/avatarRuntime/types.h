@@ -16,7 +16,7 @@
 #endif
 
 /* Experimental revision; not a frozen ecosystem ABI. Default platform packing. */
-#define AR_ABI_VERSION 2u
+#define AR_ABI_VERSION 3u
 #define AR_MAX_DIAGNOSTICS 256u
 #define AR_HEADER(type) (uint32_t)sizeof(type), AR_ABI_VERSION
 
