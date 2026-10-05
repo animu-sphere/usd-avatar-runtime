@@ -26,6 +26,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Scoped USD motion clip binding](architecture/MOTION_USD_BINDING.md) | owned semantic stage clip/source-rest connection and opt-in real-motion/avatar parity tool |
 | [Scoped USD skeleton binding](architecture/USD_BINDING.md) | owned authored skeleton baseline, explicit owner Humanoid mapping, metre conversion and rigid root placement |
 | [Scoped VRM USD Humanoid binding](architecture/VRM_USD_BINDING.md) | owner schema discovery, skeleton relationship resolution, standard role mapping and local asset evidence limits |
+| [Scoped VRM USD LookAt binding](architecture/VRM_LOOKAT_USD_BINDING.md) | owner range-map extraction, explicit head/eye/rest binding, adapter configuration and real-avatar evidence limits |
 
 ## Contracts
 

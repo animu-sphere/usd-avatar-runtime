@@ -16,6 +16,21 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT AvatarVrmUsdBindingTargets NAMESPACE AvatarRuntime::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
 
+if(AVATAR_BUILD_VRM_ADAPTER)
+    add_library(avatarVrmLookAtUsdBinding STATIC lookAtBinding.cpp)
+    add_library(AvatarRuntime::avatarVrmLookAtUsdBinding ALIAS avatarVrmLookAtUsdBinding)
+    target_compile_features(avatarVrmLookAtUsdBinding PUBLIC cxx_std_17)
+    set_target_properties(avatarVrmLookAtUsdBinding PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_link_libraries(avatarVrmLookAtUsdBinding PUBLIC avatarVrmUsdBinding avatarVrmAdapter)
+    if(MSVC)
+        target_compile_options(avatarVrmLookAtUsdBinding PRIVATE /W4 /permissive-)
+    endif()
+    install(TARGETS avatarVrmLookAtUsdBinding EXPORT AvatarVrmLookAtUsdBindingTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    install(EXPORT AvatarVrmLookAtUsdBindingTargets NAMESPACE AvatarRuntime::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
+endif()
+
 if(AVATAR_BUILD_TESTS)
     add_executable(vrmUsdBindingContracts tests.cpp)
     target_link_libraries(vrmUsdBindingContracts PRIVATE avatarVrmUsdBinding)
@@ -24,6 +39,11 @@ if(AVATAR_BUILD_TESTS)
         target_link_libraries(vrmUsdBindingContracts PRIVATE avatarMotionAdapter)
     endif()
     add_test(NAME adapters.vrm_usd_humanoid COMMAND vrmUsdBindingContracts)
+    if(AVATAR_BUILD_VRM_ADAPTER)
+        add_executable(vrmLookAtUsdBindingContracts lookAtTests.cpp)
+        target_link_libraries(vrmLookAtUsdBindingContracts PRIVATE avatarVrmLookAtUsdBinding)
+        add_test(NAME adapters.vrm_usd_lookat COMMAND vrmLookAtUsdBindingContracts)
+    endif()
     add_test(NAME adapters.vrm_usd_installed COMMAND ${CMAKE_COMMAND}
         -DROOT_BINARY=${PROJECT_BINARY_DIR}
         -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
@@ -38,6 +58,8 @@ if(AVATAR_BUILD_TESTS)
         -DMOTION_DIR=${motionCore_DIR}
         -DUSD_DIR=${pxr_DIR}
         -DSCHEMA_DIR=${vrmSchema_DIR}
+        -DVRM_DIR=${vrmRig_DIR}
+        -DWITH_LOOKAT=${AVATAR_BUILD_VRM_ADAPTER}
         -DWITH_MOTION=${AVATAR_BUILD_MOTION_ADAPTER}
         -DCONFIG=$<CONFIG>
         -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
