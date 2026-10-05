@@ -14,6 +14,7 @@ Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; actual clip/avatar USD/Humanoid discovery, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [dependencies](../architecture/DEPENDENCIES.md) |
+| USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; constructed USD -> motion -> VRM parity; actual format/schema discovery and avatar conformance pending | [USD binding](../architecture/USD_BINDING.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
 | capture, replay, inspection and benchmarks | proposed; not implemented | [recording/replay](../design/RECORDING_AND_REPLAY.md) |
@@ -79,3 +80,22 @@ This is immutable constructed-clip/rig composition evidence. Actual motion
 captures, USD Humanoid discovery, real-avatar bindings, live connector intake,
 multi-source selection and retained source metadata remain unvalidated; milestones A/B/C and
 Runtime Phase A stay open.
+
+The optional USD/motion/VRM Release configuration was checked on the same
+date/toolchain with installed `motionRetarget`/`motionSampling` 0.5.3,
+`motionCore` 0.5.0, direction-capable `vrmRig` 0.10.0 and OpenUSD 26.08.
+`ctest --test-dir build/usd-binding --output-on-failure` passes all nine
+core/VRM/motion/USD tests, adding:
+
+The USD-only Release configuration passes five tests, including its installed
+consumer, without importing `motionSampling` or `vrmRig`. The default core-only
+configuration still passes its three tests and resolves no owner dependency.
+
+| Test | Evidence |
+| --- | --- |
+| `adapters.usd_skeleton` | authored default-time joint/rest extraction through the motion owner's `BuildSkeletonDescriptor`; explicit owner Humanoid mapping; nested rigid placement, centimetre-to-metre conversion, multiple roots, auxiliary/nonuniform-scale rest; invalid layout/path/mapping/rest/topology/matrix rejection; owned copies surviving stage edits/destruction and retained output surviving runtime destruction; with motion/VRM enabled, root-motion placement once per frame, empty clip returning to placed baseline, reset/repeated-frame behavior and bone LookAt numeric owner parity at `1e-6` |
+| `adapters.usd_installed` | separately configured consumer requesting installed `usd` component, optionally `motion vrm`, repeating binding/composition checks without source-tree headers or libraries |
+
+This is constructed USD stage and explicit-role mapping evidence. Actual VRM
+schema/Humanoid discovery, expression/LookAt/material/deformation extraction,
+real assets, connectors, rendering and all evidence milestones remain open.

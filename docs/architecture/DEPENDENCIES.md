@@ -13,6 +13,9 @@ with transitive `motionCore`/OpenUSD dependencies isolated from runtime core.
 The optional [`avatarMotionAdapter`](MOTION_ADAPTER.md) consumes installed
 `motionSampling`/`motionRetarget` packages with the same core isolation and
 maps selected owner scalar/gaze fields through a host-side input assembler.
+The optional [`avatarUsdBinding`](USD_BINDING.md) reads USD skeleton/rest and
+placement into owned baseline and motion-owner values, using installed
+`motionRetarget` with `usdSkel`/`usdGeom`; it adds no core dependency.
 MMD/connector adapters and OST composition remain unconfigured.
 
 ## 1. Owners

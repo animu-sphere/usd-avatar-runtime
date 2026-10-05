@@ -23,6 +23,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
 | [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | optional owner clip sampling/retarget registration, host scalar/gaze input assembly, pose binding, clocks and VRM composition evidence |
+| [Scoped USD skeleton binding](architecture/USD_BINDING.md) | owned authored skeleton baseline, explicit owner Humanoid mapping, metre conversion and rigid root placement |
 
 ## Contracts
 
