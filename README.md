@@ -86,7 +86,10 @@ owner expression and both LookAt evaluator types to pose/morph/material
 snapshots, including world/joint-local point/direction input. Direction support
 requires an owner install with `VRMRIG_LOOKAT_DIRECTION_API`.
 Its constructed-rig tests do not establish real-avatar acceptance.
-Motion/Humanoid/connector adapters, Hydra, OpenExec and OST
-composition are not implemented.
+An optional [motion clip pose adapter](docs/architecture/MOTION_ADAPTER.md)
+connects installed owner sampling/retargeting to runtime pose and validates
+motion -> VRM LookAt/Expression with constructed bindings. Real-avatar
+USD/Humanoid binding, motion channel/gaze input assembly, connector adapters,
+Hydra, OpenExec and OST composition remain unimplemented.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.

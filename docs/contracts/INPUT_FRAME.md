@@ -142,6 +142,15 @@ resolved gaze result/provenance records remain open before freeze.
 
 ## 3. Intake and ownership
 
+The optional [clip pose adapter](../architecture/MOTION_ADAPTER.md) binds an
+immutable owner clip in configuration and samples it using frame evaluation
+seconds with an explicit affine clip/runtime clock mapping. It publishes rig
+pose without adding owner types or a motion array to the C input ABI. Sampled
+face channels/gaze points are diagnosed as unsupported by that pose-only
+callback; host input assembly must map them separately. Actual motion/connector
+observation transport, actor selection and retained source provenance remain
+open. This scoped path does not complete input composition.
+
 The runtime bridge binds source actors to avatar instances, selects a declared
 input snapshot, and delegates generic sampling/blending to motion evaluators.
 Device decoding, source normalization and connector buffering remain upstream.

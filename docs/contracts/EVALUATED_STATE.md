@@ -65,6 +65,12 @@ most `1e-6`. Each transform is parent-local; roots are runtime-world. Avatar
 placement must be included by the binding adapter in the root transform. The
 runtime does not retarget or convert basis/quaternion ordering itself.
 
+The optional [motion adapter](../architecture/MOTION_ADAPTER.md) marshals owner
+retarget translations/rotations and float rest scale into this dense layout.
+Explicit owner-slot/runtime-joint and parent matching is tested with constructed
+rigs, including undriven nonidentity rest. Additional root placement, actual
+USD/Humanoid binding and real-avatar conformance remain open under RT-O4.
+
 Blend shapes use `(mesh_id, target_id)`; material values use
 `(material_id, input_id)` with scalar, vec3 or vec4 type fixed by the layout;
 visibility uses a target ID and a 0/1 value. All identities are copied opaque

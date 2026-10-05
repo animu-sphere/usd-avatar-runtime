@@ -1,0 +1,44 @@
+#pragma once
+#include "avatarRuntime/api.h"
+#include "motionSampling/MotionSource.h"
+#include "motionRetarget/PoseRetargeter.h"
+#include <memory>
+#include <string>
+#include <vector>
+
+namespace avatarMotion {
+// Owner values stay in this optional C++ layer, outside the runtime C ABI.
+struct ClipPoseAdapterConfig {
+    std::string evaluatorId, layoutId, skeletonId;
+    uint64_t layoutVersion = 0;
+    openstrata::motion::MotionClip clip;
+    openstrata::motion::SkeletonDescriptor skeleton;
+    openstrata::motion::RetargetMap map;
+    openstrata::motion::SourceRestPose sourceRest;
+    openstrata::motion::RetargetOptions options;
+    // One explicit runtime joint identity per owner skeleton slot. Owner
+    // parents must match the runtime layout; roots remain runtime-world.
+    std::vector<std::string> jointIds;
+    // runtime_seconds = clip_seconds * clockScale + clockOffset.
+    double clockScale = 1.0, clockOffset = 0.0;
+    std::vector<std::string> after;
+};
+
+// Immutable, stateless clip evaluation: SampleClip -> PoseRetargeter -> pose
+// writer, atomic in RETARGET. Empty clips leave the working pose untouched;
+// out-of-range requests use the owner's boundary hold and emit a diagnostic.
+// Channels, gaze, confidence and contacts are not published by this adapter.
+// Keep alive until runtime destruction. Invalid configuration throws
+// invalid_argument. No stage, renderer, OpenExec or input acquisition.
+class ClipPoseAdapter {
+public:
+    explicit ClipPoseAdapter(ClipPoseAdapterConfig config);
+    ~ClipPoseAdapter();
+    ClipPoseAdapter(const ClipPoseAdapter&) = delete;
+    ClipPoseAdapter& operator=(const ClipPoseAdapter&) = delete;
+    ArEvaluatorDesc Descriptor() const;
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+};
+} // namespace avatarMotion

@@ -36,6 +36,12 @@ work, and the evidence milestones below are still open.
 World/joint-local points and directions now reach both LookAt types, including
 ordered working-pose transforms and the owner's additive direction entry point.
 This is constructed-binding evidence, not actual connector/asset mapping evidence.
+The optional [motion clip pose adapter](../architecture/MOTION_ADAPTER.md) now
+samples and retargets immutable owner clips into dense rig pose, with explicit
+clock/joint/parent bindings and constructed motion -> VRM LookAt/Expression
+numeric parity. Motion channel/gaze input assembly, actual clip/avatar binding,
+USD Humanoid discovery and connectors remain step 2/3 work; this does not close
+milestone A.
 A USD binding adapter builds instance configuration for avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation targets. Integration diagnostics must
@@ -111,7 +117,8 @@ These completed foundations are recorded in the
 
 Remaining implementation/review work before Phase A acceptance:
 
-- Marshal owner motion values and validate the revision-3 gaze spaces and
+- Extend the scoped owner clip-to-pose adapter with motion channel/gaze input
+  assembly and real bindings; validate the revision-3 gaze spaces and
   observation validity against actual connector/motion/VRM mappings;
   establish semantic intent/mapping precedence using real bindings (RT-O1/RT-O2).
 - Validate actual motion/VRM/MMD adapters against phase dependencies, particularly
@@ -120,7 +127,9 @@ Remaining implementation/review work before Phase A acceptance:
   with the real owner library and constructed rigs; actual avatar/motion
   bindings remain unvalidated. Bone-type LookAt now has constructed-rig
   pose parity and ordered working-head evidence with explicit eye/rest bindings;
-  actual avatar joint/rest conformance remains open.
+  actual avatar joint/rest conformance remains open. Owner motion clip sampling
+  and retargeting now precede VRM in constructed-rig tests; this is not real
+  clip/asset/Humanoid discovery evidence.
 - Prove rig/material/deformation layout conformance with those adapters;
   negotiate effects outside the current dense snapshot subset, including
   explicit expression/gaze results and retained provenance (RT-O4).
@@ -140,8 +149,9 @@ and extend missing boundaries with their owners instead of copying algorithms.
 Begin this work during Phase A. VRM Humanoid/LookAt/Expression is the first
 family; motion completes that slice, then MMD challenges scheduler generality.
 
-The first optional adapter implements expression effects and both LookAt types
-through installed `vrmRig`. Remaining VRM work includes USD asset
+The optional adapters implement owner clip sampling/retarget-to-pose and
+expression effects/both LookAt types through installed owner libraries.
+Constructed motion-to-VRM composition is tested. Remaining VRM work includes USD asset
 binding, Humanoid/motion integration, real-avatar eye/rest conformance,
 actual connector gaze mapping and typed resolved expression/gaze state.
 Do not count constructed rigs as the representative real-avatar evidence required here.
