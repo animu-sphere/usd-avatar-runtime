@@ -8,8 +8,10 @@ owner: usd-avatar-runtime
 This maps [design policy section 18](../design/DESIGN_POLICY.md) to prospective
 components. The initial implementation provides public headers, one
 `libs/avatarRuntime` library, CMake installation/export support and contract
-tests. Registry/validation/diagnostics currently live inside that library;
-separate `avatarCore`/`avatarRegistry`/`avatarDiagnostics` targets below are
+tests. Registry/validation/diagnostics currently live inside that library.
+`adapters/vrm` now provides the optional installed `avatarVrmAdapter` target
+and owner-boundary tests; see the [scoped adapter](VRM_ADAPTER.md).
+Separate `avatarCore`/`avatarRegistry`/`avatarDiagnostics` targets below are
 prospective, as are plugins and tools. Do not create empty targets from this
 sketch.
 

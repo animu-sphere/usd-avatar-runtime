@@ -13,7 +13,7 @@ Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
-| motion/VRM/MMD/connector integration | ownership described; no runtime adapters | [dependencies](../architecture/DEPENDENCIES.md) |
+| motion/VRM/MMD/connector integration | optional installed `vrmRig` expression + expression-type LookAt adapter with explicit input/layout/output binding and diagnostics; constructed-rig numeric parity tested; real-avatar USD binding, Humanoid/motion/connectors, bone LookAt and MMD pending | [VRM adapter](../architecture/VRM_ADAPTER.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
 | capture, replay, inspection and benchmarks | proposed; not implemented | [recording/replay](../design/RECORDING_AND_REPLAY.md) |
@@ -37,5 +37,19 @@ linked. `ctest --test-dir build/direct --output-on-failure` runs:
 | `contracts.runtime` | C++20 headers; revision-1/2 and undersized-view rejection; deterministic plan order; missing/backward/cyclic dependencies; overlapping writers; capability mismatch; stateful failure/retry/reset; ignored/invalid writes; time/input/layout validation; independent instances; absent/zero and complete snapshot behavior; diagnostic provenance and overflow; retained metadata, stable layout across reset, explicit layout version change, prior input revision on failure and domain-independent evaluator metadata; gaze absence/origin, point/direction, world/bound-joint spaces, unchanged stale/unavailable transport, source/actor identity, invalid arrays/references/numerics/clocks/duplicates and failure before provider callbacks with same-frame retry |
 | `contracts.installed_consumer` | install into a build-local prefix, configure/build C provider and consumer separately with `find_package(AvatarRuntime 0.1.0 EXACT)`, run the C boundary against installed headers/library |
 
-These tests use synthetic providers. They prove runtime boundary behavior,
+These core tests use synthetic providers. They prove runtime boundary behavior,
 not VRM/MMD/motion algorithm conformance, renderer parity or an ABI freeze.
+
+The optional Release adapter build was also checked on Windows x64/MSVC 19.51
+on 2026-10-05 with installed `vrmRig` 0.10.0, `motionCore` 0.5.0 and OpenUSD
+26.08. `ctest --test-dir build/vrm --output-on-failure` passes the same three
+core tests plus:
+
+| Test | Evidence |
+| --- | --- |
+| `adapters.vrm_expression` | real owner LookAt/expression algorithms against constructed rigs; numeric direct-owner morph/RGB/alpha parity at `1e-6`; exact source/actor/channel selection; owner binary/override arbitration and clamp diagnostics; gaze precedence; world head placement/rotation; missing layout/version/target/material/head, unsupported slots/gaze spaces/kinds/head scale; absence/zero, stale gaze, expression-only capability set, independent instances, failure/retry/reset and snapshots retained past runtime destruction |
+| `adapters.vrm_installed` | separate configure/build via installed `AvatarRuntime` `vrm` component and adapter headers/static library, repeating owner-boundary checks; the installed C-only core consumer still resolves without provider dependencies |
+
+This is real-library adapter evidence with test input and constructed rig
+configuration. It is not real VRM asset/motion/connector evidence, independently
+validated owner semantics, renderer output, milestone acceptance or ABI freeze.

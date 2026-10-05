@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 project(UsdAvatarRuntime VERSION 0.1.0 LANGUAGES C CXX)
 
 option(AVATAR_BUILD_TESTS "Build contract and direct execution tests" ${PROJECT_IS_TOP_LEVEL})
+option(AVATAR_BUILD_VRM_ADAPTER "Build the optional vrmRig registration adapter" OFF)
 add_library(avatarRuntime SHARED libs/avatarRuntime/runtime.cpp)
 add_library(AvatarRuntime::avatarRuntime ALIAS avatarRuntime)
 target_compile_features(avatarRuntime PRIVATE cxx_std_17)
@@ -38,4 +39,8 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfig.cmake
 if(AVATAR_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests/contracts)
+endif()
+
+if(AVATAR_BUILD_VRM_ADAPTER)
+    add_subdirectory(adapters/vrm)
 endif()

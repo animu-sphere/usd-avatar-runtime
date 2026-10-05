@@ -75,8 +75,11 @@ atomic control step in the constraints phase: it already handles bone morphs,
 appends and IK internally in MMD order. Do not schedule its bone effects again
 in the expression phase. `vrmRig`'s expression-type LookAt returns contributions
 for `ExpressionResolver`, which should run after gaze and resolve them once.
-These are integration constraints, not claims that those adapters exist here;
-phase validation against runnable sibling adapters remains a freeze gate.
+The optional [VRM adapter](../architecture/VRM_ADAPTER.md) implements an atomic
+expression-phase callback that invokes expression-type LookAt before the owner
+expression resolver and writes resolved effects once. Constructed-rig parity
+tests validate that scoped sequence. MMD, bone LookAt and actual motion/avatar
+plans still require conformance evidence before freeze.
 
 ## 2. Registration descriptor
 

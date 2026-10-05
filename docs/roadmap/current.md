@@ -27,6 +27,11 @@ tooling and a stable frozen ABI are not prerequisites.
 | 7 | Hydra publication | Scene Index/overlay adapter over fast-path-validated semantics and shared frame/state identity; resolved output parity | C |
 
 Registration adapters must not expose provider-private types in core ABI.
+A scoped first [VRM registration adapter](../architecture/VRM_ADAPTER.md)
+now executes owner expression-type LookAt -> Expression using test input and
+constructed bindings. It validates morph/material effects and the retained
+snapshot boundary; real-avatar/Humanoid/motion integration remains step 2/3
+work, and the evidence milestones below are still open.
 A USD binding adapter builds instance configuration for avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation targets. Integration diagnostics must
@@ -106,7 +111,10 @@ Remaining implementation/review work before Phase A acceptance:
   observation validity against actual connector/motion/VRM mappings;
   establish semantic intent/mapping precedence using real bindings (RT-O1/RT-O2).
 - Validate actual motion/VRM/MMD adapters against phase dependencies, particularly
-  atomic MMD control and gaze-to-expression flow (RT-O3).
+  atomic MMD control and full motion-to-VRM flow (RT-O3). The optional VRM
+  adapter's atomic expression-driven gaze-to-expression sequence is tested
+  with the real owner library and constructed rigs; actual avatar/motion
+  bindings and bone LookAt remain unvalidated.
 - Prove rig/material/deformation layout conformance with those adapters;
   negotiate effects outside the current dense snapshot subset, including
   explicit expression/gaze results and retained provenance (RT-O4).
@@ -125,6 +133,12 @@ and extend missing boundaries with their owners instead of copying algorithms.
 
 Begin this work during Phase A. VRM Humanoid/LookAt/Expression is the first
 family; motion completes that slice, then MMD challenges scheduler generality.
+
+The first optional adapter implements expression effects and expression-type
+LookAt through installed `vrmRig`. Remaining VRM work includes USD asset
+binding, Humanoid/motion integration, bone LookAt, joint-local/direction gaze
+mapping and typed resolved expression/gaze state. Do not count constructed
+rigs as the representative real-avatar evidence required here.
 
 Acceptance: representative motion-to-VRM and motion-to-MMD frames use one
 runtime lifecycle; format-specific writes are consolidated once; connector
