@@ -40,7 +40,7 @@ this is not a new cross-toolchain C++ ABI guarantee.
 ## Configuration and lifetime
 
 [`ExpressionAdapterConfig`](../../adapters/vrm/include/avatarVrm/ExpressionAdapter.h)
-copies the owner's `ExpressionRig`, optional expression-type `LookAtRig`,
+copies the owner's `ExpressionRig`, optional expression- or bone-type `LookAtRig`,
 layout ID/version, evaluator ID, input selections and output bindings.
 The host currently supplies these values; USD stage binding is still pending.
 `Descriptor()` supplies the registration table. Keep the adapter alive until
@@ -68,6 +68,17 @@ bindings, including material input types, before owner evaluation. Missing
 targets and unsupported slots fail publication rather than dropping effects.
 The host remains responsible for assigning honest layout identities.
 
+Bone rigs additionally supply `EyeBinding` records mapping each named owner
+eye to `(skeleton_id, joint_id)` and an authored parent-local rest quaternion
+in x,y,z,w order. Rest rotations must be finite and unit length within the
+runtime's squared-norm tolerance of `1e-6`. Each named eye requires exactly
+one mapping; duplicate owner or runtime identities, extra mappings, head
+targets and cross-skeleton mappings are rejected. At least one eye is required;
+one-eye rigs preserve the owner's missing-eye warning. Eye bindings are invalid
+without bone LookAt. Every frame validates the head and eye layout even when
+gaze is absent. Eyes must be direct children of the head, matching the owner's
+head-space rotation boundary; other parent spaces fail visibly.
+
 ## Execution and supported gaze
 
 One stateless callback in `AR_PHASE_EXPRESSIONS` executes the scoped sequence:
@@ -83,10 +94,19 @@ selected scalars ----------------------+
 ```
 
 The callback reads material values and, when LookAt is enabled, pose. It writes
-deformation/material domains. Earlier pose phases precede it; `after` names
-additional required predecessors. LookAt contributions are resolved exactly
-once, with no intermediate state shared across frames. This is scoped RT-O3
-evidence; bone-driven gaze and actual motion/MMD plans remain unvalidated.
+deformation/material domains and, for bone rigs, pose. Bone LookAt returns eye
+rotations instead of expression contributions. Each replaces the working eye
+rotation with normalized `resolved gaze * bound authored rest`, matching the
+owner's bake caller. Translation and scale retain their current working values.
+Earlier animated eye rotations are replaced rather than multiplied into gaze;
+there is no accumulation or prior-frame hold. Earlier pose phases precede it;
+`after` names additional required predecessors. LookAt contributions are resolved
+exactly once, with no intermediate state shared across frames. This is scoped RT-O3
+evidence with both LookAt types; actual motion/MMD plans remain unvalidated.
+Supplied capabilities are `avatar.vrm.expression.effects` version 1 plus
+`avatar.vrm.lookAt.expression` or `avatar.vrm.lookAt.bone` version 1 for the
+selected rig type. Bone rig registration's pose writes participate in the
+runtime's existing writer dependency checks.
 
 LookAt currently accepts selected **runtime-world points** with valid
 observations. It derives head world position/orientation from the working
@@ -94,10 +114,14 @@ parent-local rig, including root placement, using OpenUSD value operations.
 Head ancestry must have unit scale within `1e-6`; owner positions/targets must
 fit finite float values. Missing head joints, scaled ancestry, joint-local
 points and directions produce explicit failures. Bone-type LookAt is rejected
-at construction. These restrictions do not narrow the general input contract.
+when its eye binding is incomplete. These restrictions do not narrow the
+general input contract.
 Absent gaze produces no contribution. Stale/unavailable selected gaze is
 diagnosed and contributes nothing; the complete snapshot returns unwritten
 effects to baseline. It does not hold the previous gaze silently.
+The owner's valid target-at-origin result also contributes no eye rotation and
+forwards its warning. Unwritten eyes retain the authored baseline or an earlier
+pose evaluator's values for this frame.
 
 When valid LookAt reports a name also mapped by a scalar, the LookAt value
 replaces that scalar and an informational precedence diagnostic identifies
@@ -109,8 +133,8 @@ unavailable. This is an explicit adapter policy, not a core arbitration rule.
 
 Diagnostics identify `usd-vrm-plugins.vrmRig` as origin; the runtime stamps the
 evaluator, instance, frame and phase. Adapter codes report layout, target,
-head, space/range and availability failures. Owner unresolved, clamped,
-suppressed and warning results are forwarded with their named subjects or
+head/eye/eye-parent, space/range and availability failures. Owner unresolved,
+clamped, suppressed and warning results are forwarded with their named subjects or
 warning text. Provider failure returns `AR_PROVIDER_ERROR` at the runtime
 boundary; the diagnostic retains the underlying adapter status.
 
@@ -118,10 +142,16 @@ The tests exercise installed owner algorithms with constructed rigs and test
 input, numeric direct-owner parity at `1e-6`, isolation, reset, absence/zero,
 rollback/retry and retained output lifetime. A separately configured installed
 consumer repeats the boundary checks without source-tree include paths.
+Bone tests cover asymmetric inner/outer maps, both yaw signs, rotated head
+placement from an earlier evaluator, nonidentity rest rotations, preserved
+translation/scale, repeated-frame stability, one-eye diagnostics, stale and
+unavailable gaze, target-at-origin, invalid bindings, and rollback after eye
+writes when later material marshalling fails. An unordered same-phase pose
+writer is rejected as a write conflict at instance creation.
 Versions and target evidence are recorded in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
-Real VRM asset binding, Humanoid/motion/connector integration, bone LookAt,
+Real VRM asset binding, Humanoid/motion/connector integration,
 joint-local/direction gaze, resolved expression/gaze records and renderer
 consumption remain in the [roadmap](../roadmap/current.md). No milestone,
 ABI freeze, pixel parity or renderer support follows from these tests.

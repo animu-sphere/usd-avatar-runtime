@@ -2,6 +2,7 @@
 #include "avatarRuntime/api.h"
 #include "vrmRig/ExpressionResolver.h"
 #include "vrmRig/LookAtEvaluator.h"
+#include <array>
 #include <memory>
 
 namespace avatarVrm {
@@ -16,6 +17,11 @@ struct ExpressionInputBinding {
 struct MorphBinding {
     std::string ownerTarget, mesh, target;
 };
+struct EyeBinding {
+    std::string ownerJoint, skeleton, joint;
+    // Authored parent-local rest quaternion (x,y,z,w), not the animated value.
+    std::array<double, 4> restRotation{0, 0, 0, 1};
+};
 struct ExpressionAdapterConfig {
     std::string evaluatorId;
     std::string layoutId;
@@ -23,12 +29,15 @@ struct ExpressionAdapterConfig {
     vrmRig::ExpressionRig expressions;
     std::vector<ExpressionInputBinding> inputs;
     std::vector<MorphBinding> morphs;
-    // Optional expression-driven LookAt; bone rigs are rejected. Accepts runtime-world
+    // Optional expression- or bone-driven LookAt. Accepts runtime-world
     // points only and unit-scale head ancestry; unsupported inputs fail visibly.
     std::optional<vrmRig::LookAtRig> lookAt;
     InputIdentity gaze;
     std::string headSkeleton, headJoint;
     std::vector<std::string> after;
+    // Bone rigs: exactly one mapping for each named owner eye. Runtime eyes
+    // must be direct children of the head in the same skeleton.
+    std::vector<EyeBinding> eyes;
 };
 
 // Immutable configuration, stateless per-instance evaluation. Keep this object

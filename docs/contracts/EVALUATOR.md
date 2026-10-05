@@ -76,9 +76,12 @@ appends and IK internally in MMD order. Do not schedule its bone effects again
 in the expression phase. `vrmRig`'s expression-type LookAt returns contributions
 for `ExpressionResolver`, which should run after gaze and resolve them once.
 The optional [VRM adapter](../architecture/VRM_ADAPTER.md) implements an atomic
-expression-phase callback that invokes expression-type LookAt before the owner
-expression resolver and writes resolved effects once. Constructed-rig parity
-tests validate that scoped sequence. MMD, bone LookAt and actual motion/avatar
+expression-phase callback that invokes LookAt before the owner
+expression resolver and writes resolved effects once. Expression rigs feed
+named contributions to the resolver; bone rigs write eye rotations composed
+with bound authored rest rotations and declare pose writes. Constructed-rig
+parity tests validate both types, including working head pose from an earlier
+base-pose evaluator. MMD and actual motion/avatar
 plans still require conformance evidence before freeze.
 
 ## 2. Registration descriptor
