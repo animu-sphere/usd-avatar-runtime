@@ -9,6 +9,12 @@ This proposal develops [design policy sections 14–15](../design/DESIGN_POLICY.
 It owns runtime negotiation and observation; provider-specific diagnostics
 retain their original owner and codes.
 
+The direct prototype implements exact-version capability negotiation and
+callback-scoped diagnostics using
+[`types.h`](../../include/avatarRuntime/types.h) and
+[`diagnostics.h`](../../include/avatarRuntime/diagnostics.h). Candidate semantic
+tokens below remain proposals until actual adapters establish their meaning.
+
 ## 1. Capabilities
 
 Capability tokens have explicit versions. The policy's candidate vocabulary is:
@@ -37,6 +43,16 @@ features. Missing required support prevents the plan/output binding from
 activating. Optional unsupported outputs follow an explicit host policy and
 produce diagnostics. Never rely on compile-time VRM/MMD assumptions alone.
 
+Revision 1 computes active support as the intersection of selected providers'
+supplied tokens and the instance's explicitly bound tokens at the **same
+nonzero version**. Required instance/evaluator capabilities must occur in that
+intersection; conflicting versions supplied by selected providers are rejected.
+Optional bound tokens without a selected provider produce an inactive-capability
+warning. `get_capabilities` returns the active set sorted by ID; installation or
+registration alone does not enable a feature. The application must declare the
+bound set honestly; the runtime cannot infer rig support without a binding
+adapter. Output-consumer negotiation is still Runtime Phase C work.
+
 ## 2. Diagnostic context
 
 A proposed record carries stable code and severity, origin/provider identity,
@@ -52,6 +68,20 @@ Required cases include missing mappings, dropped/stale input, unresolved
 intent, unsupported outputs, invalid contracts, dependency cycles, conflicting
 writes and non-finite transforms. Deterministic ordering and overflow/drop
 behavior must be specified; logging must not block the frame on external I/O.
+
+Revision 1 delivers synchronous diagnostic callbacks in validation/plan order,
+preserves provider `origin`, `code`, `subject`, message and status, and stamps
+the active evaluator/instance/frame/phase. Runtime composition records use
+`runtime.*` codes. Records and strings are borrowed only during the callback;
+consumers copy them to retain them. The sink must avoid blocking I/O and must
+not throw or reenter the runtime. Up to `AR_MAX_DIAGNOSTICS` (256) records per
+operation are delivered, followed by one `runtime.diagnostics.overflow`
+warning if additional records are omitted. The overflow warning uses runtime
+origin and does not change the operation status. Malformed provider records
+fail the frame. Severity never decides success: callback statuses and state
+validation decide it. Missing mappings/stale-source diagnostics still require
+actual provider/connector adapters; timings, hashes and trace tooling are future
+work.
 
 ## 3. Observation hooks
 

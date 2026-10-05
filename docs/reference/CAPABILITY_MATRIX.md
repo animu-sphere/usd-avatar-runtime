@@ -2,24 +2,40 @@
 
 Checked against this repository on 2026-10-05. This is implementation status,
 not a promise about sibling repositories or a release/support declaration.
-No runtime code or build configuration exists in the current tree.
+The experimental direct runtime and CMake installation/export are implemented.
+Runtime Phase A remains open; revision 1 is not a frozen ecosystem ABI.
 
 | Surface | Current status | Owning documentation |
 | --- | --- | --- |
 | implementation direction | adopted documentation | [design policy](../design/DESIGN_POLICY.md) |
-| runtime architecture and layout | documented proposals | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
-| input/evaluated-state contracts | draft; no ABI freeze or headers | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
-| evaluator registration, phase execution and lifecycle | draft; not implemented | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
-| versioned C ABI | draft; not implemented | [ABI](../contracts/ABI.md) |
-| capability negotiation and diagnostics | draft; not implemented | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
+| runtime architecture and layout | one reusable `avatarRuntime` target; further component split proposed | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
+| input/evaluated-state contracts | experimental C headers: attributed scalars/clock mappings and dense resolved snapshots; motion/gaze ABI and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
+| evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
+| versioned C ABI | revision/size validation, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
+| capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion/VRM/MMD/connector integration | ownership described; no runtime adapters | [dependencies](../architecture/DEPENDENCIES.md) |
-| Hydra state overlay and direct consumer API | proposed; not implemented | [output paths](../architecture/OUTPUT_PATHS.md) |
+| Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
 | capture, replay, inspection and benchmarks | proposed; not implemented | [recording/replay](../design/RECORDING_AND_REPLAY.md) |
-| multi-avatar execution and parallel scheduling | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
-| OST composition and published runtime packages | not configured | [layout](../architecture/PROJECT_LAYOUT.md) |
-| supported native/Web/WASM/XR targets | no runtime validation evidence | [roadmap](../roadmap/current.md) |
+| multi-avatar execution and parallel scheduling | independent instances tested under serial execution; parallel scheduling pending | [overview](../architecture/OVERVIEW.md) |
+| OST composition and published runtime packages | local CMake install/export tested; OST composition and publication not configured | [layout](../architecture/PROJECT_LAYOUT.md) |
+| supported native/Web/WASM/XR targets | local Windows x64/MSVC direct prototype evidence only; no other target validation | [roadmap](../roadmap/current.md) |
 
 Update a row only with implementation and validation evidence from this
 repository. A sibling's callable library or published package is an integration
 input, not proof that this runtime already composes it.
+
+## Validation evidence
+
+The direct Release build was checked on Windows x64 with MSVC 19.51 and CMake
+4.4.3 on 2026-10-05. No OpenUSD, Hydra, OpenExec or sibling provider target is
+linked. `ctest --test-dir build/direct --output-on-failure` runs:
+
+| Test | Evidence |
+| --- | --- |
+| `contracts.c_provider_consumer` | separate runtime DLL, C11 provider DLL and C11 consumer; table negotiation, capability discovery and snapshots surviving runtime shutdown |
+| `contracts.runtime` | C++20 headers; deterministic plan order; missing/backward/cyclic dependencies; overlapping writers; capability mismatch; stateful failure/retry/reset; ignored/invalid writes; time/input/layout validation; independent instances; absent/zero and complete snapshot behavior; diagnostic provenance and overflow |
+| `contracts.installed_consumer` | install into a build-local prefix, configure/build C provider and consumer separately with `find_package(AvatarRuntime 0.1.0 EXACT)`, run the C boundary against installed headers/library |
+
+These tests use synthetic providers. They prove runtime boundary behavior,
+not VRM/MMD/motion algorithm conformance, renderer parity or an ABI freeze.

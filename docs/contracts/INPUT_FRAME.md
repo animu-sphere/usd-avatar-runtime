@@ -9,6 +9,12 @@ owner: usd-avatar-runtime
 evaluation. It is renderer- and format-independent. This document develops
 [design policy section 5](../design/DESIGN_POLICY.md); it defines no final struct.
 
+The experimental [`input.h`](../../include/avatarRuntime/input.h) implements
+frame identity/generation, evaluation seconds, optional USD time mapping and
+source-attributed scalar channels. This subset is not a second motion model:
+motion pose/clip values and gaze space descriptors are still unimplemented.
+The full logical contract and RT-O1/RT-O2 remain open.
+
 ## 1. Logical contents
 
 | Part | Meaning |
@@ -44,6 +50,15 @@ requires the bound head transform, not a guessed VRM range-map result.
 Exact time/space descriptors are `RT-O1` in the
 [roadmap](../roadmap/current.md#open-decisions).
 
+In revision 1, each scalar records its source/actor/channel identity, source
+seconds and an explicit positive affine clock mapping:
+`runtime_sample_seconds = source_seconds * clock_scale + clock_offset`.
+The evaluation instant stays separate. When present, the USD mapping is
+`usd_time_code = evaluation_seconds * usd_time_codes_per_second + usd_time_code_offset`.
+Both mapped results must be finite. Missing mappings are not guessed. The
+runtime validates/forwards this metadata; it does not sample, blend or reject
+stale samples on behalf of a connector/motion provider.
+
 ## 3. Intake and ownership
 
 The runtime bridge binds source actors to avatar instances, selects a declared
@@ -75,3 +90,12 @@ Absent data differs from a reported zero or identity. Validity information
 must survive assembly. Generic motion hold/interpolation behavior remains its
 owner's; clearing, holding or defaulting other channels must be a declared
 binding policy. Validate numeric inputs without silently inventing observations.
+
+The prototype requires an explicit nonempty namespace on scalar channel IDs
+(for example `intent:smile`, `vrm:customName` or `app:speed`). These names do not
+freeze a semantic vocabulary or imply native/intent conversion. Missing entries
+mean absent; a zero-valued entry remains present. Duplicate source/actor/channel
+triples and non-finite values are rejected. Different sources may report the
+same channel: arbitration belongs in explicit provider binding configuration,
+not array/arrival order. Inputs are already-selected immutable observations;
+there is no separate invalid/stale-observation flag in this subset.

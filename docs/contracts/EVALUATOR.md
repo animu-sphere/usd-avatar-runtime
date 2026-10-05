@@ -8,6 +8,11 @@ owner: usd-avatar-runtime
 This proposal develops [design policy sections 7–8 and 16](../design/DESIGN_POLICY.md).
 It owns invocation and order, not the provider's motion/format algorithm.
 
+[`evaluator.h`](../../include/avatarRuntime/evaluator.h) and the direct runtime
+implement experimental registration, phase barriers and explicit predecessor
+dependencies. This does not freeze RT-O3: actual motion/VRM/MMD adapter plans
+still need conformance evidence.
+
 ## 1. Initial phase sequence
 
 Numeric positions preserve the policy's conceptual order. They are not frozen
@@ -41,6 +46,23 @@ expression/morph label appears later. Decide whether staged contributions,
 explicit dependency substeps or a revised common sequence are appropriate
 with the format owner (`RT-O3`). Do not give the plugin an independent loop.
 
+Prototype phase constants cover provider positions 1–10; collection and
+publication remain runtime boundaries. Dependencies in `after` must name
+selected registered evaluators and cannot point backwards across a phase
+barrier. Topological sorting uses `(phase, UTF-8 ID byte order)` for independent
+steps; descriptor registration/selection order has no influence. Same-phase
+overlapping writers need a dependency path. Across phases the barrier supplies
+explicit order. A later write replaces the resolved channel value; additive
+composition must be performed by the owning provider using its working view.
+
+Sibling inspection supports treating `mmdControl::Evaluator::Evaluate` as one
+atomic control step in the constraints phase: it already handles bone morphs,
+appends and IK internally in MMD order. Do not schedule its bone effects again
+in the expression phase. `vrmRig`'s expression-type LookAt returns contributions
+for `ExpressionResolver`, which should run after gaze and resolve them once.
+These are integration constraints, not claims that those adapters exist here;
+phase validation against runnable sibling adapters remains a freeze gate.
+
 ## 2. Registration descriptor
 
 The proposed descriptor declares stable provider/evaluator identity and
@@ -54,6 +76,16 @@ conflicting state writers before execution. Multiple writes require an explicit
 composition policy or ordered dependency. A tie-breaker must be stable and
 documented; discovery order is not an evaluation policy. Phase crossings and
 configurable exceptions must be declared and validated centrally.
+
+Registration copies identity/version, required/supplied capability lists and
+predecessor IDs. Binding selects a subset of evaluators for one instance and
+creates independent provider state. Read/write domains are pose, deformation,
+material and visibility. Callback working/prior views expose only the union of
+declared read/write domains; writer hooks reject undeclared domains, invalid
+indices and invalid values. An ignored writer error still fails the frame.
+Providers must treat const views as immutable and cannot retain callback views.
+Read-after-write requirements must be declared as dependencies; lexical order
+of otherwise independent readers does not imply a provider-specific policy.
 
 ## 3. Invocation
 

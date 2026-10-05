@@ -23,8 +23,9 @@ reference records the current tree, and roadmap tracks incomplete work.
 
 ## Contracts
 
-All contracts are proposals. Names are logical concepts, not available headers
-or a frozen wire/ABI representation. Their adoption is gated by
+The contracts describe the target boundary and the scoped experimental
+implementation under `include/avatarRuntime/`. Revision 1 is compilable but
+is not a frozen wire/ABI representation. Adoption is gated by
 [Runtime Phase A](roadmap/current.md#runtime-phase-a--freeze-contracts).
 
 | Document | Owns |

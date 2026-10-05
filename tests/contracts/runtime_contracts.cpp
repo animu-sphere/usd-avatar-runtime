@@ -1,0 +1,372 @@
+#include "avatarRuntime/api.h"
+#include <cmath>
+#include <cstdlib>
+#include <iostream>
+#include <limits>
+#include <string>
+#include <vector>
+
+#define CHECK(x) do { if (!(x)) { std::cerr << "Line " << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while (0)
+ArRuntimeApi api{};
+struct Log {
+    std::vector<std::string> codes, origins, evaluators, subjects;
+    std::vector<uint64_t> frames;
+    std::vector<ArStatus> statuses;
+    static void AR_CALL emit(void* p, const ArDiagnostic* d) {
+        auto& log = *static_cast<Log*>(p);
+        log.codes.emplace_back(d->code); log.origins.emplace_back(d->origin);
+        log.evaluators.emplace_back(d->evaluator_id); log.subjects.emplace_back(d->subject);
+        log.frames.push_back(d->frame_id); log.statuses.push_back(d->status);
+    }
+    ArDiagnosticSink sink() { return {this, emit}; }
+};
+struct Fixture {
+    ArRuntime runtime = 0;
+    ArJoint joints[2]{{"rig", "root", -1, {{0,0,0}, {0,0,0,1}, {1,1,1}}},
+        {"rig", "auxiliary", 0, {{0,1,0}, {0,0,0,1}, {2,3,4}}}};
+    ArBlendShape shape{"mesh", "face", 0};
+    ArMaterialInput material{"material", "test:color", AR_VALUE_VEC4, 0, {1,1,1,1}};
+    ArVisibility visibility{"mesh", 1};
+    Fixture() { CHECK(api.create_runtime(&runtime) == AR_OK); }
+    ~Fixture() { CHECK(api.destroy_runtime(runtime) == AR_OK); }
+    ArInstanceDesc desc(const std::vector<const char*>& selected) {
+        ArInstanceDesc d{AR_HEADER(ArInstanceDesc)};
+        d.generation = 1; d.evaluators = selected.data(); d.evaluator_count = uint32_t(selected.size());
+        d.initial_state = {AR_HEADER(ArStateView)};
+        d.initial_state.joints = joints; d.initial_state.joint_count = 2;
+        d.initial_state.blend_shapes = &shape; d.initial_state.blend_shape_count = 1;
+        d.initial_state.materials = &material; d.initial_state.material_count = 1;
+        d.initial_state.visibility = &visibility; d.initial_state.visibility_count = 1;
+        return d;
+    }
+    ArInstance make(const std::vector<const char*>& selected) {
+        auto d = desc(selected); ArInstance id = 0;
+        CHECK(api.create_instance(runtime, &d, nullptr, &id) == AR_OK); return id;
+    }
+};
+ArInputFrame frame(uint64_t id, double seconds = 0, uint64_t generation = 1) {
+    ArInputFrame f{AR_HEADER(ArInputFrame)}; f.frame_id = id; f.generation = generation;
+    f.evaluation_seconds = seconds; return f;
+}
+ArStateView view(ArSnapshot s) {
+    ArStateView v{AR_HEADER(ArStateView)}; CHECK(api.get_snapshot(s, &v) == AR_OK); return v;
+}
+ArStatus AR_CALL noop(void*, void*, const ArEvaluationContext*, const ArStateWriter*) { return AR_OK; }
+ArEvaluatorDesc evaluator(const char* id, ArPhase phase = AR_PHASE_BASE_POSE, ArDomain writes = 0) {
+    ArEvaluatorDesc d{AR_HEADER(ArEvaluatorDesc)};
+    d.id = id; d.provider_id = "test.provider"; d.provider_version = "1";
+    d.phase = phase; d.writes = writes; d.evaluate = noop; return d;
+}
+void add(Fixture& f, const ArEvaluatorDesc& d) { CHECK(api.register_evaluator(f.runtime, &d, nullptr) == AR_OK); }
+
+void negotiation() {
+    ArRuntimeApi invalid{};
+    CHECK(arGetApi(2, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(1, sizeof(invalid) - 1, &invalid) == AR_INCOMPATIBLE_ABI);
+    struct Extended { ArRuntimeApi table; uint64_t tail; } extended{};
+    extended.tail = 0x12345678;
+    CHECK(arGetApi(1, sizeof(extended), &extended.table) == AR_OK && extended.tail == 0x12345678);
+    Fixture f; auto d = evaluator("a"); d.struct_size -= 1;
+    CHECK(api.register_evaluator(f.runtime, &d, nullptr) == AR_INCOMPATIBLE_ABI);
+    d = evaluator("a"); add(f, d);
+    CHECK(api.register_evaluator(f.runtime, &d, nullptr) == AR_DUPLICATE_ID);
+    auto instance = f.make({"a"});
+    Fixture other; auto input = frame(1); ArSnapshot snapshot = 999;
+    CHECK(api.evaluate_frame(other.runtime, instance, &input, nullptr, &snapshot) == AR_INVALID_HANDLE && snapshot == 0);
+    CHECK(api.destroy_instance(f.runtime, instance) == AR_OK);
+    CHECK(api.destroy_instance(f.runtime, instance) == AR_INVALID_HANDLE);
+    CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &snapshot) == AR_INVALID_HANDLE);
+}
+
+struct Order {
+    std::vector<std::string> calls;
+    static ArStatus AR_CALL evaluate(void* p, void*, const ArEvaluationContext*, const ArStateWriter*) {
+        auto& pair = *static_cast<std::pair<Order*, const char*>*>(p);
+        pair.first->calls.emplace_back(pair.second); return AR_OK;
+    }
+};
+void planning() {
+    {
+        Fixture f; auto a = evaluator("a", AR_PHASE_CONSTRAINTS, AR_DOMAIN_POSE);
+        auto b = evaluator("b", AR_PHASE_CONSTRAINTS, AR_DOMAIN_POSE);
+        add(f, b); add(f, a);
+        auto desc = f.desc({}); std::vector<const char*> selected{"b", "a"};
+        desc.evaluators = selected.data(); desc.evaluator_count = 2; ArInstance id = 99;
+        CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_WRITE_CONFLICT && id == 0);
+    }
+    {
+        Fixture f; auto a = evaluator("a"); auto b = evaluator("b");
+        const char* afterA[] = {"b"}; const char* afterB[] = {"a"};
+        a.after = afterA; a.after_count = 1; b.after = afterB; b.after_count = 1;
+        add(f, a); add(f, b);
+        std::vector<const char*> selected{"a", "b"}; auto desc = f.desc(selected); ArInstance id;
+        Log log; auto sink = log.sink();
+        CHECK(api.create_instance(f.runtime, &desc, &sink, &id) == AR_DEPENDENCY_CYCLE);
+        CHECK(log.codes.back() == "runtime.dependency.cycle");
+        selected = {"a"}; desc = f.desc(selected);
+        CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_MISSING_DEPENDENCY);
+    }
+    {
+        Fixture f; auto a = evaluator("a", AR_PHASE_CONSTRAINTS); auto b = evaluator("b", AR_PHASE_EXPRESSIONS);
+        const char* after[] = {"b"}; a.after = after; a.after_count = 1; add(f, a); add(f, b);
+        std::vector<const char*> selected{"a", "b"}; auto desc = f.desc(selected); ArInstance id;
+        CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_PHASE_ORDER);
+    }
+    {
+        Fixture f; Order order;
+        std::pair<Order*, const char*> data[]{{&order, "a"}, {&order, "b"}, {&order, "c"}};
+        auto a = evaluator("a", AR_PHASE_CONSTRAINTS, AR_DOMAIN_POSE);
+        auto b = evaluator("b", AR_PHASE_CONSTRAINTS, AR_DOMAIN_POSE);
+        auto c = evaluator("c", AR_PHASE_SAMPLE);
+        a.user_data = &data[0]; b.user_data = &data[1]; c.user_data = &data[2];
+        a.evaluate = b.evaluate = c.evaluate = Order::evaluate;
+        const char* after[] = {"a"}; b.after = after; b.after_count = 1;
+        add(f, b); add(f, a); add(f, c);
+        auto instance = f.make({"b", "c", "a"}); auto input = frame(1); ArSnapshot s;
+        CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &s) == AR_OK);
+        CHECK(order.calls == std::vector<std::string>({"c", "a", "b"})); CHECK(api.release_snapshot(s) == AR_OK);
+    }
+}
+
+void capabilities() {
+    Fixture f; auto e = evaluator("a"); ArCapability support{"test.feature", 1};
+    e.supplies = &support; e.supply_count = 1; add(f, e);
+    std::vector<const char*> selected{"a"}; auto d = f.desc(selected);
+    d.required_capabilities = &support; d.required_capability_count = 1; ArInstance id;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_MISSING_CAPABILITY);
+    d.bound_capabilities = &support; d.bound_capability_count = 1;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_OK);
+    const ArCapability* active; uint32_t count;
+    CHECK(api.get_capabilities(f.runtime, id, &active, &count) == AR_OK);
+    CHECK(count == 1 && std::string(active[0].id) == "test.feature" && active[0].version == 1);
+    support.version = 2;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_MISSING_CAPABILITY);
+}
+
+struct Control {
+    int mode = 0, creates = 0, destroys = 0, commits = 0, aborts = 0;
+    bool priorSeen = false;
+    ArRuntime runtime = 0;
+    std::vector<std::string>* events = nullptr;
+    const char* label = "";
+    struct State { int committed = 0, pending = 0; };
+    static ArStatus AR_CALL create(void* p, ArInstance, uint64_t, void** out) {
+        auto& c = *static_cast<Control*>(p); ++c.creates;
+        *out = new State(); return c.mode == 7 ? AR_PROVIDER_ERROR : AR_OK;
+    }
+    static void AR_CALL destroy(void* p, void* state) { ++static_cast<Control*>(p)->destroys; delete static_cast<State*>(state); }
+    static ArStatus AR_CALL begin(void* p, void* state, const ArEvaluationContext* ctx) {
+        auto& c = *static_cast<Control*>(p); auto& s = *static_cast<State*>(state);
+        if (c.events) c.events->push_back(std::string("begin:") + c.label);
+        s.pending = s.committed + 1; c.priorSeen = ctx->prior != nullptr;
+        return c.mode == 6 ? AR_PROVIDER_ERROR : AR_OK;
+    }
+    static ArStatus AR_CALL evaluate(void* p, void* state, const ArEvaluationContext* ctx, const ArStateWriter* writer) {
+        auto& c = *static_cast<Control*>(p); auto& s = *static_cast<State*>(state);
+        if (c.events) c.events->push_back(std::string("evaluate:") + c.label);
+        CHECK(ctx->working->joint_count == 2 && ctx->working->material_count == 0);
+        auto t = ctx->working->joints[0].local;
+        t.translation[0] = s.pending;
+        CHECK(writer->set_joint(writer->context, 0, &t) == AR_OK);
+        if (c.mode == 1 || c.mode == 10) return AR_PROVIDER_ERROR;
+        if (c.mode == 2) writer->set_blend_shape(writer->context, 0, 1); // undeclared, ignored by provider
+        if (c.mode == 3) { t.translation[0] = std::numeric_limits<double>::infinity(); writer->set_joint(writer->context, 0, &t); }
+        if (c.mode == 4) throw 42;
+        if (c.mode == 5) CHECK(api.destroy_runtime(c.runtime) == AR_BUSY);
+        const uint32_t diagnostics = c.mode == 8 ? 300 : 1;
+        for (uint32_t i = 0; i < diagnostics; ++i) {
+            ArDiagnostic d{AR_HEADER(ArDiagnostic), "owner.warning", "original.owner", "wrong", "test:channel", "Test warning",
+                AR_SEVERITY_WARNING, AR_OK, 0, 999, 0};
+            if (c.mode == 11) d.abi_version = 99;
+            ctx->diagnostics.emit(ctx->diagnostics.user_data, &d);
+        }
+        return AR_OK;
+    }
+    static void AR_CALL finish(void* p, void* state, uint32_t commit) {
+        auto& c = *static_cast<Control*>(p); auto& s = *static_cast<State*>(state);
+        if (c.events) c.events->push_back(std::string(commit ? "commit:" : "abort:") + c.label);
+        if ((commit && c.mode == 9) || (!commit && c.mode == 10)) throw 42;
+        if (commit) { ++c.commits; s.committed = s.pending; }
+        else { ++c.aborts; s.pending = s.committed; }
+    }
+    ArEvaluatorDesc descriptor() {
+        auto e = evaluator("counter", AR_PHASE_BASE_POSE, AR_DOMAIN_POSE); e.user_data = this;
+        e.flags = AR_EVALUATOR_STATEFUL; e.create_state = create; e.destroy_state = destroy;
+        e.begin_frame = begin; e.evaluate = evaluate; e.end_frame = finish; return e;
+    }
+};
+
+void transactions() {
+    Control c; Fixture f; c.runtime = f.runtime; add(f, c.descriptor());
+    auto a = f.make({"counter"}); auto b = f.make({"counter"}); CHECK(c.creates == 2);
+    ArSnapshot first, second, s; auto input = frame(1, .25);
+    CHECK(api.evaluate_frame(f.runtime, a, &input, nullptr, &first) == AR_OK);
+    CHECK(view(first).joints[0].local.translation[0] == 1 && !c.priorSeen);
+    input = frame(2, .5);
+    for (int mode : {1, 2, 3, 4, 6, 11}) {
+        c.mode = mode; s = 99;
+        const ArStatus expected = mode == 2 || mode == 11 ? AR_INVALID_ARGUMENT : mode == 3 ? AR_INVALID_STATE : AR_PROVIDER_ERROR;
+        CHECK(api.evaluate_frame(f.runtime, a, &input, nullptr, &s) == expected && s == 0);
+        CHECK(view(first).frame_id == 1 && view(first).joints[0].local.translation[0] == 1);
+    }
+    CHECK(c.commits == 1 && c.aborts == 6);
+    c.mode = 5; Log log; auto sink = log.sink();
+    CHECK(api.evaluate_frame(f.runtime, a, &input, &sink, &second) == AR_OK);
+    CHECK(view(second).joints[0].local.translation[0] == 2 && c.priorSeen);
+    CHECK(log.origins[0] == "original.owner" && log.evaluators[0] == "counter" && log.frames[0] == 2);
+    CHECK(log.statuses[0] == AR_OK && log.subjects[0] == "test:channel");
+    c.mode = 0; input = frame(1);
+    CHECK(api.evaluate_frame(f.runtime, b, &input, nullptr, &s) == AR_OK);
+    CHECK(view(s).joints[0].local.translation[0] == 1); CHECK(api.release_snapshot(s) == AR_OK);
+    input = frame(2, .5);
+    CHECK(api.evaluate_frame(f.runtime, a, &input, nullptr, &s) == AR_INVALID_ARGUMENT);
+    input = frame(3, .1);
+    CHECK(api.evaluate_frame(f.runtime, a, &input, nullptr, &s) == AR_INVALID_ARGUMENT);
+    c.mode = 7;
+    CHECK(api.reset_instance(f.runtime, a, 2) == AR_PROVIDER_ERROR);
+    c.mode = 0; input = frame(3, .75);
+    CHECK(api.evaluate_frame(f.runtime, a, &input, nullptr, &s) == AR_OK);
+    CHECK(view(s).joints[0].local.translation[0] == 3); CHECK(api.release_snapshot(s) == AR_OK);
+    CHECK(api.reset_instance(f.runtime, a, 2) == AR_OK);
+    CHECK(api.reset_instance(f.runtime, a, 2) == AR_INVALID_ARGUMENT);
+    input = frame(1, -1, 2);
+    c.mode = 8; Log overflow; auto overflowSink = overflow.sink();
+    CHECK(api.evaluate_frame(f.runtime, a, &input, &overflowSink, &s) == AR_OK);
+    CHECK(view(s).joints[0].local.translation[0] == 1 && !c.priorSeen);
+    CHECK(overflow.codes.size() == AR_MAX_DIAGNOSTICS + 1);
+    CHECK(overflow.codes.back() == "runtime.diagnostics.overflow");
+    CHECK(api.release_snapshot(first) == AR_OK); CHECK(api.release_snapshot(second) == AR_OK);
+    CHECK(api.destroy_instance(f.runtime, a) == AR_OK); CHECK(api.destroy_instance(f.runtime, b) == AR_OK);
+    CHECK(c.creates == c.destroys);
+    CHECK(view(s).generation == 2); CHECK(api.release_snapshot(s) == AR_OK);
+}
+
+void orderedRollbackAndPoisoning() {
+    std::vector<std::string> events;
+    Control a, b, c; Fixture f;
+    a.events = b.events = c.events = &events; a.label = "a"; b.label = "b"; c.label = "c";
+    auto da = a.descriptor(); da.id = "a";
+    auto db = b.descriptor(); db.id = "b"; db.phase = AR_PHASE_CONSTRAINTS;
+    auto dc = c.descriptor(); dc.id = "c"; dc.phase = AR_PHASE_FINAL_POSE;
+    add(f, dc); add(f, db); add(f, da);
+    auto id = f.make({"c", "b", "a"}); c.mode = 6;
+    auto input = frame(1); ArSnapshot s;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_PROVIDER_ERROR);
+    CHECK(events == std::vector<std::string>({"begin:a", "evaluate:a", "begin:b", "evaluate:b",
+        "begin:c", "abort:c", "abort:b", "abort:a"}));
+    events.clear(); c.mode = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_OK);
+    CHECK(view(s).joints[0].local.translation[0] == 1);
+    CHECK(events == std::vector<std::string>({"begin:a", "evaluate:a", "begin:b", "evaluate:b",
+        "begin:c", "evaluate:c", "commit:a", "commit:b", "commit:c"}));
+    CHECK(api.release_snapshot(s) == AR_OK);
+    /* A contract-violating infallible callback cannot leave the instance live. */
+    c.mode = 9; input = frame(2);
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_PROVIDER_ERROR && s == 0);
+    c.mode = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_INVALID_STATE);
+    CHECK(api.reset_instance(f.runtime, id, 2) == AR_OK);
+    input = frame(1, 0, 2);
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_OK);
+    CHECK(view(s).joints[0].local.translation[0] == 1); CHECK(api.release_snapshot(s) == AR_OK);
+    c.mode = 10; input = frame(2, 0, 2);
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_PROVIDER_ERROR);
+    c.mode = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_INVALID_STATE);
+    CHECK(api.destroy_instance(f.runtime, id) == AR_OK);
+    CHECK(a.creates == a.destroys && b.creates == b.destroys && c.creates == c.destroys);
+}
+
+ArStatus AR_CALL resolve(void*, void*, const ArEvaluationContext* ctx, const ArStateWriter* writer) {
+    if (ctx->input->scalar_count) {
+        const double v = ctx->input->scalars[0].value;
+        const double color[4]{v, 0, 0, 1};
+        CHECK(writer->set_blend_shape(writer->context, 0, v) == AR_OK);
+        CHECK(writer->set_material(writer->context, 0, 1, color) == AR_OK);
+        CHECK(writer->set_visibility(writer->context, 0, 0) == AR_OK);
+    }
+    return AR_OK;
+}
+void inputsAndSnapshots() {
+    Fixture f; auto e = evaluator("resolve", AR_PHASE_EXPRESSIONS, AR_DOMAIN_DEFORMATION | AR_DOMAIN_MATERIAL | AR_DOMAIN_VISIBILITY);
+    e.evaluate = resolve; add(f, e); auto id = f.make({"resolve"});
+    ArScalarInput scalar{"source", "actor", "intent:custom", .75, 10, 1, -10};
+    auto input = frame(1); input.scalars = &scalar; input.scalar_count = 1;
+    input.has_usd_mapping = 1; input.usd_time_codes_per_second = 24; input.usd_time_code_offset = 100;
+    ArSnapshot a, b;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &a) == AR_OK);
+    auto v = view(a); CHECK(v.blend_shapes[0].weight == .75 && v.materials[0].overridden == 1 && v.visibility[0].visible == 0);
+    CHECK(v.joints[1].local.scale[2] == 4 && std::string(v.joints[1].joint_id) == "auxiliary");
+    input = frame(2);
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &b) == AR_OK);
+    v = view(b); CHECK(v.blend_shapes[0].weight == 0 && v.materials[0].overridden == 0 && v.visibility[0].visible == 1);
+    CHECK(view(a).blend_shapes[0].weight == .75); CHECK(api.release_snapshot(b) == AR_OK);
+    input = frame(3); input.scalars = &scalar; input.scalar_count = 1; scalar.value = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &b) == AR_OK);
+    CHECK(view(b).blend_shapes[0].weight == 0 && view(b).materials[0].overridden == 1);
+    CHECK(api.release_snapshot(b) == AR_OK);
+    input = frame(4); input.scalars = &scalar; input.scalar_count = 1;
+    scalar.value = std::numeric_limits<double>::quiet_NaN();
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &b) == AR_INVALID_ARGUMENT);
+    scalar.value = 0; scalar.clock_scale = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &b) == AR_INVALID_ARGUMENT);
+    scalar.clock_scale = 1; scalar.channel_id = "unqualified";
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &b) == AR_INVALID_ARGUMENT);
+    scalar.channel_id = "intent:custom"; ArScalarInput duplicate[2]{scalar, scalar};
+    input.scalars = duplicate; input.scalar_count = 2;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &b) == AR_DUPLICATE_ID);
+    CHECK(api.retain_snapshot(a) == AR_OK); CHECK(api.destroy_instance(f.runtime, id) == AR_OK);
+    CHECK(view(a).frame_id == 1); CHECK(api.release_snapshot(a) == AR_OK); CHECK(api.release_snapshot(a) == AR_OK);
+    CHECK(api.release_snapshot(a) == AR_INVALID_HANDLE);
+}
+
+void deterministicFrames() {
+    Fixture f; auto e = evaluator("resolve", AR_PHASE_EXPRESSIONS,
+        AR_DOMAIN_DEFORMATION | AR_DOMAIN_MATERIAL | AR_DOMAIN_VISIBILITY);
+    e.evaluate = resolve; add(f, e);
+    auto a = f.make({"resolve"}); auto b = f.make({"resolve"});
+    ArScalarInput scalar{"source", "actor", "intent:custom", 0, 0, 1, 0};
+    for (uint64_t n = 1; n <= 3; ++n) {
+        auto input = frame(n, double(n) * .25); scalar.value = double(n) * .2;
+        input.scalars = &scalar; input.scalar_count = 1;
+        ArSnapshot sa, sb;
+        CHECK(api.evaluate_frame(f.runtime, a, &input, nullptr, &sa) == AR_OK);
+        CHECK(api.evaluate_frame(f.runtime, b, &input, nullptr, &sb) == AR_OK);
+        const auto va = view(sa), vb = view(sb);
+        CHECK(va.frame_id == vb.frame_id && va.generation == vb.generation && va.evaluation_seconds == vb.evaluation_seconds);
+        CHECK(va.joint_count == vb.joint_count && va.blend_shape_count == vb.blend_shape_count &&
+            va.material_count == vb.material_count && va.visibility_count == vb.visibility_count);
+        for (uint32_t j = 0; j < va.joint_count; ++j) {
+            CHECK(std::string(va.joints[j].joint_id) == vb.joints[j].joint_id);
+            for (int k = 0; k < 3; ++k) CHECK(va.joints[j].local.translation[k] == vb.joints[j].local.translation[k] &&
+                va.joints[j].local.scale[k] == vb.joints[j].local.scale[k]);
+            for (int k = 0; k < 4; ++k) CHECK(va.joints[j].local.rotation[k] == vb.joints[j].local.rotation[k]);
+        }
+        CHECK(va.blend_shapes[0].weight == vb.blend_shapes[0].weight);
+        CHECK(va.materials[0].overridden == vb.materials[0].overridden && va.materials[0].value_type == vb.materials[0].value_type);
+        for (int k = 0; k < 4; ++k) CHECK(va.materials[0].value[k] == vb.materials[0].value[k]);
+        CHECK(va.visibility[0].visible == vb.visibility[0].visible);
+        CHECK(api.release_snapshot(sa) == AR_OK && api.release_snapshot(sb) == AR_OK);
+    }
+}
+
+void validation() {
+    Fixture f; ArInstance id; auto d = f.desc({});
+    f.joints[0].local.rotation[3] = 0;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
+    f.joints[0].local.rotation[3] = 1; f.joints[1].parent_index = 1;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
+    f.joints[1].parent_index = 0; f.material.value_type = 2;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
+    f.material.value_type = AR_VALUE_VEC4;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_OK);
+    auto input = frame(1); input.has_usd_mapping = 1; input.usd_time_codes_per_second = 0; ArSnapshot s;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_INVALID_ARGUMENT);
+}
+
+int main() {
+    CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
+    negotiation(); planning(); capabilities(); transactions(); orderedRollbackAndPoisoning();
+    inputsAndSnapshots(); deterministicFrames(); validation();
+    std::cout << "Runtime contract checks passed\n";
+}

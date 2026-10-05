@@ -5,8 +5,10 @@ owner: usd-avatar-runtime
 
 # Repository ownership and dependencies
 
-This document owns placement rules. It specifies intended integration;
-there are no package dependency declarations in this repository yet.
+This document owns placement rules. The initial `avatarRuntime` CMake target
+has no external provider, OpenUSD, renderer or OpenExec dependency. It exports
+an experimental installable CMake package; actual ecosystem provider dependencies
+and OST composition are still unconfigured.
 
 ## 1. Owners
 
