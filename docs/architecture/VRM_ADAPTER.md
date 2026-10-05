@@ -48,7 +48,9 @@ copies the owner's `ExpressionRig`, optional expression- or bone-type `LookAtRig
 layout ID/version, evaluator ID, input selections and output bindings.
 The host currently supplies these values. The optional
 [USD skeleton binding](USD_BINDING.md) supplies authored joint/rest and
-placement values; VRM schema, expression and LookAt discovery remain pending.
+placement values. Separate [VRM Humanoid](VRM_USD_BINDING.md) and
+[LookAt](VRM_LOOKAT_USD_BINDING.md) binders supply schema-derived configuration;
+expression and output-target discovery remain pending.
 `Descriptor()` supplies the registration table. Keep the adapter alive until
 runtime destruction, because registration borrows its immutable `user_data`.
 Multiple instances can share that configuration without sharing frame state.

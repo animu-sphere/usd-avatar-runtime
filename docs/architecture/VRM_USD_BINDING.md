@@ -63,6 +63,8 @@ Custom roles outside the installed standard schema are retained in
 `UnsupportedBones()` for host diagnostics and are not silently mapped. They
 must still have readable nonempty token values. No legacy alias conversion,
 format detection, expression extraction or LookAt configuration is performed.
+The separate [LookAt binding](VRM_LOOKAT_USD_BINDING.md) adds gaze configuration
+and head/eye/rest extraction when the VRM registration adapter is enabled.
 
 `Skeleton()` supplies the owned baseline, joint IDs, placement and owner
 skeleton/retarget map for [motion composition](USD_BINDING.md#motion-and-vrm-composition).
@@ -102,3 +104,7 @@ Subsequent [USD motion binding](MOTION_USD_BINDING.md) evidence adds seven
 real VRMA clips driving this same avatar's Humanoid pose, with all-joint owner
 parity and reset/retention. The earlier constructed-clip result above remains
 scoped as recorded; real-avatar LookAt/Expression and rendering remain open.
+Subsequent [LookAt binding](VRM_LOOKAT_USD_BINDING.md) evidence adds this
+avatar's Expression-type gaze configuration and owner-weight parity with test
+gaze and constructed output sinks. Actual expression/output extraction and
+complete motion-to-LookAt composition remain open.
