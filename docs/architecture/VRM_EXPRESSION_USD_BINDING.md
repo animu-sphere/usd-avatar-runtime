@@ -82,7 +82,12 @@ LookAt/Expression bindings -> retained state matches direct owner output at
 provider versions and logs stay in ignored build evidence; no asset is copied.
 Material extraction has constructed-USD evidence, not real-avatar evidence.
 
-Real-motion-to-LookAt/Expression composition, additional avatars (including
+The [motion parity tool](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) now
+composes seven real motion clips with these actual bindings and explicit host
+scalar/gaze probes, checking every morph and joint against separate owner calls.
+Native VRMA expression/gaze intake remains a distinct missing owner boundary.
+
+Additional avatars (including
 bone eyes and material binds), shared-mesh targets, live connectors, renderer
 consumption and milestone/ABI acceptance remain open in the
 [roadmap](../roadmap/current.md).

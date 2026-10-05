@@ -74,6 +74,45 @@ error diagnostic, malformed binding or unchanged avatar pose returns nonzero.
 The tool never copies, installs or authors the input assets, and no local asset
 is added to default CTest runs.
 
+With `AVATAR_BUILD_VRM_ADAPTER`, the tool also links the LookAt and Expression
+USD bindings. `--vrm` extracts the complete output baseline, registers motion
+and the atomic LookAt/Expression adapter, and deliberately selects the latter
+first to verify dependency ordering. The host maps common motion channels
+named `vrm:<verbatim avatar expression name>` to that expression; other channels
+are reported as unmapped. This is a scoped explicit host policy, without aliases
+or automatic VRM-version name conversion. Selected owner world gaze points use
+the existing input assembler and the same affine sample clock.
+
+Optional `--gaze-point X Y Z` and repeated `--weight expression=value` override
+selected input with **host test probes**. They require `--vrm`; weights must name
+declared expressions. Inputs must be finite; owner clamping/arbitration remains
+unchanged. Options precede the avatar and motion paths:
+
+```sh
+avatarMotionCheck --vrm --gaze-point 1 1.5 3 --weight happy=0.4 <avatar.vrm> <motion.vrma>
+```
+
+Every frame compares all joints, morph identities/weights, material identities,
+types, override flags and RGB/alpha with separate owner calls at `1e-6`.
+The oracle derives the head from separately sampled/retargeted pose, including
+root placement, rather than runtime output. Bone eye rotations include authored
+rest; quaternion signs compare equivalently. Held gaze is explicitly stale while
+scalar values remain usable. Additional frames check explicit zero, total
+expression/gaze absence and reset. Both held and active snapshots survive
+runtime destruction. Counters distinguish reader-provided fields from selected
+probe input; coverage counters exclude the additional lifecycle checks.
+Motion-driven joint changes are counted before LookAt so probe eye rotations
+cannot hide a clip that produces no pose change from target rest.
+
+The current installed `motionUsd` reader carries common `motion:channelName` /
+`motion:channelValue` attributes. It does **not** convert the VRMA file-format
+owner's `vrm:expressionWeight` and `vrm:lookAtTarget` attributes. Zero native
+counters therefore describe this reader boundary, not absence in the original
+file. Native VRMA expression/gaze ingestion and its coordinate conversion must
+be resolved with the format/motion owners; probes do not establish that coverage.
+The generic gaze round-trip and format-owner handoff are tracked in
+[usd-motion-plugins issue #37](https://github.com/animu-sphere/usd-motion-plugins/issues/37).
+
 ## Evidence and remaining scope
 
 `adapters.motion_usd_clip` checks source height/rotation/ancestry, time-code to
@@ -97,7 +136,29 @@ state composition, not independent correctness of parsing/retarget semantics.
 The separate [LookAt binding](VRM_LOOKAT_USD_BINDING.md) extracts gaze
 configuration with test-input evidence. The separate
 [Expression binding](VRM_EXPRESSION_USD_BINDING.md) adds actual-avatar morph
-output discovery and test scalar/gaze composition. Real-motion-to-LookAt/Expression composition, live connectors,
+output discovery and test scalar/gaze composition.
+
+On 2026-10-06, `--vrm` checked all seven clips again with those actual bindings,
+both without probes and with a world-point gaze plus `happy=0.4` / `blink=0.8`
+host probes. Each run evaluated 8,286 frames, including zero/absence/reset;
+maximum pose/morph component error was `1.403972313e-7`. The probe run changed
+morph output on 8,265 frames. All 128 joints, 48 morph slots, snapshot
+capabilities and retained active/held state passed; this avatar has no material
+binds. Reader-provided expression/gaze counters were zero for every clip.
+Owner warnings retain unbound `upperChest` and intentional held/stale checks.
+No error diagnostics occurred. Package versions/toolchain are unchanged from
+the evidence above; asset hashes and commands stay in ignored local evidence.
+
+`tools.motion_vrm_check` adds constructed USD regression coverage for both
+LookAt types, nonidentity eye rest, changing root/head pose, a common semantic
+expression key between body keys, all six material slots and alpha, unmapped
+channels, explicit zero/absence, stale holds, reset and retained snapshots.
+It also rejects malformed probe options and deliberately perturbed oracle
+morph/material output. The optional combined build now passes sixteen tests.
+
+This establishes real motion pose + host test gaze/expression -> actual-avatar
+LookAt/Expression -> retained state composition. Native VRMA expression/gaze
+intake, live connectors,
 source provenance in retained state, renderer output, milestones A/B/C and
 ABI freeze remain open. See the [capability matrix](../reference/CAPABILITY_MATRIX.md)
 and [roadmap](../roadmap/current.md).

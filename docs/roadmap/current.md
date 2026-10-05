@@ -72,8 +72,7 @@ An opt-in parity tool validates seven real VRMA clips on the same private
 avatar: all target joint TRS, source/runtime clock mapping, boundary holds,
 reset and retained snapshots. The target's missing `upperChest` mapping is
 reported by the owner. This closes the scoped real-clip-to-Humanoid pose gap;
-full motion-to-LookAt/Expression composition,
-connectors and rendering
+native VRMA expression/gaze intake, connectors and rendering
 remain open, and milestone A is not yet complete.
 
 The optional [VRM USD LookAt binding](../architecture/VRM_LOOKAT_USD_BINDING.md)
@@ -82,15 +81,28 @@ configuration. Constructed USD tests cover owner quaternion/weight parity,
 stage lifetime and installed consumers. The same private avatar's
 Expression-type LookAt has test-gaze owner-weight parity with constructed
 output sinks. Real-avatar bone-eye
-conformance and real-motion-to-LookAt composition remain step 2/3 work.
+conformance and native VRMA gaze intake remain step 2/3 work; host-test gaze
+against a real motion pose has the scoped evidence below.
 
 The optional [VRM USD Expression binding](../architecture/VRM_EXPRESSION_USD_BINDING.md)
 now extracts owner definitions, mesh blend-shape identities and canonical material
 baseline inputs. Constructed USD tests cover all six colour slots and indexed
 binds; the same private avatar supplies 18 expressions and 48 morph slots with
 test scalar/gaze -> actual LookAt/Expression -> retained state owner parity.
-Material binds on real avatars, additional rigs/shared-mesh targets and complete
-real-motion-to-LookAt/Expression composition remain open; milestone A is not closed.
+The opt-in `avatarMotionCheck --vrm` now checks those actual bindings while
+seven real clips drive the working pose, with explicit host scalar/world-gaze
+probes and separate owner pose/head/LookAt/Expression comparisons. Zero/absence,
+stale holds, reset and active/held snapshot retention pass. This closes the
+scoped real-motion-pose + host-test-input composition gap.
+
+The installed common motion reader does not convert the VRMA owner's native
+expression/gaze attributes; all seven clips report zero reader-provided fields.
+Resolve native expression/gaze intake and coordinate mapping with the owners,
+then validate captured/clip input without probes. Material binds on real avatars,
+additional rigs/shared-mesh targets, connector intake and renderer consumption
+remain open; milestone A is not closed by probe evidence.
+The shared motion USD gaze boundary and VRMA owner handoff are tracked in
+[usd-motion-plugins issue #37](https://github.com/animu-sphere/usd-motion-plugins/issues/37).
 
 ## Evidence milestones
 
@@ -204,7 +216,8 @@ The optional adapters implement owner clip sampling/retarget-to-pose and
 expression effects/both LookAt types through installed owner libraries.
 Constructed motion-to-VRM composition is tested, including owned USD skeleton
 baseline and rigid placement from explicit bindings. Remaining VRM work includes
-additional expression/material asset conformance, complete motion-to-format composition, real-avatar eye/rest conformance,
+additional expression/material asset conformance, native VRMA expression/gaze
+intake beyond host-probe composition, real-avatar eye/rest conformance,
 actual connector gaze mapping and typed resolved expression/gaze state.
 Do not count constructed rigs as the representative real-avatar evidence required here.
 
