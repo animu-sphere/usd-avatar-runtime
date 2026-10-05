@@ -13,6 +13,9 @@ tests. Registry/validation/diagnostics currently live inside that library.
 and owner-boundary tests; see the [scoped adapter](VRM_ADAPTER.md).
 `adapters/vrm-usd` provides the separate optional installed
 `avatarVrmUsdBinding` target for [schema Humanoid discovery](VRM_USD_BINDING.md).
+The same directory adds separate `avatarVrmLookAtUsdBinding` and
+`avatarVrmExpressionUsdBinding` targets for authored gaze and expression/output
+configuration, enabled with the VRM evaluator adapter.
 Separate `avatarCore`/`avatarRegistry`/`avatarDiagnostics` targets below are
 prospective, as are plugins and tools. Do not create empty targets from this
 sketch.

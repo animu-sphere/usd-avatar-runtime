@@ -21,6 +21,10 @@ The optional [`avatarVrmUsdBinding`](VRM_USD_BINDING.md) adds installed
 The optional [`avatarVrmLookAtUsdBinding`](VRM_LOOKAT_USD_BINDING.md) composes
 that target with the VRM registration adapter for gaze configuration extraction;
 requesting only `vrm_usd` still imports no evaluator.
+The optional [Expression USD binding](VRM_EXPRESSION_USD_BINDING.md) composes
+the same owner packages plus `usdShade` to extract expression definitions and
+canonical output baseline; its component imports neither LookAt binding nor
+motion sampling/source reading.
 The optional [`avatarMotionUsdBinding`](MOTION_USD_BINDING.md) connects installed
 `motionUsd` semantic clip reading and owner source rest to motion evaluation,
 above the generic USD binder. The opt-in `avatarMotionCheck` host composes that

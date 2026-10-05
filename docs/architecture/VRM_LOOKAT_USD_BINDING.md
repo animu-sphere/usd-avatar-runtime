@@ -62,6 +62,8 @@ and namespaced gaze channel, then keeps the registration adapter alive for
 its runtime. Expression-type LookAt still needs host-supplied expression,
 morph and material bindings to realize resolved weights. This binder does
 not discover those output targets or invent actual-avatar expression binds.
+The separate [Expression binding](VRM_EXPRESSION_USD_BINDING.md) can now
+populate those fields through `ApplyTo()`, with its complete output baseline.
 
 Rebuild after authored configuration changes and update layout identity for
 structural changes. Discovery failures throw `invalid_argument` with
@@ -89,6 +91,8 @@ destruction. Paths/hashes and commands remain in ignored build evidence; no
 asset is copied or included in default tests.
 
 This validates one real-avatar LookAt configuration with test gaze. Actual
-expression/output extraction, real-avatar bone-eye conformance, real-motion
+real-avatar bone-eye conformance, real-motion
 composition, connectors, rendering, milestones and ABI freeze remain open in
 the [roadmap](../roadmap/current.md).
+Actual expression/output extraction and test-gaze composition now have scoped
+evidence in the separate Expression binding document.

@@ -63,7 +63,7 @@ the applied owner schema, resolves its skeleton relationship and maps standard
 roles without joint-name inference. One private avatar validates 128 joints,
 51 roles and constructed motion-to-state parity; affine matrix roundoff from
 that asset is covered by generic binder regression tests. Expression and
-material/deformation target extraction remain open; this
+material/deformation discovery now have the scoped evidence below; this
 does not establish complete real-avatar evaluation evidence.
 
 The optional [USD motion clip binding](../architecture/MOTION_USD_BINDING.md)
@@ -72,7 +72,7 @@ An opt-in parity tool validates seven real VRMA clips on the same private
 avatar: all target joint TRS, source/runtime clock mapping, boundary holds,
 reset and retained snapshots. The target's missing `upperChest` mapping is
 reported by the owner. This closes the scoped real-clip-to-Humanoid pose gap;
-real-avatar Expression/output extraction, full motion-to-LookAt composition,
+full motion-to-LookAt/Expression composition,
 connectors and rendering
 remain open, and milestone A is not yet complete.
 
@@ -81,8 +81,16 @@ now extracts both owner rig types, raw range maps and explicit head/eye/rest
 configuration. Constructed USD tests cover owner quaternion/weight parity,
 stage lifetime and installed consumers. The same private avatar's
 Expression-type LookAt has test-gaze owner-weight parity with constructed
-output sinks. Actual expression/output extraction, real-avatar bone-eye
+output sinks. Real-avatar bone-eye
 conformance and real-motion-to-LookAt composition remain step 2/3 work.
+
+The optional [VRM USD Expression binding](../architecture/VRM_EXPRESSION_USD_BINDING.md)
+now extracts owner definitions, mesh blend-shape identities and canonical material
+baseline inputs. Constructed USD tests cover all six colour slots and indexed
+binds; the same private avatar supplies 18 expressions and 48 morph slots with
+test scalar/gaze -> actual LookAt/Expression -> retained state owner parity.
+Material binds on real avatars, additional rigs/shared-mesh targets and complete
+real-motion-to-LookAt/Expression composition remain open; milestone A is not closed.
 
 ## Evidence milestones
 
@@ -160,16 +168,18 @@ Remaining implementation/review work before Phase A acceptance:
 - Validate actual motion/VRM/MMD adapters against phase dependencies, particularly
   atomic MMD control and full motion-to-VRM flow (RT-O3). The optional VRM
   adapter's atomic expression-driven gaze-to-expression sequence is tested
-  with the real owner library and constructed rigs; actual avatar/motion
-  bindings remain unvalidated. Bone-type LookAt now has constructed-rig
+  with the real owner library, constructed rigs and one actual avatar's
+  expression/morph bindings with test scalar/gaze input; complete real-motion
+  composition remains unvalidated. Bone-type LookAt now has constructed-rig
   pose parity and ordered working-head evidence with explicit eye/rest bindings;
   actual avatar joint/rest conformance remains open. Owner motion clip sampling
   and retargeting now precede VRM in constructed-rig tests; this is not real
   clip/LookAt/Expression asset evidence. Schema-derived Humanoid mapping and
   constructed motion-to-state parity now have one private-avatar result.
 - Extend scoped USD skeleton/rest/placement and owner schema/Humanoid
-  conformance beyond the single local avatar; complete expression and
-  output target discovery. The generic binder still uses explicit role
+  conformance beyond the single local avatar; validate expression/output
+  discovery on additional rigs, including material binds and shared-mesh targets.
+  The generic binder still uses explicit role
   mappings, with the optional VRM schema adapter supplying them (RT-O4).
 - Prove rig/material/deformation layout conformance with those adapters;
   negotiate effects outside the current dense snapshot subset, including
@@ -194,7 +204,7 @@ The optional adapters implement owner clip sampling/retarget-to-pose and
 expression effects/both LookAt types through installed owner libraries.
 Constructed motion-to-VRM composition is tested, including owned USD skeleton
 baseline and rigid placement from explicit bindings. Remaining VRM work includes
-expression/output asset discovery, complete motion-to-format composition, real-avatar eye/rest conformance,
+additional expression/material asset conformance, complete motion-to-format composition, real-avatar eye/rest conformance,
 actual connector gaze mapping and typed resolved expression/gaze state.
 Do not count constructed rigs as the representative real-avatar evidence required here.
 

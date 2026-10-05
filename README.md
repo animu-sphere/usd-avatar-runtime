@@ -93,8 +93,7 @@ to owned input frames, validating motion -> input -> VRM LookAt/Expression
 with constructed bindings. An optional
 [USD skeleton binding](docs/architecture/USD_BINDING.md) reads authored
 joint/rest layout into owned baseline and motion-owner values with explicit
-Humanoid mappings, metre conversion and rigid placement. Real-avatar VRM
-expression/output binding extraction, multi-source input selection,
+Humanoid mappings, metre conversion and rigid placement. Multi-source input selection,
 connector adapters, Hydra, OpenExec and OST composition remain unimplemented.
 The optional [VRM USD Humanoid binding](docs/architecture/VRM_USD_BINDING.md)
 discovers the owner's applied schema, resolves its skeleton relationship and
@@ -104,10 +103,14 @@ parity. The optional [USD motion clip binding](docs/architecture/MOTION_USD_BIND
 connects installed `motionUsd` reading and source rest to pose evaluation.
 Its opt-in `avatarMotionCheck` tool validates seven real VRMA clips on that
 avatar with all-joint numeric parity, reset and retained snapshots. Real-avatar
-Expression/output extraction and renderer evidence remain open. The optional
+Full real-motion-to-Expression composition and renderer evidence remain open. The optional
 [USD LookAt binding](docs/architecture/VRM_LOOKAT_USD_BINDING.md) now extracts
 owner range maps and head/eye/rest configuration into the VRM adapter. One
 private avatar's Expression-type LookAt has test-gaze owner-weight parity;
-its actual expression/output bindings and full motion-to-LookAt flow remain open.
+the separate [Expression binding](docs/architecture/VRM_EXPRESSION_USD_BINDING.md)
+now extracts actual morph/material targets and supplies a complete baseline.
+That avatar's 18 expressions and 48 morph slots have test scalar/gaze owner
+parity; material targets have constructed-USD evidence. Full real-motion-to-LookAt
+flow remains open.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.
