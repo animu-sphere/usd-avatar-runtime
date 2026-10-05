@@ -33,6 +33,9 @@ constructed bindings. It validates bone-type eye pose and expression-type
 morph/material effects and the retained snapshot boundary;
 real-avatar/Humanoid/motion integration remains step 2/3
 work, and the evidence milestones below are still open.
+World/joint-local points and directions now reach both LookAt types, including
+ordered working-pose transforms and the owner's additive direction entry point.
+This is constructed-binding evidence, not actual connector/asset mapping evidence.
 A USD binding adapter builds instance configuration for avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation targets. Integration diagnostics must
@@ -140,7 +143,7 @@ family; motion completes that slice, then MMD challenges scheduler generality.
 The first optional adapter implements expression effects and both LookAt types
 through installed `vrmRig`. Remaining VRM work includes USD asset
 binding, Humanoid/motion integration, real-avatar eye/rest conformance,
-joint-local/direction gaze mapping and typed resolved expression/gaze state.
+actual connector gaze mapping and typed resolved expression/gaze state.
 Do not count constructed rigs as the representative real-avatar evidence required here.
 
 Acceptance: representative motion-to-VRM and motion-to-MMD frames use one

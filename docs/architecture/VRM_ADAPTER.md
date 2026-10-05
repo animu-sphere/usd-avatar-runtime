@@ -16,6 +16,10 @@ The default `avatarRuntime` target has no provider dependencies. Enable
 `AVATAR_BUILD_VRM_ADAPTER` to resolve `vrmRig` using its installed CMake package;
 its transitive dependencies include `motionCore` and OpenUSD value libraries.
 No sibling source directory is compiled into this runtime.
+The owner install must include the additive `EvaluateDirection` API advertised
+by `VRMRIG_LOOKAT_DIRECTION_API`. Older headers fail with an explicit adapter
+build diagnostic; rebuild and install the owner before configuring this adapter.
+This feature requirement is not a new published owner package version.
 
 In an x64 developer shell with the owner's dependency DLLs on `PATH`:
 
@@ -108,14 +112,26 @@ Supplied capabilities are `avatar.vrm.expression.effects` version 1 plus
 selected rig type. Bone rig registration's pose writes participate in the
 runtime's existing writer dependency checks.
 
-LookAt currently accepts selected **runtime-world points** with valid
-observations. It derives head world position/orientation from the working
-parent-local rig, including root placement, using OpenUSD value operations.
-Head ancestry must have unit scale within `1e-6`; owner positions/targets must
-fit finite float values. Missing head joints, scaled ancestry, joint-local
-points and directions produce explicit failures. Bone-type LookAt is rejected
-when its eye binding is incomplete. These restrictions do not narrow the
-general input contract.
+LookAt accepts valid selected **points and directions** in runtime-world or
+explicitly bound joint-local space. It derives head/reference world transforms
+from the current working parent-local rig using OpenUSD value operations, so
+earlier pose writes participate. Local points include joint/root translation;
+local directions use joint orientation only. The reference may name the head,
+an eye or any other baseline rig joint; it names that joint's own frame.
+Head and local-reference ancestry must have unit scale within `1e-6`.
+Missing head/reference joints, scaled ancestry and positions/targets outside
+finite owner float range fail visibly. Bone-type LookAt is rejected when its
+eye binding is incomplete. These restrictions do not narrow the input contract.
+
+Point inputs preserve the owner's eye-origin offset and target-distance rules.
+Directions call the owner's `EvaluateDirection` entry point with a world unit
+vector and head orientation. The owner applies its existing range maps and
+bone/expression outputs without positional eye parallax or an inferred target
+distance. Head/root translation and avatar/clip eye offsets do not affect a
+direction; even placements outside float range remain usable. After core unit
+validation, the adapter removes the permitted double norm error before float
+marshalling to avoid rejection caused by rounding at the tolerance boundary.
+
 Absent gaze produces no contribution. Stale/unavailable selected gaze is
 diagnosed and contributes nothing; the complete snapshot returns unwritten
 effects to baseline. It does not hold the previous gaze silently.
@@ -133,7 +149,7 @@ unavailable. This is an explicit adapter policy, not a core arbitration rule.
 
 Diagnostics identify `usd-vrm-plugins.vrmRig` as origin; the runtime stamps the
 evaluator, instance, frame and phase. Adapter codes report layout, target,
-head/eye/eye-parent, space/range and availability failures. Owner unresolved,
+head/eye/eye-parent, reference-scale/range and availability failures. Owner unresolved,
 clamped, suppressed and warning results are forwarded with their named subjects or
 warning text. Provider failure returns `AR_PROVIDER_ERROR` at the runtime
 boundary; the diagnostic retains the underlying adapter status.
@@ -148,10 +164,15 @@ translation/scale, repeated-frame stability, one-eye diagnostics, stale and
 unavailable gaze, target-at-origin, invalid bindings, and rollback after eye
 writes when later material marshalling fails. An unordered same-phase pose
 writer is rejected as a write conflict at instance creation.
+Mapped-gaze tests cover both rig types, world/root/head/rotated-eye references,
+points versus directions, present/absent owner eye offsets, earlier head pose
+writes, reference-scale failure and same-frame retry. Owner API tests separately
+check direction yaw, outputs, invalid vectors and independence from placement,
+eye offsets and the point-only distance threshold.
 Versions and target evidence are recorded in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
 Real VRM asset binding, Humanoid/motion/connector integration,
-joint-local/direction gaze, resolved expression/gaze records and renderer
+actual connector gaze mappings, resolved expression/gaze records and renderer
 consumption remain in the [roadmap](../roadmap/current.md). No milestone,
 ABI freeze, pixel parity or renderer support follows from these tests.
