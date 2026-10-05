@@ -106,5 +106,7 @@ parity and reset/retention. The earlier constructed-clip result above remains
 scoped as recorded; real-avatar LookAt/Expression and rendering remain open.
 Subsequent [LookAt binding](VRM_LOOKAT_USD_BINDING.md) evidence adds this
 avatar's Expression-type gaze configuration and owner-weight parity with test
-gaze and constructed output sinks. Actual expression/output extraction and
-complete motion-to-LookAt composition remain open.
+gaze and constructed output sinks. Subsequent
+[Expression binding](VRM_EXPRESSION_USD_BINDING.md) evidence adds actual
+expression/morph target extraction and test-gaze/scalar output parity.
+Complete real-motion-to-LookAt/Expression composition remains open.

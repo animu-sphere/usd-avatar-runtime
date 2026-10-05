@@ -95,8 +95,9 @@ evidence; neither clips nor derived motion dumps are included here.
 This proves real motion -> real-avatar Humanoid pose -> retained evaluated
 state composition, not independent correctness of parsing/retarget semantics.
 The separate [LookAt binding](VRM_LOOKAT_USD_BINDING.md) extracts gaze
-configuration with test-input evidence. Real-avatar Expression/output binding
-extraction and real-motion-to-LookAt composition, live connectors,
+configuration with test-input evidence. The separate
+[Expression binding](VRM_EXPRESSION_USD_BINDING.md) adds actual-avatar morph
+output discovery and test scalar/gaze composition. Real-motion-to-LookAt/Expression composition, live connectors,
 source provenance in retained state, renderer output, milestones A/B/C and
 ABI freeze remain open. See the [capability matrix](../reference/CAPABILITY_MATRIX.md)
 and [roadmap](../roadmap/current.md).

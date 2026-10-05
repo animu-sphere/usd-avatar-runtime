@@ -1,6 +1,6 @@
 # Capability matrix
 
-Checked against this repository on 2026-10-05. This is implementation status,
+Checked against this repository on 2026-10-06. This is implementation status,
 not a promise about sibling repositories or a release/support declaration.
 The experimental direct runtime and CMake installation/export are implemented.
 Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
@@ -14,9 +14,10 @@ Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping plus seven real VRMA clips on one private avatar via owned USD clip/source rest, with all-joint parity and reset/retention; full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [USD motion binding](../architecture/MOTION_USD_BINDING.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
-| USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; full expression/output extraction pending | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
+| USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; scoped expression/output extraction available separately | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
-| USD LookAt binding | separate optional owner schema/raw range-map extraction, head/eye/rest bindings and owned adapter configuration; constructed bone quaternion/expression-weight parity; one private avatar's Expression-type rig with test gaze and constructed output sinks; actual expression/output extraction and complete real-motion composition pending | [VRM LookAt USD binding](../architecture/VRM_LOOKAT_USD_BINDING.md) |
+| USD LookAt binding | separate optional owner schema/raw range-map extraction, head/eye/rest bindings and owned adapter configuration; constructed bone quaternion/expression-weight parity; one private avatar's Expression-type rig with test gaze and actual morph outputs through the Expression binding; complete real-motion composition pending | [VRM LookAt USD binding](../architecture/VRM_LOOKAT_USD_BINDING.md) |
+| USD Expression binding | optional applied owner expression discovery, explicit mesh blend-shape token mapping, indexed/legacy material binds and owned canonical RGB/alpha baseline; all-slot constructed owner parity and one private avatar's 18 expressions/48 morph slots with test scalar/gaze LookAt composition; shared-mesh targets and real-avatar material evidence pending | [VRM Expression USD binding](../architecture/VRM_EXPRESSION_USD_BINDING.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
 | capture, replay, inspection and benchmarks | opt-in local avatar/motion pose parity checker implemented; recording, comprehensive inspection/replay and benchmarks pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md), [recording/replay](../design/RECORDING_AND_REPLAY.md) |
 | multi-avatar execution and parallel scheduling | independent instances tested under serial execution; parallel scheduling pending | [overview](../architecture/OVERVIEW.md) |
@@ -146,8 +147,8 @@ Owner diagnostics preserve unbound driven `upperChest` and the intentional
 boundary holds; no error diagnostic occurs. Files are read in place, and paths,
 hashes and command logs stay in ignored build evidence. No asset is copied,
 authored, redistributed or added to default tests. This is real-motion/avatar
-Humanoid pose composition evidence. Actual expression/output extraction,
-real-motion-to-LookAt composition, live connectors, renderer output, milestones and freeze
+Humanoid pose composition evidence. Real-motion-to-LookAt/Expression
+composition, live connectors, renderer output, milestones and freeze
 remain open.
 
 The [USD LookAt binding](../architecture/VRM_LOOKAT_USD_BINDING.md) was checked
@@ -169,11 +170,28 @@ The same private avatar's 128-joint Expression-type LookAt configuration was
 extracted read-only with zero parser warnings and tested against owner weights
 using test gaze and constructed expression output sinks. Reset and retained
 snapshots pass after stage/runtime destruction. Paths, hashes, package versions
-and command logs remain in ignored build evidence. Actual-avatar expression
-and output bindings, real-avatar bone-eye conformance, real-motion-to-LookAt
+and command logs remain in ignored build evidence. Real-avatar bone-eye conformance, real-motion-to-LookAt
 composition, connectors and renderer evidence remain open; no milestone or
 ABI freeze is claimed.
 
 A fresh motion-USD-only Release configuration passes seven tests without
 importing `motionSampling`, `vrmRig` or `vrmSchema`. The default core-only
 configuration still passes three tests without importing USD/provider targets.
+
+The [USD Expression binding](../architecture/VRM_EXPRESSION_USD_BINDING.md)
+was checked with the same installed packages/toolchain on 2026-10-06. The
+combined Release build passes fifteen tests, adding
+`adapters.vrm_usd_expression`: all six owner material slots and alpha at `1e-6`,
+override/morph accumulation, alias tokens, indexed/legacy arrays, LookAt
+composition, forwarded/reference remapping, malformed/ambiguous/connected
+output rejection, zero/absence, stage/copy lifetime, reset and retained snapshots.
+The installed VRM USD test additionally configures/builds/runs the explicit
+`vrm_expression_usd` consumer, checking that it imports neither LookAt binding
+nor motion sampling/source reading before separately requesting LookAt.
+
+The private avatar now has actual expression/output extraction evidence:
+18 expressions and 48 morph slots, with no material colour binds. Test scalar/gaze
+input through extracted LookAt/Expression bindings matches direct owner outputs
+at `1e-6`; stage destruction, reset and retained snapshots pass. Asset identities
+and commands remain in ignored build evidence. Real-avatar material binds,
+full real-motion composition, connectors, renderer evidence and freeze stay open.
