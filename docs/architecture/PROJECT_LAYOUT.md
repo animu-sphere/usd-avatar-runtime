@@ -11,6 +11,8 @@ components. The initial implementation provides public headers, one
 tests. Registry/validation/diagnostics currently live inside that library.
 `adapters/vrm` now provides the optional installed `avatarVrmAdapter` target
 and owner-boundary tests; see the [scoped adapter](VRM_ADAPTER.md).
+`adapters/vrm-usd` provides the separate optional installed
+`avatarVrmUsdBinding` target for [schema Humanoid discovery](VRM_USD_BINDING.md).
 Separate `avatarCore`/`avatarRegistry`/`avatarDiagnostics` targets below are
 prospective, as are plugins and tools. Do not create empty targets from this
 sketch.

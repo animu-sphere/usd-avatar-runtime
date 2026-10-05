@@ -115,10 +115,25 @@ void invalid() {
     badMatrix(trs(pxr::GfVec3d(0),0,pxr::GfVec3d(-1,1,1)),"USD_BINDING_REFLECTION");
     badMatrix(trs(pxr::GfVec3d(0),0,pxr::GfVec3d(0,1,1)),"USD_BINDING_SCALE");
     m = trs(pxr::GfVec3d(0)); m[0][3] = 1; badMatrix(m,"USD_BINDING_NONAFFINE");
+    m = trs(pxr::GfVec3d(0)); m[3][3] = 1 + 2e-12; badMatrix(m,"USD_BINDING_NONAFFINE");
+    m = trs(pxr::GfVec3d(0)); m[0][3] = 2e-12; badMatrix(m,"USD_BINDING_NONAFFINE");
     m = trs(pxr::GfVec3d(0)); m[0][0] = std::numeric_limits<double>::infinity(); badMatrix(m,"USD_BINDING_NONFINITE");
     badMatrix(trs(pxr::GfVec3d(1e100,0,0)),"USD_BINDING_FLOAT_RANGE");
     s = stage(); CHECK(pxr::UsdGeomXform(s->GetPrimAtPath(config().avatarRoot)).AddScaleOp().Set(pxr::GfVec3f(2)));
     reject(s,config(),"USD_BINDING_PLACEMENT_SCALE");
+}
+void affineRoundoff() {
+    auto s = stage(); auto sk = pxr::UsdSkelSkeleton(s->GetPrimAtPath(config().skeleton));
+    pxr::VtMatrix4dArray matrices; CHECK(sk.GetRestTransformsAttr().Get(&matrices));
+    matrices[0][3][3] = 1 + 2.220446049250313e-16;
+    matrices[1][0][3] = 5e-13;
+    CHECK(sk.GetRestTransformsAttr().Set(matrices));
+    avatarUsd::SkeletonBinding binding(s,config());
+    CHECK(closeEnough(binding.Baseline().joints[0].local.translation[2],4));
+    CHECK(closeEnough(binding.Baseline().joints[1].local.translation[1],0.5));
+    // Normalization is private to binding; authored values remain untouched.
+    pxr::VtMatrix4dArray authored; CHECK(sk.GetRestTransformsAttr().Get(&authored));
+    CHECK(authored == matrices);
 }
 #ifdef AR_TEST_MOTION
 void composition() {
@@ -225,7 +240,7 @@ void composition() {
 } // namespace
 int main() {
     try {
-        baseline(); invalid();
+        baseline(); invalid(); affineRoundoff();
 #ifdef AR_TEST_MOTION
         composition();
 #endif

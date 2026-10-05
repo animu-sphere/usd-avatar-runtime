@@ -94,8 +94,12 @@ with constructed bindings. An optional
 [USD skeleton binding](docs/architecture/USD_BINDING.md) reads authored
 joint/rest layout into owned baseline and motion-owner values with explicit
 Humanoid mappings, metre conversion and rigid placement. Real-avatar VRM
-schema/Humanoid discovery, multi-source
-input selection, connector adapters,
-Hydra, OpenExec and OST composition remain unimplemented.
+expression/LookAt/output binding extraction, multi-source input selection,
+connector adapters, Hydra, OpenExec and OST composition remain unimplemented.
+The optional [VRM USD Humanoid binding](docs/architecture/VRM_USD_BINDING.md)
+discovers the owner's applied schema, resolves its skeleton relationship and
+supplies standard role mappings to the generic binder. One privately supplied
+avatar validates skeleton/Humanoid binding and constructed motion-to-state
+parity; real motion and real-avatar LookAt/Expression evidence remain open.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.
