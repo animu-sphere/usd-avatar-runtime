@@ -46,13 +46,19 @@ This describes a logical transaction. The scoped prototype rules below define
 buffer ownership and calls; final ABI freeze still needs provider conformance.
 Output adapters must not trigger evaluation again.
 
-In revision 2, `evaluate_frame` validates the input and starts a fresh authored
+In revision 3, `evaluate_frame` validates the input and starts a fresh authored
 baseline, then calls `begin_frame`/`evaluate` in plan order. Stateful providers
 stage private changes during these callbacks. `end_frame(commit=0)` runs in
 reverse begin order after any failure, including failure of `begin_frame`
 itself. A failed attempt neither advances the last successful frame nor returns
 a snapshot; its output handle is zero, allowing correction/retry with the same
 frame ID. Stateless providers have only an `evaluate` callback.
+
+Typed gaze identity/space/reference/validity, numeric values and clock mappings
+are validated before any `begin_frame`. Malformed observations cannot stage
+provider changes. Valid unavailable/stale observations are forwarded unchanged;
+the owning adapter supplies its explicit hold/drop policy. Input observations
+are borrowed for this call and are not retained as prior state.
 
 After successful validation and all snapshot allocation, the runtime invokes
 infallible `end_frame(commit=1)` in plan order and records the prior successful

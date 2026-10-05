@@ -77,9 +77,10 @@ rollback, instance isolation, retained snapshots and an external build against
 the installed `AvatarRuntime::avatarRuntime` CMake target. See
 [the ABI](docs/contracts/ABI.md) and
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) for exact coverage.
-The headers are experimental revision 2; Runtime Phase A is still open.
-Revision 2 adds retained layout identity, input revision and active capabilities
-to snapshots; revision-1 providers/consumers must rebuild.
+The headers are experimental revision 3; Runtime Phase A is still open.
+Revision 3 adds typed gaze observations with explicit space, validity and clock
+mapping, preserving revision 2's retained layout/input/capability metadata.
+Revision-1/2 providers and consumers must rebuild.
 Motion/gaze adapters, Hydra, OpenExec and OST composition are not implemented.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.

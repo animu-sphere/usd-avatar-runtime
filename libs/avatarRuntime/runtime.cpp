@@ -278,10 +278,13 @@ void cleanupStates(std::vector<BoundEvaluator>& plan) noexcept {
 struct Instance {
     uint64_t generation;
     State baseline;
+    std::set<std::pair<std::string, std::string>> jointIds;
     std::vector<BoundEvaluator> plan;
     std::shared_ptr<const State> prior;
     bool poisoned = false;
-    Instance(uint64_t g, const ArStateView& v) : generation(g), baseline(v) {}
+    Instance(uint64_t g, const ArStateView& v) : generation(g), baseline(v) {
+        for (const auto& j : baseline.joints) jointIds.emplace(j.skeleton_id, j.joint_id);
+    }
     ~Instance() { cleanupStates(plan); }
 };
 struct Runtime {
@@ -439,17 +442,54 @@ void validateInput(const ArInputFrame* input, const Instance& inst, Diagnostics&
             input->usd_time_codes_per_second + input->usd_time_code_offset))))
         d.fail(AR_INVALID_ARGUMENT, "runtime.clock.usd", "Invalid USD clock mapping");
     requireSpan(input->scalars, input->scalar_count, d);
+    requireSpan(input->gazes, input->gaze_count, d);
     std::set<std::tuple<std::string, std::string, std::string>> ids;
+    const auto observation = [&](const char* source, const char* actor, const char* channel,
+                                 double seconds, double scale, double offset) {
+        requireId(source, d); requireId(actor, d); requireId(channel, d);
+        const char* separator = std::strchr(channel, ':');
+        if (!separator || separator == channel || !separator[1])
+            d.fail(AR_INVALID_ARGUMENT, "runtime.channel.namespace", "Input channel needs an explicit namespace", channel);
+        if (!ids.emplace(source, actor, channel).second)
+            d.fail(AR_DUPLICATE_ID, "runtime.input.duplicate", "Duplicate source/actor/channel input", channel);
+        if (!std::isfinite(seconds) || !std::isfinite(scale) || scale <= 0 || !std::isfinite(offset) ||
+            !std::isfinite(seconds * scale + offset))
+            d.fail(AR_INVALID_ARGUMENT, "runtime.input.numeric", "Invalid source clock mapping", channel);
+    };
     for (uint32_t i = 0; i < input->scalar_count; ++i) {
-        const auto& s = input->scalars[i]; requireId(s.source_id, d); requireId(s.actor_id, d); requireId(s.channel_id, d);
-        const char* separator = std::strchr(s.channel_id, ':');
-        if (!separator || separator == s.channel_id || !separator[1])
-            d.fail(AR_INVALID_ARGUMENT, "runtime.channel.namespace", "Scalar channel needs an explicit namespace", s.channel_id);
-        if (!ids.emplace(s.source_id, s.actor_id, s.channel_id).second)
-            d.fail(AR_DUPLICATE_ID, "runtime.input.duplicate", "Duplicate source/actor/channel input", s.channel_id);
-        if (!std::isfinite(s.value) || !std::isfinite(s.source_seconds) || !std::isfinite(s.clock_scale) ||
-            s.clock_scale <= 0 || !std::isfinite(s.clock_offset) || !std::isfinite(s.source_seconds * s.clock_scale + s.clock_offset))
-            d.fail(AR_INVALID_ARGUMENT, "runtime.input.numeric", "Non-finite input or invalid source clock mapping", s.channel_id);
+        const auto& s = input->scalars[i];
+        observation(s.source_id, s.actor_id, s.channel_id, s.source_seconds, s.clock_scale, s.clock_offset);
+        if (!std::isfinite(s.value))
+            d.fail(AR_INVALID_ARGUMENT, "runtime.input.numeric", "Non-finite scalar input", s.channel_id);
+    }
+    for (uint32_t i = 0; i < input->gaze_count; ++i) {
+        const auto& g = input->gazes[i];
+        observation(g.source_id, g.actor_id, g.channel_id, g.source_seconds, g.clock_scale, g.clock_offset);
+        if (g.kind != AR_GAZE_POINT && g.kind != AR_GAZE_DIRECTION)
+            d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.kind", "Unknown gaze point/direction kind", g.channel_id);
+        if (g.validity != AR_OBSERVATION_VALID && g.validity != AR_OBSERVATION_UNAVAILABLE && g.validity != AR_OBSERVATION_STALE)
+            d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.validity", "Unknown gaze observation validity", g.channel_id);
+        if (g.space == AR_GAZE_RUNTIME_WORLD) {
+            if (g.skeleton_id || g.joint_id)
+                d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.reference", "World gaze must not name a joint reference", g.channel_id);
+        } else if (g.space == AR_GAZE_JOINT_LOCAL) {
+            requireId(g.skeleton_id, d); requireId(g.joint_id, d);
+            if (!inst.jointIds.count({g.skeleton_id, g.joint_id}))
+                d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.reference", "Gaze reference is not a bound rig joint", g.channel_id);
+        } else {
+            d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.space", "Unknown gaze coordinate space", g.channel_id);
+        }
+        double norm = 0;
+        for (double v : g.value) {
+            if (!std::isfinite(v))
+                d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.numeric", "Non-finite gaze value", g.channel_id);
+            if (g.validity == AR_OBSERVATION_UNAVAILABLE && v != 0)
+                d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.unavailable", "Unavailable gaze must have a zero payload", g.channel_id);
+            if (g.kind == AR_GAZE_DIRECTION) norm += v * v;
+        }
+        if (g.kind == AR_GAZE_DIRECTION && g.validity != AR_OBSERVATION_UNAVAILABLE &&
+            (!std::isfinite(norm) || std::abs(norm - 1.0) > 1e-6))
+            d.fail(AR_INVALID_ARGUMENT, "runtime.gaze.direction", "Gaze direction must be a unit vector", g.channel_id);
     }
 }
 

@@ -25,7 +25,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 ## Contracts
 
 The contracts describe the target boundary and the scoped experimental
-implementation under `include/avatarRuntime/`. Revision 2 is compilable but
+implementation under `include/avatarRuntime/`. Revision 3 is compilable but
 is not a frozen wire/ABI representation. Adoption is gated by
 [Runtime Phase A](roadmap/current.md#runtime-phase-a--freeze-contracts).
 

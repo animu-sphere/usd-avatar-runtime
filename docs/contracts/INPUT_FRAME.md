@@ -11,9 +11,10 @@ evaluation. It is renderer- and format-independent. This document develops
 
 The experimental [`input.h`](../../include/avatarRuntime/input.h) implements
 frame identity/generation, evaluation seconds, optional USD time mapping,
-source-attributed scalar channels and host input revision. This subset is not
-a second motion model:
-motion pose/clip values and gaze space descriptors are still unimplemented.
+source-attributed scalar channels, typed gaze observations and host input
+revision. This subset is not a second motion model:
+motion pose/clip values are still unimplemented; gaze descriptors have scoped
+revision-3 rules below, awaiting real-provider integration.
 The full logical contract and RT-O1/RT-O2 remain open.
 
 ## 1. Logical contents
@@ -33,8 +34,9 @@ Connector frames/observations consume
 [`motion-connectors`' contract](https://github.com/animu-sphere/motion-connectors/blob/main/docs/design/CONNECTOR_CONTRACT.md).
 This wrapper adds composition context, not another pose or tracker taxonomy.
 
-Revision 2 adds `input_revision`: a host-assigned revision for the selected
-source observations and mapping configuration. Zero means unspecified. It is
+Revision 2 introduced `input_revision`, preserved in revision 3: a host-assigned
+revision for the selected source observations and mapping configuration.
+Zero means unspecified. It is
 independent of frame ID and evaluation time; evaluating the same selected source
 snapshot at a later instant may retain the revision. The host must change it
 when selected observation/mapping content changes and interpret it within the
@@ -58,18 +60,17 @@ Reuse canonical motion units/basis without renormalizing already normalized
 connector data. Gaze points/directions identify their reference space; a
 direction is not treated as a point. Mapping a head-relative observation
 requires the bound head transform, not a guessed VRM range-map result.
-Exact time/space descriptors are `RT-O1` in the
+Real-provider validation of time/space descriptors remains `RT-O1` in the
 [roadmap](../roadmap/current.md#open-decisions).
 
 Near-term gaze input must distinguish target position, target direction,
 head-relative and eye-relative observations, with explicit source clock and
 validity. Missing/unavailable data is not an identity rotation or a valid zero
-target. These descriptors are pending ABI work; the scalar subset below does
-not implement them. Resolved eye/head/expression contributions and
-clamped/rejected/unavailable results belong to the
+target. Revision 3 implements the scoped gaze descriptors below. Resolved
+eye/head/expression contributions and clamped/rejected/unavailable results belong to the
 [evaluated-state contract](EVALUATED_STATE.md), not this input intent.
 
-In revision 2, each scalar records its source/actor/channel identity, source
+In revision 3, each scalar and gaze records its source/actor/channel identity, source
 seconds and an explicit positive affine clock mapping:
 `runtime_sample_seconds = source_seconds * clock_scale + clock_offset`.
 The evaluation instant stays separate. When present, the USD mapping is
@@ -77,6 +78,56 @@ The evaluation instant stays separate. When present, the USD mapping is
 Both mapped results must be finite. Missing mappings are not guessed. The
 runtime validates/forwards this metadata; it does not sample, blend or reject
 stale samples on behalf of a connector/motion provider.
+
+### Revision-3 gaze observations
+
+`ArInputFrame.gazes`/`gaze_count` is a synchronously borrowed array of
+`ArGazeInput`. Each record has the same source/actor/namespaced-channel identity
+and affine clock metadata as a scalar. Identity is unique across both arrays:
+the same triple cannot be reported as both scalar and gaze. Different sources
+or actors may report the same gaze channel; explicit binding policy selects or
+combines them. Array order is not arbitration.
+
+| Field | Scoped meaning |
+| --- | --- |
+| `kind` | `AR_GAZE_POINT`: target position in metres; `AR_GAZE_DIRECTION`: unit vector with squared-norm error at most `1e-6` |
+| `space` | `AR_GAZE_RUNTIME_WORLD`: canonical runtime world, including avatar placement; `AR_GAZE_JOINT_LOCAL`: the named bound joint's coordinate frame |
+| `skeleton_id`, `joint_id` | both null in runtime-world space; both valid identities naming an existing baseline rig joint in joint-local space |
+| `validity` | `AR_OBSERVATION_VALID`, `AR_OBSERVATION_UNAVAILABLE` or `AR_OBSERVATION_STALE`; zero/unknown values are rejected |
+| `value[3]` | finite point/direction components; unavailable records require all-zero payload; stale records preserve their old finite point/unit direction |
+
+All vectors use the motion owner's canonical right-handed +Y-up/+Z-forward
+basis. Joint-local names identify the joint's own frame, rather than its parent
+frame. A head-relative or eye-relative observation names the bound head/eye
+joint using opaque rig identities, without creating another humanoid vocabulary.
+The adapter constructs that joint's transform from the evaluated rig chain and
+root placement. Points include translation; directions do not. Scaling and
+direction normalization during space conversion belong to the owner adapter,
+not the runtime. A provider needing that conversion declares pose reads and
+the relevant ordering dependencies.
+
+No record means absent. A valid point `(0,0,0)` is a real target; a valid zero
+direction is rejected. Unavailable is an explicit report without a value;
+stale retains an observation the assembler has classified as old. Validity
+does not follow automatically from comparing timestamps. Providers receive
+these statuses unchanged and must define their drop/hold/default policy. Even
+unavailable/stale records must carry valid identity, kind, space/reference and
+clock metadata. Validation does not imply that a provider supports every kind
+or space; adapters diagnose unsupported requests and negotiate their outputs.
+
+The runtime validates the complete array before any provider callback. Unknown
+kind/space/validity, missing joint references, non-finite values, invalid source
+clocks and duplicate identities fail the frame without advancing provider state
+or successful-frame history; the host can correct and retry that frame ID.
+Gaze-specific validation diagnostics identify the input channel with runtime instance
+and frame context. Arrays/strings are never retained in published state.
+
+This is an input composition boundary, not a new motion value: an owner
+`MotionPose::lookAtTarget` maps to a valid world-space **point**, preserving its
+timestamp and optional absence. A direction must not be assigned to that point
+field without an explicit owner-supported conversion using the bound avatar.
+Real motion/connector/VRM mapping evidence, tracking-specific validity and
+resolved gaze result/provenance records remain open before freeze.
 
 ## 3. Intake and ownership
 
@@ -117,4 +168,5 @@ mean absent; a zero-valued entry remains present. Duplicate source/actor/channel
 triples and non-finite values are rejected. Different sources may report the
 same channel: arbitration belongs in explicit provider binding configuration,
 not array/arrival order. Inputs are already-selected immutable observations;
-there is no separate invalid/stale-observation flag in this subset.
+there is no separate invalid/stale-observation flag for scalars. Gaze validity
+is explicit under the revision-3 rules above.

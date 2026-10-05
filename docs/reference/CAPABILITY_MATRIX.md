@@ -3,15 +3,15 @@
 Checked against this repository on 2026-10-05. This is implementation status,
 not a promise about sibling repositories or a release/support declaration.
 The experimental direct runtime and CMake installation/export are implemented.
-Runtime Phase A remains open; revision 2 is not a frozen ecosystem ABI.
+Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 
 | Surface | Current status | Owning documentation |
 | --- | --- | --- |
 | implementation direction | adopted documentation; real-provider/fast-path integration prioritized before freeze | [design policy](../design/DESIGN_POLICY.md), [near-term direction](../design/NEAR_TERM_PLAN.md) |
 | runtime architecture and layout | one reusable `avatarRuntime` target; further component split proposed | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
-| input/evaluated-state contracts | experimental revision-2 C headers: attributed scalars/clock mappings, host input revision and dense snapshots with retained layout ID/version and active capabilities; motion/gaze ABI, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
+| input/evaluated-state contracts | experimental revision-3 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version and active capabilities; owner motion mapping, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
-| versioned C ABI | revision-2/size validation, revision-1 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
+| versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion/VRM/MMD/connector integration | ownership described; no runtime adapters | [dependencies](../architecture/DEPENDENCIES.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
@@ -33,8 +33,8 @@ linked. `ctest --test-dir build/direct --output-on-failure` runs:
 
 | Test | Evidence |
 | --- | --- |
-| `contracts.c_provider_consumer` | separate runtime DLL, C11 provider DLL and C11 consumer; revision-2 table negotiation, capability discovery and copied layout/input/capability metadata surviving runtime shutdown |
-| `contracts.runtime` | C++20 headers; revision-1 and undersized-view rejection; deterministic plan order; missing/backward/cyclic dependencies; overlapping writers; capability mismatch; stateful failure/retry/reset; ignored/invalid writes; time/input/layout validation; independent instances; absent/zero and complete snapshot behavior; diagnostic provenance and overflow; retained metadata, stable layout across reset, explicit layout version change, prior input revision on failure and domain-independent evaluator metadata |
+| `contracts.c_provider_consumer` | separate runtime DLL, C11 provider DLL and C11 consumer; revision-3 table negotiation, revision-2 rejection, typed gaze transport including stale/unavailable and invalid-direction retry; capability discovery and copied layout/input/capability metadata surviving runtime shutdown |
+| `contracts.runtime` | C++20 headers; revision-1/2 and undersized-view rejection; deterministic plan order; missing/backward/cyclic dependencies; overlapping writers; capability mismatch; stateful failure/retry/reset; ignored/invalid writes; time/input/layout validation; independent instances; absent/zero and complete snapshot behavior; diagnostic provenance and overflow; retained metadata, stable layout across reset, explicit layout version change, prior input revision on failure and domain-independent evaluator metadata; gaze absence/origin, point/direction, world/bound-joint spaces, unchanged stale/unavailable transport, source/actor identity, invalid arrays/references/numerics/clocks/duplicates and failure before provider callbacks with same-frame retry |
 | `contracts.installed_consumer` | install into a build-local prefix, configure/build C provider and consumer separately with `find_package(AvatarRuntime 0.1.0 EXACT)`, run the C boundary against installed headers/library |
 
 These tests use synthetic providers. They prove runtime boundary behavior,

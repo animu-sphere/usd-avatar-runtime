@@ -38,8 +38,8 @@ typedef struct ArRuntimeApi {
 } ArRuntimeApi;
 
 /* Only this symbol crosses the shared-library boundary. Caller owns out_api;
-   size must cover the complete revision-2 table. Larger tails are untouched.
-   Revision 1 is rejected: descriptors and state/input views changed layout. */
+   size must cover the complete revision-3 table. Larger tails are untouched.
+   Revisions 1 and 2 are rejected; providers/consumers must rebuild. */
 AR_EXPORT ArStatus AR_CALL arGetApi(uint32_t version, uint32_t size, ArRuntimeApi* out_api);
 
 #ifdef __cplusplus
