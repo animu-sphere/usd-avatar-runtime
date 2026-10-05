@@ -6,8 +6,12 @@ owner: usd-avatar-runtime
 # Project layout
 
 This maps [design policy section 18](../design/DESIGN_POLICY.md) to prospective
-components. Only documentation directories exist today. Do not create empty
-targets or claim build/package identities from this sketch.
+components. The initial implementation provides public headers, one
+`libs/avatarRuntime` library, CMake installation/export support and contract
+tests. Registry/validation/diagnostics currently live inside that library;
+separate `avatarCore`/`avatarRegistry`/`avatarDiagnostics` targets below are
+prospective, as are plugins and tools. Do not create empty targets from this
+sketch.
 
 ```text
 usd-avatar-runtime/
@@ -52,6 +56,13 @@ profiles, pins and formation names are decided with actual adoption/build
 evidence. The roadmap does not prescribe unverified OST configuration syntax.
 
 ## Tools and tests
+
+`tests/contracts` compiles a separate C11 provider DLL, C11 consumer and C++20
+runtime-boundary test executable. `tests/installed_consumer` builds the C
+provider/consumer in a separate CMake configuration against installed headers
+and the exported `AvatarRuntime::avatarRuntime` shared-library target. No
+renderer/OpenExec/provider package is needed for these tests. Build/install
+commands are in the [root README](../../README.md#build).
 
 Inspection reports contracts, bindings and capabilities. Replay executes a
 captured evaluation deterministically. Benchmarking measures phase/evaluator

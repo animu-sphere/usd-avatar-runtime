@@ -33,6 +33,13 @@ requires binding invalidation; it is distinct from a value-only runtime update.
 
 ## 2. Direct consumer API
 
+Experimental `evaluate_frame`/`get_snapshot`/`retain_snapshot`/`release_snapshot`
+expose the complete resolved state through
+[`api.h`](../../include/avatarRuntime/api.h). Snapshot transport/lifetime are
+implemented and tested. Renderer binding, consumer capability negotiation and
+Hydra/direct parity remain unimplemented; this snapshot API alone does not
+complete Runtime Phase C.
+
 ```text
 EvaluatedAvatarState -> direct consumer adapter -> renderer resources
 ```

@@ -9,6 +9,11 @@ This proposal owns execution boundaries around the
 [phase sequence](../contracts/EVALUATOR.md). It applies to direct and OpenExec
 execution and every output path.
 
+The direct implementation in
+[`runtime.cpp`](../../libs/avatarRuntime/runtime.cpp) exercises this lifecycle
+with experimental C callbacks. Reset/transaction rules below are implemented;
+checkpoint encoding/restore and real-provider conformance remain RT-O5 work.
+
 ## 1. Prepare an instance
 
 Load/register evaluator providers, resolve authored bindings, inspect
@@ -37,8 +42,25 @@ consumer bindings explicitly.
 6. The runtime commits the successful frame's state and releases temporary
    resources according to the selected lifetime model.
 
-This describes a logical transaction; buffer allocation, output retention and
-ABI call names remain open. Output adapters must not trigger evaluation again.
+This describes a logical transaction. The scoped prototype rules below define
+buffer ownership and calls; final ABI freeze still needs provider conformance.
+Output adapters must not trigger evaluation again.
+
+In revision 1, `evaluate_frame` validates the input and starts a fresh authored
+baseline, then calls `begin_frame`/`evaluate` in plan order. Stateful providers
+stage private changes during these callbacks. `end_frame(commit=0)` runs in
+reverse begin order after any failure, including failure of `begin_frame`
+itself. A failed attempt neither advances the last successful frame nor returns
+a snapshot; its output handle is zero, allowing correction/retry with the same
+frame ID. Stateless providers have only an `evaluate` callback.
+
+After successful validation and all snapshot allocation, the runtime invokes
+infallible `end_frame(commit=1)` in plan order and records the prior successful
+snapshot. Only then does `evaluate_frame` return a retained immutable snapshot.
+Consumer transport runs outside this transaction. A failed consumer can retry
+delivery of that retained snapshot; it cannot roll back/re-evaluate the already
+committed provider state. This scopes the publication-failure question for the
+direct path; future adapters must preserve the same distinction.
 
 ## 3. Failure and discontinuities
 
@@ -57,6 +79,16 @@ Seek, clock discontinuity, input-source replacement and configuration changes
 need explicit reset/restore rules. Reverse-time evaluation is not implied by
 accepting a timestamp. A replay starts from a declared initial state or a
 checkpoint, rather than from whichever live frame happened to run last.
+
+The prototype accepts strictly increasing nonzero successful frame IDs and
+nondecreasing finite evaluation seconds; a failed frame may be retried. Seeking
+backwards or changing source/configuration policy requires `reset_instance`
+with a strictly larger generation. Reset first creates all replacement provider
+states. If creation fails, temporary states are destroyed and the old committed
+state/generation survive. Success replaces private state and clears prior-frame
+history. `destroy_state` must safely accept a null/partially created state after
+failed creation. Changed layouts/plans currently require a new instance;
+checkpoint restore is not implemented. Retained snapshots survive either path.
 
 ## 4. Concurrency
 

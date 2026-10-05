@@ -34,7 +34,8 @@ the direct consumer API receive the same resolved state. See the
 
 ## Components
 
-These are proposed responsibilities; directory names are a
+The first direct implementation is one reusable `avatarRuntime` target with
+public C headers. Additional component targets remain a
 [layout proposal](docs/architecture/PROJECT_LAYOUT.md).
 
 | Component | Responsibility |
@@ -57,9 +58,23 @@ implementation sequence and acceptance criteria; the
 
 ## Build
 
-The repository currently contains documentation only. No runtime libraries,
-build configuration, OST composition metadata or executable API are provided.
-Build and installation instructions will be added with executable evidence
-when the first implementation lands.
+The experimental direct runtime builds without OpenUSD, Hydra, OpenExec or
+format libraries. It requires CMake 3.22+, a C++17 compiler and a C11 compiler
+for tests. On Windows, run in an x64 developer shell with Ninja available:
+
+```sh
+cmake -S . -B build/direct -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build/direct
+ctest --test-dir build/direct --output-on-failure
+cmake --install build/direct --prefix install
+```
+
+Tests exercise separately compiled C provider/consumer libraries, transaction
+rollback, instance isolation, retained snapshots and an external build against
+the installed `AvatarRuntime::avatarRuntime` CMake target. See
+[the ABI](docs/contracts/ABI.md) and
+[capability matrix](docs/reference/CAPABILITY_MATRIX.md) for exact coverage.
+The headers are experimental revision 1; Runtime Phase A is still open.
+Motion/gaze adapters, Hydra, OpenExec and OST composition are not implemented.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.

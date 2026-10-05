@@ -1,6 +1,6 @@
 # Current implementation roadmap
 
-All work below is open. Runtime Phases A–F preserve the supplied implementation
+Runtime Phases A–F remain open and preserve the supplied implementation
 policy's ordering. No release names, dates or package pins have been assigned.
 Related provider work is tracked by its owner; this page tracks runtime
 integration and the evidence needed here.
@@ -28,6 +28,26 @@ Acceptance requires:
   ABI and phase-order questions cannot be deferred past freeze.
 
 Documentation adoption alone does not satisfy this phase.
+
+The first implementation supplies experimental C headers, direct serial
+execution, capability/plan validation, transactional provider state, immutable
+snapshots, reset and separately compiled/installed C provider-consumer evidence.
+These completed foundations are recorded in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md); they are not ABI freeze.
+
+Remaining implementation/review work before Phase A acceptance:
+
+- Marshal owner motion values and define gaze spaces and observation validity;
+  establish semantic intent/mapping precedence using real bindings (RT-O1/RT-O2).
+- Validate actual motion/VRM/MMD adapters against phase dependencies, particularly
+  atomic MMD control and gaze-to-expression flow (RT-O3).
+- Prove rig/material/deformation layout conformance with those adapters;
+  negotiate effects outside the current dense snapshot subset (RT-O4).
+- Add provider checkpoint restore and test discontinuities with real stateful
+  evaluators; current reset/commit/abort are implemented (RT-O5).
+- Review/freeze the experimental ABI and semantic capability meanings with
+  separately versioned real providers. Current evidence is synthetic Windows
+  x64/MSVC, not cross-toolchain or Web support (RT-O7).
 
 ## Runtime Phase B — integrate current repositories
 
@@ -85,6 +105,10 @@ Device adapters stay with `motion-connectors`; WebGPU realization stays with
 the renderer. Native support does not establish browser support.
 
 ## Open decisions
+
+Owning documents now record scoped prototype choices for clocks/channels, dense
+output, lifecycle, plan order and C layout. IDs below stay open until the full
+acceptance evidence, including actual provider adapters, is available.
 
 IDs remain stable; resolution updates the owning contract and records the
 decision/evidence. These are runtime design questions, not claims of upstream
