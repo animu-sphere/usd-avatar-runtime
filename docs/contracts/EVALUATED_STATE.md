@@ -21,6 +21,12 @@ capabilities, preserved in revision 3. Typed gaze input does not add resolved
 gaze output fields. Expression/gaze result records and snapshot-retained diagnostics
 remain target requirements below, not fields already present in `ArStateView`.
 
+The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now writes owner
+expression/LookAt effects into the existing morph and canonical material
+channels. Constructed-rig tests establish direct-owner numeric parity and
+snapshot behavior; real-avatar layout conformance and typed resolved
+expression/gaze records remain open.
+
 ## 1. State groups
 
 | Group | Resolved effects |

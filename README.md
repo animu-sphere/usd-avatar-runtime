@@ -81,6 +81,10 @@ The headers are experimental revision 3; Runtime Phase A is still open.
 Revision 3 adds typed gaze observations with explicit space, validity and clock
 mapping, preserving revision 2's retained layout/input/capability metadata.
 Revision-1/2 providers and consumers must rebuild.
-Motion/gaze adapters, Hydra, OpenExec and OST composition are not implemented.
+An optional [VRM adapter](docs/architecture/VRM_ADAPTER.md) connects installed
+owner expression and expression-driven LookAt evaluators to morph/material
+snapshots. Its constructed-rig tests do not establish real-avatar acceptance.
+Motion/Humanoid/connector adapters, bone LookAt, Hydra, OpenExec and OST
+composition are not implemented.
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.

@@ -17,6 +17,13 @@ motion pose/clip values are still unimplemented; gaze descriptors have scoped
 revision-3 rules below, awaiting real-provider integration.
 The full logical contract and RT-O1/RT-O2 remain open.
 
+The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now selects scalar
+and gaze identities explicitly and marshals named expression weights to the
+owner's `MotionChannelSet`. Its expression-driven LookAt subset accepts valid
+runtime-world points; other spaces/kinds fail visibly, and stale/unavailable
+gaze contributes nothing. This does not establish connector/motion mappings
+or narrow the revision-3 input transport contract.
+
 ## 1. Logical contents
 
 | Part | Meaning |

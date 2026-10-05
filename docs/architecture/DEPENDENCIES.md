@@ -7,8 +7,10 @@ owner: usd-avatar-runtime
 
 This document owns placement rules. The initial `avatarRuntime` CMake target
 has no external provider, OpenUSD, renderer or OpenExec dependency. It exports
-an experimental installable CMake package; actual ecosystem provider dependencies
-and OST composition are still unconfigured.
+an experimental installable CMake package. The optional
+[`avatarVrmAdapter`](VRM_ADAPTER.md) consumes the installed `vrmRig` package,
+with transitive `motionCore`/OpenUSD dependencies isolated from runtime core.
+Other provider adapters and OST composition remain unconfigured.
 
 ## 1. Owners
 

@@ -21,6 +21,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Frame lifecycle](architecture/FRAME_LIFECYCLE.md) | frame boundaries, configuration changes and stateful execution |
 | [Output paths](architecture/OUTPUT_PATHS.md) | Hydra, direct consumers, bake/export and parity |
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
+| [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
 
 ## Contracts
 
