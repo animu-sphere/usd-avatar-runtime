@@ -23,7 +23,8 @@ remain target requirements below, not fields already present in `ArStateView`.
 
 The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now writes owner
 expression/LookAt effects into the existing morph and canonical material
-channels. Constructed-rig tests establish direct-owner numeric parity and
+channels, and bone LookAt into parent-local eye rotations using explicit
+owner-to-runtime joint/rest bindings. Constructed-rig tests establish direct-owner numeric parity and
 snapshot behavior; real-avatar layout conformance and typed resolved
 expression/gaze records remain open.
 

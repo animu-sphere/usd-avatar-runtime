@@ -35,6 +35,11 @@ uint32_t materialIndex(const ArStateView& v, const std::string& material, const 
         if (material == v.materials[i].material_id && std::strcmp(input, v.materials[i].input_id) == 0) return i;
     return v.material_count;
 }
+uint32_t jointIndex(const ArStateView& v, const std::string& skeleton, const std::string& joint) {
+    for (uint32_t i = 0; i < v.joint_count; ++i)
+        if (skeleton == v.joints[i].skeleton_id && joint == v.joints[i].joint_id) return i;
+    return v.joint_count;
+}
 pxr::GfQuatd quaternion(const ArTransform& t) {
     return pxr::GfQuatd(t.rotation[3], pxr::GfVec3d(t.rotation[0], t.rotation[1], t.rotation[2]));
 }
@@ -67,21 +72,61 @@ struct ExpressionAdapter::Impl {
                 throw std::invalid_argument("VRM morph mapping is incomplete or ambiguous");
         }
         if (config.lookAt) {
-            if (config.lookAt->type != vrmRig::LookAtType::Expression || !valid(config.gaze) ||
+            if ((config.lookAt->type != vrmRig::LookAtType::Expression &&
+                 config.lookAt->type != vrmRig::LookAtType::Bone) || !valid(config.gaze) ||
                 config.headSkeleton.empty() || config.headJoint.empty() ||
                 identities.count({config.gaze.source, config.gaze.actor, config.gaze.channel}))
-                throw std::invalid_argument("VRM LookAt requires an expression rig and distinct gaze/head binding");
+                throw std::invalid_argument("VRM LookAt requires a supported rig and distinct gaze/head binding");
             gaze.emplace(*config.lookAt);
+        }
+        if (gaze && config.lookAt->type == vrmRig::LookAtType::Bone) {
+            std::set<std::string> ownerEyes;
+            for (const auto& eye : {config.lookAt->leftEyeJoint, config.lookAt->rightEyeJoint})
+                if (!eye.empty() && !ownerEyes.insert(eye).second)
+                    throw std::invalid_argument("VRM LookAt eye identities must be distinct");
+            if (ownerEyes.empty())
+                throw std::invalid_argument("VRM bone LookAt requires at least one named eye");
+            std::set<std::pair<std::string, std::string>> runtimeEyes;
+            for (const auto& eye : config.eyes) {
+                double norm = 0;
+                for (double value : eye.restRotation) {
+                    if (!std::isfinite(value))
+                        throw std::invalid_argument("VRM eye rest rotation must be finite");
+                    norm += value * value;
+                }
+                if (!ownerEyes.erase(eye.ownerJoint) || eye.skeleton != config.headSkeleton ||
+                    eye.joint.empty() || eye.joint == config.headJoint ||
+                    !runtimeEyes.emplace(eye.skeleton, eye.joint).second || std::abs(norm - 1.0) > 1e-6)
+                    throw std::invalid_argument("VRM eye mapping/rest rotation is incomplete or ambiguous");
+            }
+            if (!ownerEyes.empty())
+                throw std::invalid_argument("Every named VRM eye requires a runtime binding");
+        } else if (!config.eyes.empty()) {
+            throw std::invalid_argument("VRM eye bindings require bone LookAt");
         }
         for (const auto& id : config.after) after.push_back(id.c_str());
         capabilities.push_back({"avatar.vrm.expression.effects", 1});
-        if (gaze) capabilities.push_back({"avatar.vrm.lookAt.expression", 1});
+        if (gaze) capabilities.push_back({config.lookAt->type == vrmRig::LookAtType::Bone
+            ? "avatar.vrm.lookAt.bone" : "avatar.vrm.lookAt.expression", 1});
     }
 
     ArStatus evaluate(const ArEvaluationContext& c, const ArStateWriter& writer) const {
         const auto& v = *c.working;
         if (!v.layout_id || config.layoutId != v.layout_id || config.layoutVersion != v.layout_version)
             return failure(c, "VRM_ADAPTER_LAYOUT", config.layoutId, "Binding layout identity/version mismatch");
+
+        std::vector<uint32_t> eyeIndices;
+        for (const auto& eye : config.eyes) {
+            const auto index = jointIndex(v, eye.skeleton, eye.joint);
+            const auto head = jointIndex(v, config.headSkeleton, config.headJoint);
+            if (head == v.joint_count)
+                return failure(c, "VRM_ADAPTER_HEAD", config.headJoint, "Bound head joint is missing");
+            if (index == v.joint_count)
+                return failure(c, "VRM_ADAPTER_EYE", eye.ownerJoint, "Bound eye joint is missing");
+            if (v.joints[index].parent_index != int32_t(head))
+                return failure(c, "VRM_ADAPTER_EYE_PARENT", eye.ownerJoint, "Bone LookAt requires eyes parented directly to the head");
+            eyeIndices.push_back(index);
+        }
 
         // Validate every rig effect before calling its owner, even if this frame
         // reports no expression touching it. Unsupported output never vanishes.
@@ -139,9 +184,7 @@ struct ExpressionAdapter::Impl {
             } else if (selected) {
                 if (selected->kind != AR_GAZE_POINT || selected->space != AR_GAZE_RUNTIME_WORLD)
                     return failure(c, "VRM_ADAPTER_GAZE_SPACE", config.gaze.channel, "This adapter requires a runtime-world gaze point");
-                uint32_t head = v.joint_count;
-                for (uint32_t i = 0; i < v.joint_count; ++i)
-                    if (config.headSkeleton == v.joints[i].skeleton_id && config.headJoint == v.joints[i].joint_id) head = i;
+                const auto head = jointIndex(v, config.headSkeleton, config.headJoint);
                 if (head == v.joint_count)
                     return failure(c, "VRM_ADAPTER_HEAD", config.headJoint, "Bound head joint is missing");
                 std::vector<uint32_t> chain;
@@ -167,6 +210,23 @@ struct ExpressionAdapter::Impl {
                 vrmRig::LookAtDiagnostics diagnostics;
                 auto result = gaze->Evaluate(input, &diagnostics);
                 for (const auto& warning : diagnostics.warnings) emit(c, "VRM_LOOKAT_WARNING", config.headJoint, warning);
+                for (const auto& eye : result.eyeRotations) {
+                    const auto binding = std::find_if(config.eyes.begin(), config.eyes.end(),
+                        [&](const EyeBinding& b) { return b.ownerJoint == eye.joint; });
+                    if (binding == config.eyes.end())
+                        return failure(c, "VRM_ADAPTER_EYE", eye.joint, "Owner eye rotation has no runtime binding");
+                    const auto& rest = binding->restRotation;
+                    // Match the owner's bake caller: resolved gaze * authored
+                    // rest, replacing animated rotation rather than accumulating.
+                    const auto eyeRotation = (pxr::GfQuatd(eye.rotation) *
+                        pxr::GfQuatd(rest[3], pxr::GfVec3d(rest[0], rest[1], rest[2]))).GetNormalized();
+                    const auto index = eyeIndices[size_t(binding - config.eyes.begin())];
+                    auto local = v.joints[index].local;
+                    for (int i = 0; i < 3; ++i) local.rotation[i] = eyeRotation.GetImaginary()[i];
+                    local.rotation[3] = eyeRotation.GetReal();
+                    const auto status = writer.set_joint(writer.context, index, &local);
+                    if (status != AR_OK) return status;
+                }
                 for (const auto& value : result.expressions.entries) {
                     if (weights.Find(value.name))
                         emit(c, "VRM_ADAPTER_GAZE_PRECEDENCE", value.name, "Selected LookAt contribution replaces mapped input of the same name", AR_OK, AR_SEVERITY_INFO);
@@ -226,11 +286,11 @@ ArEvaluatorDesc ExpressionAdapter::Descriptor() const {
     ArEvaluatorDesc d{AR_HEADER(ArEvaluatorDesc)};
     d.id = impl_->config.evaluatorId.c_str(); d.provider_id = "usd-vrm-plugins.vrmRig";
     d.provider_version = AR_VRM_PROVIDER_VERSION;
-    // Atomic owner sequence: LookAt produces weights consumed exactly once by
-    // the expression resolver. No hidden cross-frame intermediate state.
+    // Atomic owner sequence: LookAt produces expression weights or eye pose;
+    // the expression resolver runs once. No cross-frame intermediate state.
     d.phase = AR_PHASE_EXPRESSIONS;
     d.reads = AR_DOMAIN_MATERIAL | (impl_->gaze ? AR_DOMAIN_POSE : 0);
-    d.writes = AR_DOMAIN_DEFORMATION | AR_DOMAIN_MATERIAL;
+    d.writes = AR_DOMAIN_DEFORMATION | AR_DOMAIN_MATERIAL | (impl_->config.eyes.empty() ? 0 : AR_DOMAIN_POSE);
     d.after = impl_->after.data(); d.after_count = uint32_t(impl_->after.size());
     d.supplies = impl_->capabilities.data(); d.supply_count = uint32_t(impl_->capabilities.size());
     d.user_data = impl_.get(); d.evaluate = Impl::callback;

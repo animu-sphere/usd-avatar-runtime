@@ -1,8 +1,10 @@
 #include "avatarVrm/ExpressionAdapter.h"
+#include "pxr/base/gf/quatd.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 #define CHECK(x) do { if (!(x)) { std::cerr << "Line " << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while (0)
@@ -51,8 +53,10 @@ avatarVrm::ExpressionAdapterConfig config() {
 struct Fixture {
     avatarVrm::ExpressionAdapter adapter;
     ArRuntime runtime = 0;
-    ArJoint joints[2]{{"rig", "root", -1, {{2,0,0}, {0,0,0,1}, {1,1,1}}},
-                     {"rig", "head", 0, {{0,1,0}, {0,0,0,1}, {1,1,1}}}};
+    ArJoint joints[4]{{"rig", "root", -1, {{2,0,0}, {0,0,0,1}, {1,1,1}}},
+                     {"rig", "head", 0, {{0,1,0}, {0,0,0,1}, {1,1,1}}},
+                     {"rig", "eye.L", 1, {{0.03,0.1,0}, {0,0,0,1}, {1,1,1}}},
+                     {"rig", "eye.R", 1, {{-0.03,0.1,0}, {0,0,0,1}, {1,1,1}}}};
     ArBlendShape morphs[6]{{"mesh", "smile", 0.12}, {"mesh", "blink", 0.3},
                           {"mesh", "lookLeft", 0}, {"mesh", "lookRight", 0},
                           {"mesh", "lookUp", 0}, {"mesh", "lookDown", 0}};
@@ -71,7 +75,7 @@ struct Fixture {
         d.bound_capabilities = evaluator.supplies; d.bound_capability_count = evaluator.supply_count;
         d.required_capabilities = evaluator.supplies; d.required_capability_count = evaluator.supply_count;
         d.initial_state = {AR_HEADER(ArStateView)};
-        d.initial_state.joints = joints; d.initial_state.joint_count = 2;
+        d.initial_state.joints = joints; d.initial_state.joint_count = 4;
         d.initial_state.blend_shapes = morphs; d.initial_state.blend_shape_count = 6;
         d.initial_state.materials = materials; d.initial_state.material_count = 2;
         ArInstance instance = 0; CHECK(api.create_instance(runtime, &d, nullptr, &instance) == AR_OK); return instance;
@@ -210,6 +214,176 @@ void invalidBindings() {
         CHECK(api.release_snapshot(s) == AR_OK);
     }
 }
+avatarVrm::ExpressionAdapterConfig boneConfig() {
+    auto c = config(); c.lookAt->type = vrmRig::LookAtType::Bone;
+    c.lookAt->leftEyeJoint = "owner.left"; c.lookAt->rightEyeJoint = "owner.right";
+    c.lookAt->horizontalInner.outputScale = 12; c.lookAt->horizontalOuter.outputScale = 30;
+    c.lookAt->verticalUp.outputScale = 20; c.lookAt->verticalDown.outputScale = 10;
+    c.eyes = {{"owner.left", "rig", "eye.L", {std::sin(0.15),0,0,std::cos(0.15)}},
+              {"owner.right", "rig", "eye.R", {0,0,std::sin(0.2),std::cos(0.2)}}};
+    return c;
+}
+ArStatus AR_CALL moveHead(void*, void*, const ArEvaluationContext* c, const ArStateWriter* w) {
+    auto head = c->working->joints[1].local;
+    head.translation[0] = 1;
+    head.rotation[1] = std::sqrt(0.5); head.rotation[3] = std::sqrt(0.5);
+    return w->set_joint(w->context, 1, &head);
+}
+void boneLookAt() {
+    auto c = boneConfig();
+    Fixture f(c);
+    // An earlier pose writer changes the head. Gaze must consume this frame's
+    // working pose, and replace animated eye rotation using the bound rest.
+    ArEvaluatorDesc pose{AR_HEADER(ArEvaluatorDesc)};
+    pose.id = "pose"; pose.provider_id = "test.pose"; pose.provider_version = "1";
+    pose.phase = AR_PHASE_BASE_POSE; pose.reads = pose.writes = AR_DOMAIN_POSE; pose.evaluate = moveHead;
+    CHECK(api.register_evaluator(f.runtime, &pose, nullptr) == AR_OK);
+    f.joints[2].local.rotation[1] = std::sin(0.4); f.joints[2].local.rotation[3] = std::cos(0.4);
+    f.joints[2].local.scale[0] = 1.2;
+    const char* selected[]{"vrm.face", "pose"};
+    auto descriptor = f.adapter.Descriptor();
+    CHECK(descriptor.phase == AR_PHASE_EXPRESSIONS && (descriptor.writes & AR_DOMAIN_POSE));
+    CHECK(std::string(descriptor.supplies[1].id) == "avatar.vrm.lookAt.bone");
+    ArInstanceDesc d{AR_HEADER(ArInstanceDesc)};
+    d.generation = 1; d.layout_id = c.layoutId.c_str(); d.layout_version = c.layoutVersion;
+    d.evaluators = selected; d.evaluator_count = 2;
+    d.bound_capabilities = descriptor.supplies; d.bound_capability_count = descriptor.supply_count;
+    d.required_capabilities = descriptor.supplies; d.required_capability_count = descriptor.supply_count;
+    d.initial_state = {AR_HEADER(ArStateView)};
+    d.initial_state.joints = f.joints; d.initial_state.joint_count = 4;
+    d.initial_state.blend_shapes = f.morphs; d.initial_state.blend_shape_count = 6;
+    d.initial_state.materials = f.materials; d.initial_state.material_count = 2;
+    ArInstance id = 0; CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_OK);
+    pose.id = "pose.conflict"; pose.phase = AR_PHASE_EXPRESSIONS;
+    CHECK(api.register_evaluator(f.runtime, &pose, nullptr) == AR_OK);
+    selected[1] = "pose.conflict";
+    ArInstance conflict = 0;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &conflict) == AR_WRITE_CONFLICT && conflict == 0);
+    selected[1] = "pose";
+    ArGazeInput gaze{"tracker", "actor", "eyes:target", AR_GAZE_POINT, AR_GAZE_RUNTIME_WORLD,
+                     AR_OBSERVATION_VALID, nullptr, nullptr, {4,2.1,-1}, 0, 1, 0};
+    ArSnapshot retained = 0;
+    for (uint64_t frameId = 1; frameId <= 3; ++frameId) {
+        gaze.value[2] = frameId == 2 ? 1 : -1; // both yaw signs, then repeat
+        gaze.value[1] = frameId == 2 ? 0.1 : 2.1;
+        auto input = frame(frameId); input.gazes = &gaze; input.gaze_count = 1;
+        ArScalarInput scalar{"tracker", "actor", "face:smile", 0.25, 0, 1, 0};
+        input.scalars = &scalar; input.scalar_count = 1;
+        ArSnapshot s = 0;
+        CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_OK);
+        auto output = view(s);
+        vrmRig::LookAtInput owner;
+        owner.head.position = pxr::GfVec3f(3,1,0);
+        owner.head.orientation = pxr::GfQuatf(float(std::sqrt(0.5)), pxr::GfVec3f(0,float(std::sqrt(0.5)),0));
+        owner.target = pxr::GfVec3f(float(gaze.value[0]),float(gaze.value[1]),float(gaze.value[2]));
+        auto result = vrmRig::LookAtEvaluator(*c.lookAt).Evaluate(owner);
+        CHECK(result.eyeRotations.size() == 2);
+        for (const auto& eye : result.eyeRotations) {
+            auto b = std::find_if(c.eyes.begin(), c.eyes.end(), [&](const auto& binding) { return binding.ownerJoint == eye.joint; });
+            const auto slot = size_t(b - c.eyes.begin()) + 2;
+            const auto& rest = b->restRotation;
+            auto expected = (pxr::GfQuatd(eye.rotation) * pxr::GfQuatd(rest[3], pxr::GfVec3d(rest[0],rest[1],rest[2]))).GetNormalized();
+            for (int i = 0; i < 3; ++i) {
+                CHECK(near(output.joints[slot].local.rotation[i], expected.GetImaginary()[i]));
+                CHECK(near(output.joints[slot].local.translation[i], f.joints[slot].local.translation[i]));
+                CHECK(near(output.joints[slot].local.scale[i], f.joints[slot].local.scale[i]));
+            }
+            CHECK(near(output.joints[slot].local.rotation[3], expected.GetReal()));
+            if (frameId == 3) for (int i = 0; i < 4; ++i)
+                CHECK(near(output.joints[slot].local.rotation[i], view(retained).joints[slot].local.rotation[i]));
+        }
+        CHECK(near(output.blend_shapes[0].weight, 0.2)); // expressions still run
+        CHECK(output.blend_shapes[2].weight == 0); // bone gaze adds no look expression
+        if (frameId == 1) retained = s; else CHECK(api.release_snapshot(s) == AR_OK);
+    }
+    for (uint64_t frameId = 4; frameId <= 7; ++frameId) {
+        auto input = frame(frameId);
+        if (frameId != 4) {
+            input.gazes = &gaze; input.gaze_count = 1;
+            gaze.validity = frameId == 5 ? AR_OBSERVATION_STALE :
+                            frameId == 6 ? AR_OBSERVATION_UNAVAILABLE : AR_OBSERVATION_VALID;
+            // Last frame is a valid point at the current eye origin.
+            if (frameId >= 6) {
+                gaze.value[0] = frameId == 6 ? 0 : 3;
+                gaze.value[1] = frameId == 6 ? 0 : double(1.1f);
+                gaze.value[2] = 0;
+            }
+        }
+        Log log; auto sink = log.sink(); ArSnapshot s = 0;
+        CHECK(api.evaluate_frame(f.runtime, id, &input, &sink, &s) == AR_OK);
+        auto output = view(s);
+        for (int i = 0; i < 4; ++i) CHECK(output.joints[2].local.rotation[i] == f.joints[2].local.rotation[i]);
+        if (frameId == 5 || frameId == 6) CHECK(log.has("VRM_ADAPTER_GAZE_UNAVAILABLE"));
+        if (frameId == 7) CHECK(log.has("VRM_LOOKAT_WARNING"));
+        CHECK(api.release_snapshot(s) == AR_OK);
+    }
+    CHECK(api.reset_instance(f.runtime, id, 2) == AR_OK);
+    auto input = frame(1); input.generation = 2;
+    ArSnapshot s = 0; CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_OK);
+    CHECK(view(s).generation == 2 && view(s).joints[2].local.rotation[1] == f.joints[2].local.rotation[1]);
+    CHECK(api.release_snapshot(s) == AR_OK);
+    CHECK(api.destroy_runtime(f.runtime) == AR_OK); f.runtime = 0;
+    CHECK(view(retained).joint_count == 4 && view(retained).layout_version == 3);
+    CHECK(api.release_snapshot(retained) == AR_OK);
+}
+void boneBindings() {
+    for (const char* defect : {"unnamed", "duplicateOwner", "missingMap", "extraMap", "duplicateTarget", "skeleton", "head", "norm", "nan", "expression"}) {
+        auto c = boneConfig(); const std::string name(defect);
+        if (name == "unnamed") c.lookAt->leftEyeJoint = c.lookAt->rightEyeJoint = "";
+        if (name == "duplicateOwner") c.lookAt->rightEyeJoint = c.lookAt->leftEyeJoint;
+        if (name == "missingMap") c.eyes.pop_back();
+        if (name == "extraMap") c.eyes.push_back({"extra", "rig", "extra"});
+        if (name == "duplicateTarget") c.eyes[1].joint = c.eyes[0].joint;
+        if (name == "skeleton") c.eyes[0].skeleton = "other";
+        if (name == "head") c.eyes[0].joint = "head";
+        if (name == "norm") c.eyes[0].restRotation[3] = 2;
+        if (name == "nan") c.eyes[0].restRotation[0] = std::numeric_limits<double>::quiet_NaN();
+        if (name == "expression") c.lookAt->type = vrmRig::LookAtType::Expression;
+        bool threw = false;
+        try { avatarVrm::ExpressionAdapter adapter(c); } catch (const std::invalid_argument&) { threw = true; }
+        CHECK(threw);
+    }
+    for (const char* defect : {"missing", "parent", "head"}) {
+        Fixture f(boneConfig()); const std::string name(defect);
+        if (name == "missing") f.joints[2].joint_id = "other";
+        if (name == "parent") f.joints[2].parent_index = 0;
+        if (name == "head") f.joints[1].joint_id = "other";
+        auto id = f.make(); auto input = frame(1); ArSnapshot s = 0; Log log; auto sink = log.sink();
+        // Validate output layout even with no gaze this frame.
+        CHECK(api.evaluate_frame(f.runtime, id, &input, &sink, &s) == AR_PROVIDER_ERROR && s == 0);
+        CHECK(log.has(name == "missing" ? "VRM_ADAPTER_EYE" : name == "parent" ? "VRM_ADAPTER_EYE_PARENT" : "VRM_ADAPTER_HEAD"));
+    }
+    {
+        auto c = boneConfig(); c.lookAt->rightEyeJoint.clear(); c.eyes.pop_back();
+        Fixture f(c); auto id = f.make(); auto other = f.make();
+        ArGazeInput gaze{"tracker", "actor", "eyes:target", AR_GAZE_POINT, AR_GAZE_RUNTIME_WORLD,
+                         AR_OBSERVATION_VALID, nullptr, nullptr, {3,1.1,1}, 0, 1, 0};
+        auto input = frame(1); input.gazes = &gaze; input.gaze_count = 1;
+        Log log; auto sink = log.sink(); ArSnapshot s = 0;
+        CHECK(api.evaluate_frame(f.runtime, id, &input, &sink, &s) == AR_OK);
+        CHECK(log.has("VRM_LOOKAT_WARNING") && view(s).joints[2].local.rotation[1] != 0);
+        CHECK(view(s).joints[3].local.rotation[1] == 0); CHECK(api.release_snapshot(s) == AR_OK);
+        input.gazes = nullptr; input.gaze_count = 0;
+        CHECK(api.evaluate_frame(f.runtime, other, &input, nullptr, &s) == AR_OK);
+        CHECK(view(s).joints[2].local.rotation[1] == 0); CHECK(api.release_snapshot(s) == AR_OK);
+    }
+    {
+        Fixture f(boneConfig()); f.materials[0].value[0] = 1e100;
+        auto id = f.make();
+        ArGazeInput gaze{"tracker", "actor", "eyes:target", AR_GAZE_POINT, AR_GAZE_RUNTIME_WORLD,
+                         AR_OBSERVATION_VALID, nullptr, nullptr, {3,1.1,1}, 0, 1, 0};
+        ArScalarInput scalar{"tracker", "actor", "face:smile", 1, 0, 1, 0};
+        auto input = frame(1); input.gazes = &gaze; input.gaze_count = 1;
+        input.scalars = &scalar; input.scalar_count = 1;
+        Log log; auto sink = log.sink(); ArSnapshot s = 0;
+        CHECK(api.evaluate_frame(f.runtime, id, &input, &sink, &s) == AR_PROVIDER_ERROR && s == 0);
+        CHECK(log.has("VRM_ADAPTER_RANGE")); // eye writes preceded failed material write
+        input.gazes = nullptr; input.gaze_count = 0; input.scalars = nullptr; input.scalar_count = 0;
+        CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_OK);
+        CHECK(view(s).joints[2].local.rotation[1] == 0 && near(view(s).blend_shapes[0].weight, 0.12));
+        CHECK(api.release_snapshot(s) == AR_OK);
+    }
+}
 void gazeBindings() {
     ArGazeInput gaze{"tracker", "actor", "eyes:target", AR_GAZE_POINT, AR_GAZE_RUNTIME_WORLD,
                      AR_OBSERVATION_VALID, nullptr, nullptr, {4,1.1,-1}, 0, 1, 0};
@@ -253,6 +427,6 @@ void gazeBindings() {
 } // namespace
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
-    evaluation(); invalidBindings(); gazeBindings();
+    evaluation(); invalidBindings(); gazeBindings(); boneLookAt(); boneBindings();
     std::cout << "VRM owner expression/LookAt adapter contracts passed\n";
 }
