@@ -6,9 +6,11 @@ The experimental direct runtime and CMake installation/export are implemented.
 Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 
 The [boundary cleanup policy](../design/BOUNDARY_POLICY.md) is accepted intent.
-Cleanup is not implemented: `ClipPoseAdapter` still validates generic motion
-invariants locally, `InputAssembler` keeps its existing name, `StageClip` still
-uses the runtime USD skeleton binder for source preparation, and
+The motion-boundary slice is implemented: `ClipPoseAdapter` delegates generic
+invariants to installed owner validation APIs, and `MotionPoseInputBridge`
+retains `InputAssembler` source aliases. Owned owner reports preserve
+code/subject/detail and package identity and can be emitted to C sinks.
+`StageClip` still uses the runtime USD skeleton binder for source preparation, and
 `SkeletonBinding` still performs generic matrix/token/topology checks around
 owner conversion. These facts are visible in the respective adapter sources;
 the [roadmap](../roadmap/current.md#boundary-cleanup-workstreams) tracks migration.
@@ -21,6 +23,7 @@ the [roadmap](../roadmap/current.md#boundary-cleanup-workstreams) tracks migrati
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
+| motion validation boundary | installed owner clip/retarget validators invoked before retargeter construction; selected timestamp/scalar/gaze validation delegated by MotionPoseInputBridge; runtime binding/clock/C-string checks retained; owned MotionValidationError and synchronous C sink forwarding preserve owner report identity/order and package version; old InputAssembler source names retained | [motion adapters](../architecture/MOTION_ADAPTER.md) |
 | motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping plus seven real VRMA clips on one private avatar via owned USD clip/source rest, with all-joint parity and reset/retention; full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [USD motion binding](../architecture/MOTION_USD_BINDING.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; scoped expression/output extraction available separately | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
@@ -229,3 +232,34 @@ connectors, renderer output, all evidence milestones and ABI freeze remain open.
 The fresh pose-check configuration with the VRM evaluator disabled also builds
 and evaluates a constructed motion on the private avatar, rejects `--vrm` with
 an explicit build-option diagnostic, and imports no `vrmRig` target.
+
+On 2026-10-06 the motion-boundary cleanup was checked with Windows x64/MSVC
+19.51 Release and separately built/installed local `motionCore`,
+`motionSampling` and `motionRetarget` 0.5.3 with additive owner validation APIs.
+The owner core/sampling/retarget suites pass 5/2/3 tests, including value,
+hierarchy, partial-input and dependency-boundary coverage. The runtime's full
+optional adapter/tool configuration passes all 16 tests; separate motion-only
+and core-only configurations pass 5 and 3 tests. Installed C and C++ consumers
+are included in each applicable configuration.
+
+`adapters.motion_pose` and its separately built installed consumer compare
+representative malformed clip/rig reports with direct owner validators,
+including every code, subject, detail, severity and origin in order. The
+owned exception retains the report and installed version after source
+configuration destruction; later `Emit` reproduces the same records. The
+new input-bridge name and old source aliases compile together; selected-field
+validation agrees with the owner, corrected retry/zero/absence pass, and
+unused pose-only fields do not become bridge preconditions. Existing
+clock/ownership/rollback/reset/retained snapshot and motion -> VRM parity
+tests remain green. Runtime binding diagnostics now have runtime origin,
+while owner evaluation diagnostics retain motion origin.
+
+The validation extension is local/unpublished; package numbers alone are
+insufficient. CMake verifies installed headers and callable linked symbols for
+the optional motion component. In-tree and separately configured installed
+motion consumers reject pre-extension owner packages with an actionable
+configuration diagnostic. Core-only import still resolves no provider or
+USD dependency. USD skeleton/source-rest ownership cleanup, real native input,
+renderer consumption, milestones and ABI freeze remain open. This change
+establishes adapter delegation and forwarding, not independent validation of
+motion algorithms or a new core ABI.

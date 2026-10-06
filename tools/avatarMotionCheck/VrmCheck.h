@@ -1,5 +1,5 @@
 #pragma once
-#include "avatarMotion/InputAssembler.h"
+#include "avatarMotion/MotionPoseInputBridge.h"
 #include "motionRetarget/PoseRetargeter.h"
 #include "avatarVrmUsd/ExpressionBinding.h"
 #include "avatarVrmUsd/LookAtBinding.h"
@@ -19,7 +19,7 @@ inline void verify(bool condition, const char* message) {
 }
 struct VrmCheck {
     avatarVrm::ExpressionAdapterConfig config;
-    avatarMotion::InputAssemblerConfig inputConfig;
+    avatarMotion::MotionPoseInputBridgeConfig inputConfig;
     const ArStateView& baseline;
     std::map<std::string,float> probeWeights;
     std::optional<pxr::GfVec3f> probeGaze;

@@ -92,7 +92,9 @@ declared behavior. See [motion adapters](../architecture/MOTION_ADAPTER.md).
 
 Retain the `MotionPose -> AvatarInputFrame` bridge in this repository. Clarify
 its name when implementing the cleanup; candidates are `MotionPoseInputBridge`,
-`MotionInputBridge` and `MotionObservationBridge`. No rename is selected yet.
+`MotionInputBridge` and `MotionObservationBridge`. At adoption no rename was
+selected; the implemented choice and compatibility names are recorded in
+[motion adapters](../architecture/MOTION_ADAPTER.md#host-input-assembly).
 
 It owns runtime channel mapping, source/actor identity attribution, owner values
 to `ArScalarInput`/`ArGazeInput`, runtime input lifetime and unmapped-field

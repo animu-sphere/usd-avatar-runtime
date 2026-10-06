@@ -124,11 +124,11 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file
     motion::PoseRetargeter owner(c.skeleton,c.map,c.sourceRest,c.options);
 #ifdef AR_CHECK_VRM
     std::unique_ptr<avatarVrm::ExpressionAdapter> vrmAdapter;
-    std::unique_ptr<avatarMotion::InputAssembler> assembler;
+    std::unique_ptr<avatarMotion::MotionPoseInputBridge> assembler;
     if (vrm) {
         vrmAdapter = std::make_unique<avatarVrm::ExpressionAdapter>(vrm->config);
         vrm->inputConfig.clockScale = c.clockScale; vrm->inputConfig.clockOffset = c.clockOffset;
-        assembler = std::make_unique<avatarMotion::InputAssembler>(vrm->inputConfig);
+        assembler = std::make_unique<avatarMotion::MotionPoseInputBridge>(vrm->inputConfig);
     }
 #endif
     Host host;

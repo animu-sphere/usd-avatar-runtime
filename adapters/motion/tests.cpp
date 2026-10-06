@@ -1,5 +1,7 @@
 #include "avatarMotion/ClipPoseAdapter.h"
 #include "avatarMotion/InputAssembler.h"
+#include "avatarMotion/MotionPoseInputBridge.h"
+#include "motionRetarget/Validation.h"
 #ifdef AR_TEST_VRM
 #include "avatarVrm/ExpressionAdapter.h"
 #include "vrmRig/RequiredBones.h"
@@ -10,6 +12,11 @@
 #include <iostream>
 #include <limits>
 #include <stdexcept>
+#include <optional>
+#include <type_traits>
+
+static_assert(std::is_same_v<avatarMotion::InputAssembler, avatarMotion::MotionPoseInputBridge>);
+static_assert(std::is_same_v<avatarMotion::InputAssemblerConfig, avatarMotion::MotionPoseInputBridgeConfig>);
 
 #define CHECK(x) do { if (!(x)) { std::cerr << "Line " << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while (0)
 namespace {
@@ -17,9 +24,13 @@ namespace motion = openstrata::motion;
 ArRuntimeApi api{};
 bool near(double a, double b) { return std::abs(a-b) < 1e-6; }
 struct Log {
-    std::vector<std::string> codes, origins;
+    std::vector<std::string> codes, origins, subjects, messages;
+    std::vector<ArStatus> statuses;
+    std::vector<uint32_t> severities;
     static void AR_CALL emit(void* user, const ArDiagnostic* d) {
         auto& log = *static_cast<Log*>(user); log.codes.emplace_back(d->code); log.origins.emplace_back(d->origin);
+        log.subjects.emplace_back(d->subject); log.messages.emplace_back(d->message);
+        log.statuses.push_back(d->status); log.severities.push_back(d->severity);
     }
     bool has(const char* code) const { return std::find(codes.begin(), codes.end(), code) != codes.end(); }
     ArDiagnosticSink sink() { return {this, emit}; }
@@ -123,14 +134,9 @@ void invalidBindings() {
     };
     auto c = config(); c.jointIds[1] = c.jointIds[0]; rejects(c);
     c = config(); c.clockScale = 0; rejects(c);
-    c = config(); c.clip.samples[0].timestamp = -std::numeric_limits<double>::max();
-    c.clip.samples[1].timestamp = std::numeric_limits<double>::max(); rejects(c);
-    c = config(); std::swap(c.clip.samples[0],c.clip.samples[1]); rejects(c);
-    c = config(); c.clip.samples[0].localRotations[size_t(motion::HumanJoint::Head)] = pxr::GfQuatf(0); rejects(c);
-    c = config(); c.clip.samples[0].root.worldPosition[0] = std::numeric_limits<float>::infinity(); rejects(c);
-    c = config(); c.sourceRest.parents[0] = 0; rejects(c);
+    c = config(); c.evaluatorId = std::string("motion\0hidden",13); rejects(c);
+    c = config(); c.jointIds[0] = std::string("hips\0hidden",11); rejects(c);
     c = config(); CHECK(c.map.SetJointIndex(motion::HumanJoint::Neck,1,3)); rejects(c);
-    c = config(); CHECK(c.map.SetJointIndex(motion::HumanJoint::Neck,9,10)); rejects(c);
     for (int test = 0; test < 3; ++test) {
         Fixture f; if (test == 1) f.joints[2].joint_id = "missing";
         if (test == 2) f.joints[3].parent_index = 1;
@@ -138,7 +144,7 @@ void invalidBindings() {
         Log log; auto sink = log.sink(); ArSnapshot s = 0;
         CHECK(api.evaluate_frame(f.runtime,instance,&input,&sink,&s) == AR_PROVIDER_ERROR && s == 0);
         CHECK(log.has(test == 0 ? "MOTION_ADAPTER_LAYOUT" : test == 1 ? "MOTION_ADAPTER_JOINT" : "MOTION_ADAPTER_PARENT"));
-        CHECK(log.origins.front() == "usd-motion-plugins.motionRetarget");
+        CHECK(log.origins.front() == "usd-avatar-runtime.avatarMotionAdapter");
     }
     c = config(); c.clockScale = std::numeric_limits<double>::denorm_min(); Fixture f(c); auto id = f.make();
     auto input = frame(1,11); ArSnapshot s = 0; Log log; auto sink = log.sink();
@@ -146,6 +152,79 @@ void invalidBindings() {
     CHECK(log.has("MOTION_ADAPTER_TIME"));
     input.evaluation_seconds = 10; // Corrected retry of same frame ID.
     CHECK(api.evaluate_frame(f.runtime,id,&input,nullptr,&s) == AR_OK); CHECK(api.release_snapshot(s) == AR_OK);
+}
+void ownerValidation() {
+    const auto provider = avatarMotion::ClipPoseAdapter(config());
+    const std::string versions(provider.Descriptor().provider_version);
+    auto version = [&](const std::string& owner) {
+        const auto begin = versions.find(owner + "/"); CHECK(begin != std::string::npos);
+        const auto start = begin + owner.size() + 1;
+        return versions.substr(start, versions.find(';',start) - start);
+    };
+    auto compare = [](const Log& log, const motion::ValidationReport& report, const char* origin) {
+        CHECK(log.codes.size() == report.reported.size());
+        for (size_t i = 0; i < report.reported.size(); ++i) {
+            const auto& d = report.reported[i];
+            CHECK(log.codes[i] == motion::ValidationCodeString(d.code));
+            CHECK(log.origins[i] == origin && log.subjects[i] == d.subject && log.messages[i] == d.detail);
+            CHECK(log.statuses[i] == AR_INVALID_ARGUMENT && log.severities[i] == AR_SEVERITY_ERROR);
+        }
+    };
+    // Representative malformed owner inputs prove delegation and forwarding;
+    // generic numerical/hierarchy edge coverage belongs to owner tests.
+    for (int test = 0; test < 4; ++test) {
+        auto c = config();
+        if (test == 0) {
+            std::swap(c.clip.samples[0], c.clip.samples[1]);
+            c.clip.samples[0].channels.entries = {{"z",1},{"a",0},{"a",1}};
+        } else if (test == 1) {
+            c.sourceRest.parents[0] = 0;
+            c.options.requiredBones.push_back(motion::HumanJoint::Count);
+        } else if (test == 2) {
+            auto joints = c.skeleton.GetJoints(); joints[1].parent = 1;
+            c.skeleton = motion::SkeletonDescriptor(joints);
+        } else {
+            CHECK(c.map.SetJointIndex(motion::HumanJoint::Neck,9,10));
+        }
+        const auto expected = test == 0 ? motion::ValidateMotionClip(c.clip) :
+            motion::ValidateRetargetConfiguration(c.skeleton,c.map,c.sourceRest,c.options).values;
+        CHECK(!expected.IsValid());
+        const char* origin = test == 0 ? "usd-motion-plugins.motionCore" : "usd-motion-plugins.motionRetarget";
+        Log log; std::optional<avatarMotion::MotionValidationError> retained;
+        try { avatarMotion::ClipPoseAdapter rejected(c, log.sink()); CHECK(false); }
+        catch (const avatarMotion::MotionValidationError& error) {
+            CHECK(error.Origin() == origin && !error.OwnerVersion().empty());
+            CHECK(error.OwnerVersion() == version(test == 0 ? "motionCore" : "motionRetarget"));
+            CHECK(error.Report().reported.size() == expected.reported.size());
+            CHECK(std::string(error.what()).find(log.codes.front()) != std::string::npos);
+            retained = error;
+        }
+        compare(log, expected, origin);
+        c = {}; log = {}; retained->Emit(log.sink());
+        compare(log, expected, origin); // report outlives source config/constructor
+    }
+    avatarMotion::MotionPoseInputBridgeConfig bridgeConfig;
+    bridgeConfig.source = "selected.source"; bridgeConfig.actor = "selected.actor";
+    bridgeConfig.channels = {{"happy", "expression:happy"}};
+    bridgeConfig.gazeChannel = "gaze:target";
+    avatarMotion::MotionPoseInputBridge bridge(bridgeConfig);
+    motion::MotionPose pose; pose.channels.entries = {{"z",1},{"happy",0},{"happy",1}};
+    pose.lookAtTarget = pxr::GfVec3f(std::numeric_limits<float>::infinity());
+    const auto expected = motion::ValidateMotionPose(pose);
+    Log log; auto context = frame(1,0);
+    try { bridge.Assemble(&pose,context,AR_OBSERVATION_VALID,log.sink()); CHECK(false); }
+    catch (const avatarMotion::MotionValidationError& error) {
+        CHECK(error.OwnerVersion() == version("motionCore"));
+    }
+    compare(log, expected, "usd-motion-plugins.motionCore");
+    // Corrected retry, zero/absence and no validation of unused pose fields.
+    pose = {}; pose.channels.Set("happy",0);
+    pose.root.hasPosition = true; pose.root.worldPosition = pxr::GfVec3f(std::numeric_limits<float>::infinity());
+    pose.validRotations.set(); pose.localRotations.fill(pxr::GfQuatf(0));
+    log = {};
+    auto input = bridge.Assemble(&pose,context,AR_OBSERVATION_VALID,log.sink());
+    CHECK(input.View().scalar_count == 1 && input.View().scalars[0].value == 0);
+    CHECK(input.View().gaze_count == 0 && log.codes.empty());
 }
 void unavailableAndDiagnostics() {
     auto c = config(); c.clip.samples.clear(); Fixture empty(c); auto id = empty.make();
@@ -352,7 +431,7 @@ void vrmSequence() {
 } // namespace
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION,sizeof(api),&api) == AR_OK);
-    evaluation(); invalidBindings(); unavailableAndDiagnostics(); rollback(); inputAssembly();
+    evaluation(); invalidBindings(); ownerValidation(); unavailableAndDiagnostics(); rollback(); inputAssembly();
 #ifdef AR_TEST_VRM
     vrmSequence();
 #endif

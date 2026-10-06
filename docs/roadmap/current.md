@@ -23,7 +23,6 @@ before freeze; owner API work stays in its owning repository.
 
 | Workstream | Remaining work | Acceptance gate | Original Runtime Phase |
 | --- | --- | --- | --- |
-| A: motion boundary | delegate ClipPoseAdapter generic validation to motion-owner APIs; retain runtime binding checks; document/choose a bridge-oriented InputAssembler name | owner validates timestamps, quaternions, source-rest hierarchy, confidence, root modes, vocabulary and channels; runtime only registers/invokes/maps results and runtime identities; bridge preserves owned lifetime, clocks, identities and unmapped diagnostics | A/B |
 | B: USD/motion ownership | move StageClip motion-domain preparation to motionUsd; split SkeletonBinding into owner skeleton/rest conversion and runtime binding; delete duplicate conversion | owner supplies clip/source-rest and skeleton results with diagnostics; runtime retains avatar/layout/skeleton/joint identity, baseline and root placement; existing stage/copy lifetime, units, rejection and parity behavior remains verified | A/B |
 | C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
 | D: MMD second provider | register owner MMD evaluator; validate bone/morph/control dependencies and shared pre/post-physics handoff | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; physics boundary order is explicit | A/B |
@@ -37,6 +36,15 @@ and preserved owner diagnostic identity/version/subject. Adapter validation
 tests cover invocation/mapping/lifetime; generic numerical correctness tests
 remain with the owner. Code changes must update the capability matrix with
 evidence rather than marking work complete from this documentation alone.
+
+Workstream A's scoped motion registration/input bridge gate is validated:
+generic clip/rig and selected-observation checks call installed owner APIs,
+runtime binding checks remain, and `MotionPoseInputBridge` supplies compatible
+`InputAssembler` source aliases. The
+[capability matrix](../reference/CAPABILITY_MATRIX.md) records report forwarding,
+owned version/lifetime and installed-consumer evidence. The remaining
+workstreams above and the retained owner-version C ABI review under F remain
+open; this does not close Runtime Phase A or an evidence milestone.
 
 ## Near-term implementation sequence
 

@@ -10,8 +10,9 @@ The optional `avatarMotionAdapter` connects installed `motionSampling` and
 scoped RT-O3/RT-O4 path: immutable clip -> owner sampling -> explicit humanoid
 retarget map -> dense runtime rig pose -> ordered VRM LookAt/Expression.
 Constructed bindings do not establish real-avatar or milestone acceptance.
-The same target also supplies host-side `InputAssembler` for selected owner
+The same target also supplies host-side `MotionPoseInputBridge` for selected owner
 scalar channels and world gaze points, without changing the runtime C ABI.
+`InputAssembler` and `InputAssemblerConfig` remain source-compatible aliases.
 
 ## Build and installation
 
@@ -19,6 +20,12 @@ Enable `AVATAR_BUILD_MOTION_ADAPTER` and provide installed `motionSampling`,
 `motionRetarget` (0.5.3 or compatible later version), `motionCore` and OpenUSD
 CMake packages. The adapter links only owner value libraries; core still has
 no provider dependency. No sibling sources are compiled into the runtime.
+The local additive validation APIs in `motionCore/Validation.h` and
+`motionRetarget/Validation.h` are required. CMake probes installed headers and
+linked symbols both in-tree and for the installed `motion` component; older
+packages with the same version may lack them. Core-only lookup does not run
+this probe or import the owners. This is unpublished owner API evidence,
+not a claim that all 0.5.3 installations expose validation.
 In an x64 developer shell with dependency DLLs on `PATH`:
 
 ```sh
@@ -53,12 +60,30 @@ infer humanoid roles from joint names. A VRM host supplies its owner's
 `vrmRig::GetRequiredBones()` through `RetargetOptions::requiredBones`; the
 motion adapter contains no VRM rule or dependency.
 
-Configuration rejects incomplete/duplicate target identities, invalid parents,
-out-of-range/duplicate map targets, invalid/cyclic source-rest ancestry,
-non-finite values, non-unit driven/rest rotations and unsorted or overflowing
-clip interpolation intervals before constructing the reusable retargeter.
+Construction invokes owner `ValidateRetargetConfiguration` and
+`ValidateMotionClip` before constructing the reusable retargeter. The owner
+checks parent/rest/map invariants, source-rest ancestry, reference rest, root
+options, required-bone vocabulary and clip values/times/channels/confidence.
+The adapter keeps runtime identity, nonempty/complete joint layout, C-string
+transport, clock mapping and rigid placement checks. Many owner roles mapping
+to one runtime target remain rejected using the owner's duplicate detection;
+other hosts may accept the owner's recoverable collision warning.
 The clip may be empty. Missing required bones remain recoverable owner
 diagnostics, preserving the owner's partial-skeleton policy.
+Equal adjacent clip times remain supported; validation does not normalize or
+clamp values. Owner validation additionally rejects malformed clip labels,
+source metadata and contact enums that the previous local checks did not inspect.
+
+Malformed owner input throws owned `MotionValidationError`, derived from
+`invalid_argument`. Its `Report()`, `Origin()` and `OwnerVersion()` preserve
+owner code/subject/detail order and the installed package identity after source
+configuration destruction. `Emit(sink)` forwards all report entries as C
+diagnostics with `AR_INVALID_ARGUMENT` and error severity. An optional
+`ClipPoseAdapter(config, sink)` sink receives the same report synchronously on
+rejection and is never retained. There is no runtime instance/frame/evaluator
+identity at construction. Revision 3 has no diagnostic owner-version field;
+version remains in the exception envelope and evaluator descriptor. Runtime
+binding errors remain plain `invalid_argument`.
 
 Keep the adapter alive until runtime destruction: registration borrows its
 immutable `user_data`. Multiple instances share configuration without sharing
@@ -109,7 +134,10 @@ outside the clip range use the owner's boundary hold and emit
 policy. Owner retarget codes, subjects, detail and severity are preserved with
 provider origin `usd-motion-plugins.motionRetarget`; the runtime stamps the
 instance/frame/evaluator/phase. Descriptor version records both owner package
-versions. The scoped capability is `avatar.motion.clipPose` version 1.
+versions plus `motionCore`. Runtime adapter checks/hold/scope diagnostics use
+origin `usd-avatar-runtime.avatarMotionAdapter`; owner retarget diagnostics
+retain their own origin. The scoped capability is `avatar.motion.clipPose`
+version 1.
 
 The clip callback publishes pose only. Sampled scalar channels and gaze points emit
 `MOTION_ADAPTER_CHANNELS_UNSUPPORTED` / `MOTION_ADAPTER_GAZE_UNSUPPORTED` and
@@ -124,12 +152,14 @@ still pending.
 
 This helper is a runtime-owned repository-boundary bridge from `MotionPose` to
 `AvatarInputFrame`, following [boundary policy section 6](../design/BOUNDARY_POLICY.md#6-inputassembler-cleanup).
-`InputAssembler` is the current API name; a bridge-oriented rename is planned
-but no replacement name is selected. Its runtime source/actor attribution and
+The selected name is `MotionPoseInputBridge`; the legacy `InputAssembler.h`
+header provides source aliases for the class and configuration. Hosts rebuild
+against the experimental static adapter; this does not promise binary
+compatibility with previously built C++ hosts. Its runtime source/actor attribution and
 supplied clock mappings do not implement external identity tracking, device
 clock normalization, network synchronization or generic channel normalization.
 
-[`InputAssembler`](../../adapters/motion/include/avatarMotion/InputAssembler.h)
+[`MotionPoseInputBridge`](../../adapters/motion/include/avatarMotion/MotionPoseInputBridge.h)
 maps an already selected owner `MotionPose` into an owned revision-3 input
 frame. It does not sample, poll a connector, retarget or perform format
 arbitration. Supply explicit source/actor identity, positive affine clock
@@ -165,11 +195,16 @@ select/drop scalar inputs according to their source policy.
 
 Configuration rejects duplicate native mappings, scalar/gaze identity
 collisions, embedded NULs, missing namespaces and invalid clocks. Assembly
-rejects invalid context/clock numerics, malformed owner channel sets and
-non-finite channel/gaze payloads before returning any frame. Unmapped reported
+delegates selected timestamp/channel/gaze validation to owner
+`ValidateMotionPose`, on an observation projection containing only those fields.
+Unused pose rotations, root, confidence and metadata do not change assembly
+acceptance. Owner reports produce `MotionValidationError`; the optional fourth
+`Assemble` argument forwards them to a synchronous C sink. Context, mapped-clock
+overflow and C-string transport checks remain runtime checks. Rejection returns
+no partial frame. Unmapped reported
 channels are available through `UnmappedChannels()` and an unbound point through
-`HasUnmappedGaze()` so the host can diagnose its selection. The helper emits no
-evaluator diagnostics and registers no capability; it runs before evaluation.
+`HasUnmappedGaze()` so the host can diagnose its selection. The helper registers
+no evaluator or capability; it runs before evaluation.
 
 `MotionInputFrame` owns all arrays/strings, and copies share immutable storage.
 Its `View()` can be borrowed synchronously by `evaluate_frame` while any frame
@@ -178,7 +213,7 @@ Later assemblies do not alter earlier views. Invalid assembly throws
 `invalid_argument` and advances no cursor/provider state. There is no
 cross-toolchain C++ ABI guarantee or asynchronous runtime retention.
 
-## Boundary cleanup target
+## Boundary cleanup status
 
 Under [boundary policy section 5](../design/BOUNDARY_POLICY.md#5-clipposeadapter-cleanup),
 retain registration, phase/capability declarations, layout/version checks,
@@ -186,11 +221,12 @@ runtime joint lookup, owner/runtime parent mapping, owner diagnostic forwarding
 and `ArStateWriter` publication. Keep runtime clock and root-placement contract
 checks distinct from generic owner invariants.
 
-Move clip timestamps/interpolation spans, owner quaternion/channel/confidence
+Clip timestamps/interpolation spans, owner quaternion/channel/confidence
 invariants, skeleton/source-rest hierarchy, root-motion mode and human-joint
-vocabulary validation to motion-owner validation APIs. The configuration
-rejection rules above describe current local checks, not the final ownership.
-Required upstream APIs must be added and validated before deleting those checks.
+vocabulary validation now delegate to installed motion-owner validation APIs.
+The selected-motion bridge uses the same owner value report without validating
+fields it does not consume. USD skeleton/rest and StageClip ownership cleanup
+remain separate work; this migration does not complete all boundary workstreams.
 Sampling/retarget numerical correctness belongs to owner tests; runtime tests
 compare owner results to marshaled state, diagnostics and lifetime behavior.
 

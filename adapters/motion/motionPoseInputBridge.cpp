@@ -1,4 +1,4 @@
-#include "avatarMotion/InputAssembler.h"
+#include "avatarMotion/MotionPoseInputBridge.h"
 #include <cmath>
 #include <limits>
 #include <set>
@@ -17,7 +17,7 @@ bool channel(const std::string& s) {
     const auto colon = s.find(':');
     return identity(s) && colon != std::string::npos && colon != 0 && colon + 1 < s.size();
 }
-void validate(const InputAssemblerConfig& c) {
+void validate(const MotionPoseInputBridgeConfig& c) {
     require(identity(c.source) && identity(c.actor), "Motion input requires source and actor identity");
     require(std::isfinite(c.clockScale) && c.clockScale > 0 && std::isfinite(c.clockOffset),
             "Motion input clock mapping must be finite with positive scale");
@@ -47,26 +47,33 @@ void validateContext(const ArInputFrame& c) {
 } // namespace
 
 struct MotionInputFrame::Impl {
-    InputAssemblerConfig config;
+    MotionPoseInputBridgeConfig config;
     ArInputFrame frame;
     std::vector<ArScalarInput> scalars;
     std::vector<ArGazeInput> gazes;
     std::vector<std::string> unmapped;
     bool unmappedGaze = false;
-    Impl(const InputAssemblerConfig& c, const openstrata::motion::MotionPose* pose,
-         const ArInputFrame& context, uint32_t gazeValidity) : config(c), frame(context) {
+    Impl(const MotionPoseInputBridgeConfig& c, const openstrata::motion::MotionPose* pose,
+         const ArInputFrame& context, uint32_t gazeValidity, const ArDiagnosticSink& sink) : config(c), frame(context) {
         // Normalize the copied header to the representation we actually own.
         frame.struct_size = sizeof(ArInputFrame);
         if (!pose) return;
-        require(std::isfinite(pose->timestamp) && std::isfinite(pose->timestamp * c.clockScale + c.clockOffset),
+        // Validate only observations this bridge consumes, through the owner.
+        // Pose-only rotations/confidence/root fields are not input channels.
+        openstrata::motion::MotionPose observations;
+        observations.timestamp = pose->timestamp;
+        observations.channels = pose->channels;
+        observations.lookAtTarget = pose->lookAtTarget;
+        const auto report = openstrata::motion::ValidateMotionPose(observations);
+        if (!report.IsValid()) {
+            MotionValidationError error("usd-motion-plugins.motionCore", AR_MOTION_CORE_VERSION, report);
+            error.Emit(sink); throw error;
+        }
+        require(std::isfinite(pose->timestamp * c.clockScale + c.clockOffset),
                 "Motion input sample clock mapping is not finite");
-        // Find uses the owner's sorted unique channel-set invariant. Validate
-        // public entries before invoking it rather than guessing at duplicates.
-        std::string previous;
+        // Owner validation establishes Find preconditions; runtime checks C-string transport.
         for (const auto& entry : pose->channels.entries) {
-            require(identity(entry.name) && (previous.empty() || previous < entry.name) && std::isfinite(entry.value),
-                    "Motion input channels must be sorted, unique, named and finite");
-            previous = entry.name;
+            require(identity(entry.name), "Motion input channel names must be representable as C strings");
             bool mapped = false;
             for (const auto& binding : config.channels)
                 if (binding.ownerChannel == entry.name) { mapped = true; break; }
@@ -79,8 +86,6 @@ struct MotionInputFrame::Impl {
                                double(*value), pose->timestamp, c.clockScale, c.clockOffset});
         }
         if (pose->lookAtTarget) {
-            for (int k = 0; k < 3; ++k)
-                require(std::isfinite((*pose->lookAtTarget)[k]), "Motion input gaze point must be finite");
             if (config.gazeChannel.empty()) unmappedGaze = true;
             else {
                 ArGazeInput g{config.source.c_str(), config.actor.c_str(), config.gazeChannel.c_str(),
@@ -96,21 +101,22 @@ struct MotionInputFrame::Impl {
         frame.gaze_count = uint32_t(gazes.size());
     }
 };
-struct InputAssembler::Impl {
-    InputAssemblerConfig config;
-    explicit Impl(InputAssemblerConfig c) : config(std::move(c)) { validate(config); }
+struct MotionPoseInputBridge::Impl {
+    MotionPoseInputBridgeConfig config;
+    explicit Impl(MotionPoseInputBridgeConfig c) : config(std::move(c)) { validate(config); }
 };
 MotionInputFrame::MotionInputFrame(std::shared_ptr<const Impl> impl) : impl_(std::move(impl)) {}
 const ArInputFrame& MotionInputFrame::View() const { return impl_->frame; }
 const std::vector<std::string>& MotionInputFrame::UnmappedChannels() const { return impl_->unmapped; }
 bool MotionInputFrame::HasUnmappedGaze() const { return impl_->unmappedGaze; }
-InputAssembler::InputAssembler(InputAssemblerConfig config) : impl_(std::make_unique<Impl>(std::move(config))) {}
-InputAssembler::~InputAssembler() = default;
-MotionInputFrame InputAssembler::Assemble(const openstrata::motion::MotionPose* pose,
-                                        const ArInputFrame& context, uint32_t gazeValidity) const {
+MotionPoseInputBridge::MotionPoseInputBridge(MotionPoseInputBridgeConfig config) : impl_(std::make_unique<Impl>(std::move(config))) {}
+MotionPoseInputBridge::~MotionPoseInputBridge() = default;
+MotionInputFrame MotionPoseInputBridge::Assemble(const openstrata::motion::MotionPose* pose,
+                                               const ArInputFrame& context, uint32_t gazeValidity,
+                                               ArDiagnosticSink diagnostics) const {
     validateContext(context);
     require(gazeValidity == AR_OBSERVATION_VALID || gazeValidity == AR_OBSERVATION_STALE,
             "A present owner gaze point must be explicitly valid or stale");
-    return MotionInputFrame(std::make_shared<MotionInputFrame::Impl>(impl_->config, pose, context, gazeValidity));
+    return MotionInputFrame(std::make_shared<MotionInputFrame::Impl>(impl_->config, pose, context, gazeValidity, diagnostics));
 }
 } // namespace avatarMotion

@@ -1,5 +1,6 @@
 #pragma once
 #include "avatarRuntime/api.h"
+#include "avatarMotion/ValidationError.h"
 #include "motionSampling/MotionSource.h"
 #include "motionRetarget/PoseRetargeter.h"
 #include <memory>
@@ -32,10 +33,13 @@ struct ClipPoseAdapterConfig {
 // out-of-range requests use the owner's boundary hold and emit a diagnostic.
 // Channels, gaze, confidence and contacts are not published by this adapter.
 // Keep alive until runtime destruction. Invalid configuration throws
-// invalid_argument. No stage, renderer, OpenExec or input acquisition.
+// invalid_argument; malformed owner values throw MotionValidationError with
+// the original report/version. The optional construction sink is invoked only
+// synchronously on owner rejection and is never retained.
+// No stage, renderer, OpenExec or input acquisition.
 class ClipPoseAdapter {
 public:
-    explicit ClipPoseAdapter(ClipPoseAdapterConfig config);
+    explicit ClipPoseAdapter(ClipPoseAdapterConfig config, ArDiagnosticSink diagnostics = {});
     ~ClipPoseAdapter();
     ClipPoseAdapter(const ClipPoseAdapter&) = delete;
     ClipPoseAdapter& operator=(const ClipPoseAdapter&) = delete;
