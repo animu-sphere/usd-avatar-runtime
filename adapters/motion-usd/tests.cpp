@@ -1,4 +1,5 @@
 #include "avatarMotionUsd/StageClip.h"
+#include "avatarUsd/MotionUsdReadError.h"
 #include "motionRetarget/PoseRetargeter.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
@@ -68,13 +69,25 @@ int main() {
     CHECK(s->RemovePrim(pxr::SdfPath("/Clip"))); s.Reset();
     CHECK(copy.Read().clip.samples[1].root.worldPosition[2] == 1);
     CHECK(copy.Read().skeleton.path == path.GetString());
+    s = stage(); CHECK(pxr::UsdGeomSetStageMetersPerUnit(s,0.01));
+    motion::MotionStageRead ownerRead; motion::SkeletonReadDiagnostic diagnostic;
+    CHECK(!motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));
+    bool ownerRefused = false;
+    try { avatarMotionUsd::StageClip rejected(s,path); }
+    catch (const avatarUsd::MotionUsdReadError& e) {
+        const auto retained = e; s.Reset(); ownerRefused = true;
+        CHECK(retained.Diagnostic().code == diagnostic.code && retained.Diagnostic().subject == diagnostic.subject &&
+              retained.Diagnostic().detail == diagnostic.detail);
+        CHECK(std::string(retained.Owner()) == "motionUsd" && !retained.OwnerVersion().empty());
+    }
+    CHECK(ownerRefused);
     reject({},"MOTION_USD_STAGE");
-    reject(stage(),"USD_BINDING_AVATAR_ROOT",pxr::SdfPath());
+    reject(stage(),"MOTION_USD_SKELETON_PATH",pxr::SdfPath());
     s = stage(); CHECK(pxr::UsdGeomSetStageMetersPerUnit(s,0.01)); reject(s,"MOTION_USD_UNITS");
-    s = stage(); CHECK(pxr::UsdGeomSetStageUpAxis(s,pxr::UsdGeomTokens->z)); reject(s,"USD_BINDING_UP_AXIS");
+    s = stage(); CHECK(pxr::UsdGeomSetStageUpAxis(s,pxr::UsdGeomTokens->z)); reject(s,"MOTION_USD_UP_AXIS");
     s = stage(); s->SetTimeCodesPerSecond(0); reject(s,"MOTION_USD_RATE");
     s = stage(); pxr::UsdSkelSkeleton(s->GetPrimAtPath(path)).GetRestTransformsAttr().Block();
-    reject(s,"USD_BINDING_REST_COUNT");
+    reject(s,"MOTION_USD_REST_COUNT");
     s = stage(); auto x = pxr::UsdGeomXform::Define(s,pxr::SdfPath("/Clip"));
     CHECK(x.AddTranslateOp().Set(pxr::GfVec3d(1,0,0))); reject(s,"MOTION_USD_PLACEMENT");
     s = stage(); CHECK(s->RemovePrim(pxr::SdfPath("/Clip/Animation"))); reject(s,"MOTION_USD_READ");

@@ -11,30 +11,34 @@ It addresses the skeleton portion of RT-O4. It is not a full VRM binding
 adapter. The separate [VRM USD Humanoid binding](VRM_USD_BINDING.md) supplies
 schema-derived mappings and records scoped local real-avatar evidence.
 
-## Boundary cleanup target
+## Scoped owner reading split
 
 The adopted [boundary policy section 8](../design/BOUNDARY_POLICY.md#8-skeletonbinding-split)
-splits this helper into motion-owner conversion and runtime binding. Move
-UsdSkel-to-`SkeletonDescriptor` conversion, rest decomposition, generic topology
-validation and source/target-rest generation to motion-owner APIs. Current
-delegation of decomposition to `motionRetarget` does not complete this split:
-local matrix, token and topology validation still lives in the runtime binder.
+splits this helper into motion-owner conversion and runtime binding. The
+implemented slice calls installed `motionUsd::ReadSkeleton` for authored rest,
+token/topology/matrix validation, metre conversion and rigid placement values.
+It then invokes `motionRetarget::BuildSkeletonDescriptor` on the returned owned
+arrays. No generic USD conversion or matrix validator remains in this binder.
 
 Retain avatar-root identity, runtime layout ID/version, skeleton and joint-ID
 mapping, baseline `ArStateView`, root placement and common-state layout binding
-here. The target is owner skeleton reading -> owner `SkeletonDescriptor` ->
-runtime avatar binding -> baseline; conceptual `ReadSkeleton` and
-`AvatarSkeletonBinding` names do not imply available APIs or a selected rename.
-Runtime checks of owner results against runtime layout/representation remain.
+here. Owner parent results are checked against descriptor slots before runtime
+publication; runtime transform representation and normalized-quaternion checks
+remain. `SkeletonBinding` keeps its public name and lifetime behavior.
 
-The behavior and evidence below describe the existing `SkeletonBinding`.
-Owner API extension, migration and deletion of duplicate conversion are open
-in [cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams).
+The owner reader returns plain skeleton arrays, preserving the existing
+`motionUsd` dependency on `motionCore` alone. A coherent owner read containing
+typed descriptor/source rest still needs the owner's WS-O4 dependency decision;
+[cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams)
+remains open for that consolidation and final `StageClip` absorption.
 
 ## Dependencies and build
 
-Enable `AVATAR_BUILD_USD_BINDING` with installed `motionRetarget` 0.5.3 or
-compatible later, its `motionCore` dependency and OpenUSD. The target links
+Enable `AVATAR_BUILD_USD_BINDING` with installed `motionUsd` and `motionRetarget`
+0.5.3 or compatible later, their `motionCore` dependency and OpenUSD.
+The strict reader is an unreleased additive owner API: configuration checks
+both its installed header and linked symbols, since older 0.5.3 installs do not
+provide it. The target links
 `usdSkel`/`usdGeom`; `avatarRuntime` remains independent of USD and providers.
 Motion evaluation and VRM evaluation are separately optional. No sibling
 sources are compiled into this repository.
@@ -70,12 +74,12 @@ the adapter does not infer roles from names or read VRM schema attributes.
 Partial/empty role maps are allowed. Required-bone policy belongs to the owner
 evaluator and is supplied separately through its retarget options.
 
-The adapter reads joint tokens and authored parent-local rest matrices, checks
-them, converts translations to metres, and calls the owner's
-`BuildSkeletonDescriptor`. It resolves the explicit map with owner
+The owner reader supplies checked joint tokens, parent indices, metre rest
+matrices and separate placement. The adapter calls the owner's
+`BuildSkeletonDescriptor` and resolves the explicit map with owner
 `RetargetMap::SetJointToken`. Rest decomposition and parent derivation stay
-with `motionRetarget`; runtime binding validates that those parents agree with
-`UsdSkelTopology`. Joint tokens, order and auxiliary/non-humanoid joints are
+with `motionRetarget`; runtime binding validates agreement with owner reader
+parent indices. Joint tokens, order and auxiliary/non-humanoid joints are
 preserved. The absolute skeleton prim path is the runtime skeleton identity.
 
 The scoped profile requires Y-up and the caller's assertion that the stage
@@ -109,9 +113,12 @@ runtime instance after relevant stage edits. Change layout ID/version when
 joint identities/order/parents or role bindings change; the host remains
 responsible for honest layout identity assignment.
 
-Construction failures throw `invalid_argument` containing a `USD_BINDING_*`
-code and subject path/token. Hosts can report these pre-instance failures with
-their binding provenance; they are not frame diagnostics or provider callbacks.
+Runtime binding failures throw `invalid_argument` with `USD_BINDING_*` codes.
+Owner reading refusals throw `MotionUsdReadError`, an `invalid_argument`
+subclass retaining unmodified owner code/subject/detail and installed
+`motionUsd` package identity/version. Generic rejection codes are now
+`MOTION_USD_*`, rather than locally renamed `USD_BINDING_*` codes.
+These are pre-instance failures, not frame diagnostics or provider callbacks.
 
 ## Motion and VRM composition
 
@@ -137,6 +144,13 @@ snapshot lifetime. With motion/VRM enabled it checks root-motion placement,
 empty-clip baseline, repeat/reset behavior and bone LookAt numeric parity with
 the installed owner evaluator at `1e-6`. `adapters.usd_installed` repeats these
 checks through a separately configured installed consumer.
+
+The owner-reading split also compares descriptor/parent/placement values with
+direct installed owner calls and retains identical refusal code/subject/detail
+and package identity/version after stage destruction. The strict owner suite,
+full 16-test runtime configuration and repeated installed USD tests pass;
+seven real clips retain the prior avatar composition parity. See the
+[capability matrix](../reference/CAPABILITY_MATRIX.md) for the checked scope.
 
 These tests construct USD stages and supply explicit mappings; they also
 check bounded affine roundoff without changing authored matrices.

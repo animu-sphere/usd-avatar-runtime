@@ -15,7 +15,8 @@ The optional [`avatarMotionAdapter`](MOTION_ADAPTER.md) consumes installed
 maps selected owner scalar/gaze fields through a host-side input assembler.
 The optional [`avatarUsdBinding`](USD_BINDING.md) reads USD skeleton/rest and
 placement into owned baseline and motion-owner values, using installed
-`motionRetarget` with `usdSkel`/`usdGeom`; it adds no core dependency.
+`motionUsd` strict reading and `motionRetarget` builders with
+`usdSkel`/`usdGeom`; it adds no core dependency.
 The optional [`avatarVrmUsdBinding`](VRM_USD_BINDING.md) adds installed
 `vrmSchema` only to a separate schema discovery target above the generic binder.
 The optional [`avatarVrmLookAtUsdBinding`](VRM_LOOKAT_USD_BINDING.md) composes
@@ -24,7 +25,8 @@ requesting only `vrm_usd` still imports no evaluator.
 The optional [Expression USD binding](VRM_EXPRESSION_USD_BINDING.md) composes
 the same owner packages plus `usdShade` to extract expression definitions and
 canonical output baseline; its component imports neither LookAt binding nor
-motion sampling/source reading.
+motion sampling or the source-clip adapter. It shares the generic owner's
+skeleton-reading dependency.
 The optional [`avatarMotionUsdBinding`](MOTION_USD_BINDING.md) connects installed
 `motionUsd` semantic clip reading and owner source rest to motion evaluation,
 above the generic USD binder. The opt-in `avatarMotionCheck` host composes that
@@ -34,8 +36,9 @@ MMD/connector adapters and OST composition remain unconfigured.
 The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) refines
 these placement rules. The descriptions above record current integrations;
 generic validation in the motion adapter now delegates to installed owner
-APIs. USD skeleton/rest interpretation in the binders remains cleanup work,
-not an exception to the intended boundary.
+APIs. USD skeleton and canonical clip-space validation now also delegate to
+installed owner readers. Coherent typed descriptor/source-rest read results
+remain owner consolidation work.
 See the [cleanup workstreams](../roadmap/current.md#boundary-cleanup-workstreams).
 
 ## 1. Owners
@@ -79,8 +82,9 @@ Supplied affine mappings are preserved rather than recomputed by the bridge.
 USD integration follows the same rule. `motionUsd` owns stage motion reading,
 source skeleton interpretation, generic validation and skeleton/rest conversion.
 Runtime binding owns avatar/layout/skeleton identity, joint-ID mapping, baseline
-state and root placement. The existing `StageClip` and `SkeletonBinding` have
-not yet completed this split. Recording adapters publish resolved motion to
+state and root placement. The existing `StageClip` and `SkeletonBinding` now
+compose owner readers/builders; the owner's WS-O4 dependency/result decision
+and final `StageClip` absorption remain open. Recording adapters publish resolved motion to
 the owner recorder; runtime does not own resampling, compression or clip construction.
 
 Renderer consumers receive resolved outputs. They do not call back into VRM

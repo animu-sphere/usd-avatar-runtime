@@ -16,7 +16,8 @@ copying format evaluation into the runtime.
 The target is built when `AVATAR_BUILD_USD_BINDING`,
 `AVATAR_BUILD_VRM_USD_BINDING` and `AVATAR_BUILD_VRM_ADAPTER` are enabled.
 It consumes the existing installed `vrmSchema`, `vrmRig`, `motionRetarget`
-and OpenUSD dependencies. Motion sampling and source-clip reading are optional.
+and OpenUSD dependencies, with `motionUsd` strict skeleton reading through the
+generic USD binding. Motion sampling and the source-clip adapter are optional.
 Schema resources and dependency DLL discovery remain the host's responsibility.
 
 Installed hosts request the target explicitly:

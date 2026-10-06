@@ -69,6 +69,7 @@ if(AVATAR_BUILD_TESTS)
         -DRC_COMPILER=${CMAKE_RC_COMPILER}
         -DMT=${CMAKE_MT}
         -DRETARGET_DIR=${motionRetarget_DIR}
+        -DMOTION_USD_DIR=${motionUsd_DIR}
         -DSAMPLING_DIR=${motionSampling_DIR}
         -DMOTION_DIR=${motionCore_DIR}
         -DUSD_DIR=${pxr_DIR}

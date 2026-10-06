@@ -18,7 +18,8 @@ and `AVATAR_BUILD_VRM_ADAPTER`. It consumes installed `vrmSchema`, `vrmRig`,
 `motionRetarget` and OpenUSD, including `usdShade`. Core remains independent.
 Hosts request `AvatarRuntime` component `vrm_expression_usd` and link
 `AvatarRuntime::avatarVrmExpressionUsdBinding`. That component resolves `vrm`,
-`vrm_usd` and `usd`, without importing LookAt binding, clip reading or sampling.
+`vrm_usd` and `usd`, without importing LookAt binding, the source-clip adapter or
+sampling. The generic USD binding resolves `motionUsd` for owner skeleton reading.
 Schema resources and DLL discovery remain host responsibilities.
 
 ## Discovery and owned values

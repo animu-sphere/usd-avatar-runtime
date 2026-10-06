@@ -110,7 +110,7 @@ void invalid() {
     s = stage(); CHECK(schema(s).GetVrmSkeletonRel().SetTargets({pxr::SdfPath("/Other")}));
     reject(s,config(),"VRM_BINDING_SKELETON_PATH");
     s = stage(); CHECK(schema(s).GetVrmSkeletonRel().SetTargets({pxr::SdfPath("/Avatar/Missing")}));
-    reject(s,config(),"USD_BINDING_SKELETON");
+    reject(s,config(),"MOTION_USD_SKELETON");
     s = stage(); CHECK(schema(s).GetVrmHumanBonesHeadAttr().Set(pxr::TfToken())); reject(s,config(),"VRM_BINDING_BONE_VALUE");
     s = stage(); schema(s).GetVrmHumanBonesHeadAttr().Block(); reject(s,config(),"VRM_BINDING_BONE_VALUE");
     s = stage(); CHECK(schema(s).GetVrmHumanBonesHeadAttr().Set(pxr::TfToken("Missing")));

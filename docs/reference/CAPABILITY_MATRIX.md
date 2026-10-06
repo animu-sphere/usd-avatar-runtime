@@ -10,10 +10,14 @@ The motion-boundary slice is implemented: `ClipPoseAdapter` delegates generic
 invariants to installed owner validation APIs, and `MotionPoseInputBridge`
 retains `InputAssembler` source aliases. Owned owner reports preserve
 code/subject/detail and package identity and can be emitted to C sinks.
-`StageClip` still uses the runtime USD skeleton binder for source preparation, and
-`SkeletonBinding` still performs generic matrix/token/topology checks around
-owner conversion. These facts are visible in the respective adapter sources;
-the [roadmap](../roadmap/current.md#boundary-cleanup-workstreams) tracks migration.
+The scoped USD reader split is also implemented: `SkeletonBinding` delegates
+generic matrix/token/topology/unit/placement checks to installed
+`motionUsd::ReadSkeleton`, and `StageClip` calls `ReadCanonicalMotionStage`
+without creating a source runtime binding. Existing owner builders supply
+descriptor/source rest. Reading refusals retain owner code/subject/detail and
+package identity/version in `MotionUsdReadError`. The coherent typed owner
+result/WS-O4 decision and final StageClip absorption remain on the
+[roadmap](../roadmap/current.md#boundary-cleanup-workstreams).
 
 | Surface | Current status | Owning documentation |
 | --- | --- | --- |
@@ -263,3 +267,30 @@ USD dependency. USD skeleton/source-rest ownership cleanup, real native input,
 renderer consumption, milestones and ABI freeze remain open. This change
 establishes adapter delegation and forwarding, not independent validation of
 motion algorithms or a new core ABI.
+
+The scoped USD reader split was checked on 2026-10-06 with the same Windows
+x64/MSVC 19.51/OpenUSD 26.08 Release environment and separately installed local
+`motionUsd` 0.5.3 with unreleased strict-reading additions. The owner suite
+passes all four tests, including `motionUsd_skeletonReader` and its unchanged
+dependency boundary. The full runtime configuration passes all 16 tests;
+after adding owner-result/diagnostic assertions, the four USD/source-clip and
+installed-consumer tests pass again. These compare rest/parent/placement
+mapping directly with owner results and retain refusal code/subject/detail
+and owner version after stage destruction.
+
+The optional `usd` component now resolves `motionUsd` for skeleton reading;
+`usd`/schema-only consumers still import no source-clip adapter or sampler,
+and core-only installed import still resolves no USD/provider target. A
+configure-time header/link probe rejects a pre-extension same-version
+`motionUsd` install with an actionable error.
+
+The same seven private clips and 128-joint avatar pass both clip-only input
+and explicit host scalar/world-gaze probe modes after migration: 8,286 frames
+per mode, maximum component error `1.403972313e-7`, all-joint/morph owner parity,
+reset and retained active/held snapshots. Asset hashes/commands/logs stay in
+ignored local evidence; no asset is copied or authored. Native scalar/gaze
+counters remain zero and real material binds remain absent. This preserves
+the earlier integration evidence, without closing native intake or any
+milestone. Coherent typed descriptor/source-rest owner results and final
+`StageClip` absorption remain WS-O4/workstream B work; no package release or
+ABI freeze is claimed.

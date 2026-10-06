@@ -1,14 +1,18 @@
 find_package(motionRetarget 0.5.3 CONFIG REQUIRED)
+find_package(motionUsd 0.5.3 CONFIG REQUIRED)
+include(${PROJECT_SOURCE_DIR}/cmake/AvatarMotionUsdReading.cmake)
+avatar_require_motion_usd_reading()
 find_package(pxr CONFIG REQUIRED)
 add_library(avatarUsdBinding STATIC skeletonBinding.cpp)
 add_library(AvatarRuntime::avatarUsdBinding ALIAS avatarUsdBinding)
 target_compile_features(avatarUsdBinding PUBLIC cxx_std_17)
+target_compile_definitions(avatarUsdBinding PRIVATE AR_MOTION_USD_VERSION="${motionUsd_VERSION}")
 set_target_properties(avatarUsdBinding PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(avatarUsdBinding PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 target_link_libraries(avatarUsdBinding PUBLIC AvatarRuntime::avatarRuntime
-    motionRetarget::motionRetarget usdSkel usdGeom)
+    motionRetarget::motionRetarget motionUsd::motionUsd usdSkel usdGeom)
 if(MSVC)
     target_compile_options(avatarUsdBinding PRIVATE /W4 /permissive-)
 endif()
@@ -40,6 +44,7 @@ if(AVATAR_BUILD_TESTS)
         -DRC_COMPILER=${CMAKE_RC_COMPILER}
         -DMT=${CMAKE_MT}
         -DRETARGET_DIR=${motionRetarget_DIR}
+        -DMOTION_USD_DIR=${motionUsd_DIR}
         -DSAMPLING_DIR=${motionSampling_DIR}
         -DMOTION_DIR=${motionCore_DIR}
         -DUSD_DIR=${pxr_DIR}
