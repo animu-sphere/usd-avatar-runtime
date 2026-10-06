@@ -1,4 +1,25 @@
 add_executable(avatarMotionCheck main.cpp)
+if(AVATAR_MOTION_CHECK_TOON)
+    find_package(Toon CONFIG REQUIRED COMPONENTS AvatarState)
+    # The optional canonical RGB handoff is additive to the owner's package.
+    # Package version alone does not prove this installed header supports it.
+    function(avatar_require_toon_rgb)
+        include(CheckCXXSourceCompiles)
+        set(CMAKE_CXX_STANDARD 20)
+        set(CMAKE_REQUIRED_LIBRARIES Toon::AvatarState)
+        unset(AR_TOON_RGB_BINDING CACHE)
+        check_cxx_source_compiles([[
+            #include <toon/fast/avatar_state.hpp>
+            int main() { return int(Toon::AvatarMaterialField::BaseColorRgb); }
+        ]] AR_TOON_RGB_BINDING)
+        if(NOT AR_TOON_RGB_BINDING)
+            message(FATAL_ERROR "Motion check Toon parity requires installed Toon AvatarState with BaseColorRgb support. Rebuild/install the renderer adapter; older same-version packages are insufficient.")
+        endif()
+    endfunction()
+    avatar_require_toon_rgb()
+    target_compile_definitions(avatarMotionCheck PRIVATE AR_CHECK_TOON)
+    target_link_libraries(avatarMotionCheck PRIVATE Toon::AvatarState)
+endif()
 target_link_libraries(avatarMotionCheck PRIVATE avatarMotionUsdBinding avatarVrmUsdBinding avatarMotionAdapter)
 if(AVATAR_BUILD_VRM_ADAPTER)
     target_compile_definitions(avatarMotionCheck PRIVATE AR_CHECK_VRM)
@@ -10,6 +31,10 @@ if(AVATAR_BUILD_TESTS AND AVATAR_BUILD_VRM_ADAPTER)
     target_link_libraries(avatarMotionCheckContracts PRIVATE avatarMotionUsdBinding avatarMotionAdapter
         avatarVrmLookAtUsdBinding avatarVrmExpressionUsdBinding)
     add_test(NAME tools.motion_vrm_check COMMAND avatarMotionCheckContracts ${CMAKE_CURRENT_BINARY_DIR}/fixtures)
+    if(AVATAR_MOTION_CHECK_TOON)
+        target_compile_definitions(avatarMotionCheckContracts PRIVATE AR_CHECK_TOON)
+        target_link_libraries(avatarMotionCheckContracts PRIVATE Toon::AvatarState)
+    endif()
 endif()
 if(WIN32)
     add_custom_command(TARGET avatarMotionCheck POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different

@@ -1,4 +1,7 @@
 #include "VrmCheck.h"
+#ifdef AR_CHECK_TOON
+#include "ToonCheck.h"
+#endif
 #include "vrmSchema/vrmExpressionAPI.h"
 #include "vrmSchema/vrmHumanoidAPI.h"
 #include "vrmSchema/vrmLookAtAPI.h"
@@ -100,6 +103,38 @@ int main(int argc, char** argv) {
     try {
         verify(argc == 2,"fixture output directory required");
         const std::filesystem::path root(argv[1]); std::filesystem::create_directories(root);
+#ifdef AR_CHECK_TOON
+        {
+            ArJoint joint{"rig","root",-1,{{0,0,0},{0,0,0,1},{1,1,1}}};
+            ArBlendShape morph{"face","smile",.2};
+            const auto& slot = vrmRig::GetMaterialColorSlots().front();
+            ArMaterialInput material{"surface",slot.colorInput,AR_VALUE_VEC3,1,{.3,.4,.5,0}};
+            ArStateView state{AR_HEADER(ArStateView)};
+            state.joints = &joint; state.joint_count = 1;
+            state.blend_shapes = &morph; state.blend_shape_count = 1;
+            state.materials = &material; state.material_count = 1;
+            avatarMotionCheck::ToonCheck oracle(state);
+            verify(oracle.Compare(state,oracle.ProbeScene()) < 1e-6,"Toon identity oracle failed");
+            auto expectRefusal = [&](const Toon::FrameSnapshot& bad) {
+                bool rejected = false;
+                try { oracle.Compare(state,bad); } catch (const std::runtime_error&) { rejected = true; }
+                verify(rejected,"Toon oracle accepted incorrect resolved values");
+            };
+            auto wrong = oracle.ProbeScene();
+            auto palette = std::make_shared<std::vector<Toon::Matrix4>>(*wrong.meshes[0].joints);
+            (*palette)[0].m[12] = 1; wrong.meshes[0].joints = palette;
+            expectRefusal(wrong);
+            wrong = oracle.ProbeScene();
+            wrong.meshes[0].morph_weights = std::make_shared<const std::vector<float>>(1,.9f);
+            expectRefusal(wrong);
+            wrong = oracle.ProbeScene(); wrong.materials[0].material.base_color.x += .1f;
+            expectRefusal(wrong);
+            material.input_id = "owner:unsupported";
+            bool rejected = false;
+            try { avatarMotionCheck::ToonCheck unsupported(state); } catch (const std::runtime_error&) { rejected = true; }
+            verify(rejected,"unsupported Toon input silently dropped");
+        }
+#endif
         const auto source = (root/"motion.usda").string();
         verify(clip()->GetRootLayer()->Export(source),"export constructed motion");
         for (bool bone : {false,true}) {
@@ -139,6 +174,15 @@ int main(int argc, char** argv) {
             verify(run(arguments).first == 0,"placed native composition failed");
             auto probe = run({"--vrm","--gaze-point","1","1.5","3","--weight","blink=.8",asset,source});
             verify(probe.first == 0,"gaze composition failed");
+#ifdef AR_CHECK_TOON
+            auto transport = run({"--vrm","--toon","--gaze-point","1","1.5","3","--weight","happy=.4",placed,source});
+            verify(transport.first == 0,"Toon pose/morph/material composition failed");
+            verify(transport.second.find("duplicate/reset/rebind/retention=passed") != std::string::npos,"Toon lifecycle checks missing");
+            arguments = options; arguments.insert(arguments.begin(),"--toon"); arguments.insert(arguments.end(),{placed,projectedPath});
+            verify(run(arguments).first == 0,"Toon selected native input composition failed");
+#else
+            verify(run({"--vrm","--toon",asset,source}).first != 0,"disabled Toon accepted");
+#endif
             verify(run({asset,source}).first == 0,"pose mode regression");
             verify(run({"--vrm","--weight","missing=.5",asset,source}).first != 0,"unknown expression accepted");
             auto still = clip();
@@ -180,6 +224,7 @@ int main(int argc, char** argv) {
         }
         verify(run({"--vrm","--gaze-point","nan","0","1"}).first != 0,"nonfinite probe accepted");
         verify(run({"--weight","happy=.5"}).first != 0,"probe without VRM accepted");
+        verify(run({"--toon"}).first != 0,"Toon without VRM accepted");
         verify(run({"--vrm","--weight","happy=.5","--weight","happy=.7"}).first != 0,"duplicate probe accepted");
         std::cout << "Motion/VRM check composition passed\n";
         return 0;
