@@ -33,8 +33,9 @@ MMD/connector adapters and OST composition remain unconfigured.
 
 The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) refines
 these placement rules. The descriptions above record current integrations;
-generic validation in the motion adapter and USD skeleton/rest interpretation
-in the binders remain cleanup work, not exceptions to the intended boundary.
+generic validation in the motion adapter now delegates to installed owner
+APIs. USD skeleton/rest interpretation in the binders remains cleanup work,
+not an exception to the intended boundary.
 See the [cleanup workstreams](../roadmap/current.md#boundary-cleanup-workstreams).
 
 ## 1. Owners

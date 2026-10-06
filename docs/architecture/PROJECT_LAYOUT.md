@@ -27,7 +27,7 @@ or rename working directories merely to match a responsibility sketch.
 | Target | Location / responsibility |
 | --- | --- |
 | `avatarRuntime` | `libs/avatarRuntime`: common C contracts, lifecycle, storage, registration, scheduling and diagnostics; no external provider dependency |
-| `avatarMotionAdapter` | `adapters/motion`: owner sampling/retarget invocation and selected-motion input bridge |
+| `avatarMotionAdapter` | `adapters/motion`: owner sampling/retarget/validation invocation, owned diagnostic reports and MotionPoseInputBridge with legacy source aliases |
 | `avatarUsdBinding` | `adapters/usd`: current skeleton/baseline/placement binding; owner conversion split pending |
 | `avatarMotionUsdBinding` | `adapters/motion-usd`: current StageClip integration; motion-domain cleanup pending |
 | `avatarVrmAdapter` | `adapters/vrm`: owner LookAt/expression registration and common-state mapping |

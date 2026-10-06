@@ -108,6 +108,14 @@ representation before ABI stabilization. Runtime's own diagnostics cover plan,
 dependency/capability, lifecycle/layout, transaction and publication failures;
 publication adapters still need implementation and acceptance evidence.
 
+The optional motion adapter now supplies an owned C++ `MotionValidationError`
+for malformed owner configuration/selected observations, retaining report and
+installed owner version beyond construction/assembly. Its synchronous C sink
+mapping preserves owner code/subject/detail/origin and sets error severity and
+`AR_INVALID_ARGUMENT`. This scoped host-side envelope does not add a retained
+owner-version field to core diagnostic records. See
+[motion adapter validation](../architecture/MOTION_ADAPTER.md#configuration-and-lifetime).
+
 Expose optional phase/evaluator timings, frame status, state hashes and a trace:
 
 ```text

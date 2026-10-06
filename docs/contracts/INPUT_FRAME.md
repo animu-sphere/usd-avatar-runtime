@@ -151,7 +151,8 @@ callback; host input assembly must map them separately. Actual motion/connector
 observation transport, actor selection and retained source provenance remain
 open. This scoped path does not complete input composition.
 
-The same optional target now supplies host-side `InputAssembler`: explicit
+The same optional target now supplies host-side `MotionPoseInputBridge`
+(`InputAssembler` remains a source alias): explicit
 owner channel mappings produce attributed scalar inputs, and the owner's
 optional gaze point produces a world-point observation. It owns frame arrays
 and strings, preserves the selected pose timestamp and supplied clocks, and
@@ -163,12 +164,16 @@ retained owner metadata remain open. See the
 [assembly boundary](../architecture/MOTION_ADAPTER.md#host-input-assembly).
 
 Under the adopted [boundary policy section 6](../design/BOUNDARY_POLICY.md#6-inputassembler-cleanup),
-this bridge remains runtime-owned, with a clearer name to be selected. It maps
+this bridge remains runtime-owned under the selected name `MotionPoseInputBridge`. It maps
 owner fields to runtime channels and source/actor attribution, owns input
 lifetime and reports unmapped fields. External device/network clock and actor
 normalization, protocol decoding and generic channel normalization stay with
 their owners. Supplying runtime clock metadata is distinct from normalizing
 an external source clock.
+Selected timestamp/channel/gaze validation delegates to the motion owner;
+runtime checks its ABI, identities and supplied clock mappings. Owner reports
+remain available through an owned `MotionValidationError` and an optional
+synchronous assembly diagnostic sink. Unused pose fields are not input channels.
 
 The runtime bridge binds source actors to avatar instances, selects a declared
 input snapshot, and delegates generic sampling/blending to motion evaluators.

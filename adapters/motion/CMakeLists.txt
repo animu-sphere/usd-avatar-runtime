@@ -1,6 +1,8 @@
 find_package(motionSampling CONFIG REQUIRED)
 find_package(motionRetarget 0.5.3 CONFIG REQUIRED)
-add_library(avatarMotionAdapter STATIC clipPoseAdapter.cpp inputAssembler.cpp)
+include(${PROJECT_SOURCE_DIR}/cmake/AvatarMotionValidation.cmake)
+avatar_require_motion_validation()
+add_library(avatarMotionAdapter STATIC clipPoseAdapter.cpp motionPoseInputBridge.cpp)
 add_library(AvatarRuntime::avatarMotionAdapter ALIAS avatarMotionAdapter)
 target_compile_features(avatarMotionAdapter PUBLIC cxx_std_17)
 set_target_properties(avatarMotionAdapter PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -10,6 +12,7 @@ target_include_directories(avatarMotionAdapter PUBLIC
 target_link_libraries(avatarMotionAdapter PUBLIC AvatarRuntime::avatarRuntime
     motionSampling::motionSampling motionRetarget::motionRetarget)
 target_compile_definitions(avatarMotionAdapter PRIVATE
+    AR_MOTION_CORE_VERSION="${motionCore_VERSION}"
     AR_MOTION_RETARGET_VERSION="${motionRetarget_VERSION}"
     AR_MOTION_SAMPLING_VERSION="${motionSampling_VERSION}")
 if(MSVC)

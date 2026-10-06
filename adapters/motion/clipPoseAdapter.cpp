@@ -1,4 +1,5 @@
 #include "avatarMotion/ClipPoseAdapter.h"
+#include "motionRetarget/Validation.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/rotation.h"
 #include <algorithm>
@@ -10,21 +11,18 @@
 namespace avatarMotion {
 namespace {
 namespace motion = openstrata::motion;
-bool vectorValid(const pxr::GfVec3f& v) {
-    return std::isfinite(v[0]) && std::isfinite(v[1]) && std::isfinite(v[2]);
-}
-bool rotationValid(const pxr::GfQuatf& q) {
-    const auto& v = q.GetImaginary();
-    const double w = q.GetReal();
-    return vectorValid(v) && std::isfinite(w) &&
-        std::abs(w*w + double(v[0])*v[0] + double(v[1])*v[1] + double(v[2])*v[2] - 1.0) <= 1e-6;
-}
 void require(bool condition, const char* message) {
     if (!condition) throw std::invalid_argument(message);
 }
+bool identity(const std::string& value) {
+    return !value.empty() && value.find('\0') == std::string::npos;
+}
 void validate(const ClipPoseAdapterConfig& c) {
-    require(!c.evaluatorId.empty() && !c.layoutId.empty() && c.layoutVersion && !c.skeletonId.empty(),
+    require(identity(c.evaluatorId) && identity(c.layoutId) && c.layoutVersion && identity(c.skeletonId),
             "Motion adapter requires evaluator/layout/skeleton identity");
+    require(c.after.size() <= std::numeric_limits<uint32_t>::max(), "Too many motion evaluator dependencies");
+    for (const auto& id : c.after)
+        require(identity(id), "Motion evaluator dependency IDs must be nonempty C strings");
     require(std::isfinite(c.clockScale) && c.clockScale > 0 && std::isfinite(c.clockOffset),
             "Motion clip clock mapping must be finite with positive scale");
     double norm = 0;
@@ -38,69 +36,37 @@ void validate(const ClipPoseAdapterConfig& c) {
                 "Root placement must be finite and rigid");
     const auto& joints = c.skeleton.GetJoints();
     require(!joints.empty() && joints.size() <= size_t(std::numeric_limits<int32_t>::max()) &&
-            c.jointIds.size() == joints.size() && c.skeleton.IsTopologicallyOrdered(),
-            "Motion adapter requires a nonempty ordered skeleton and complete joint mapping");
-    std::set<std::string> tokens, ids;
-    for (size_t i = 0; i < joints.size(); ++i) {
-        const auto& j = joints[i];
-        require(!j.token.empty() && tokens.insert(j.token).second && !c.jointIds[i].empty() &&
-                ids.insert(c.jointIds[i]).second, "Motion joint bindings must be distinct and nonempty");
-        require(rotationValid(j.restRotation) && vectorValid(j.restTranslation) && vectorValid(j.restScale),
-                "Motion skeleton rest transforms must be finite with unit rotations");
+            c.jointIds.size() == joints.size(),
+            "Motion adapter requires a nonempty skeleton and complete runtime joint mapping");
+    std::set<std::string> ids;
+    for (const auto& id : c.jointIds)
+        require(!id.empty() && id.find('\0') == std::string::npos && ids.insert(id).second,
+                "Motion runtime joint IDs must be distinct, nonempty and contain no NULs");
+    // The runtime C boundary cannot represent embedded NULs in owner tokens.
+    for (const auto& joint : joints)
+        require(joint.token.find('\0') == std::string::npos, "Motion joint tokens must be representable as C strings");
+    // Reject an ambiguous many-role-to-one-target binding as before; the owner
+    // detects the collision. Its recoverable policy is valid for other hosts.
+    require(c.map.FindDuplicateJointIndices().empty(), "Motion humanoid map has duplicate runtime targets");
+}
+void validateOwner(const ClipPoseAdapterConfig& c, const ArDiagnosticSink& sink) {
+    const auto rig = motion::ValidateRetargetConfiguration(c.skeleton, c.map, c.sourceRest, c.options);
+    if (!rig.IsValid()) {
+        MotionValidationError error("usd-motion-plugins.motionRetarget", AR_MOTION_RETARGET_VERSION, rig.values);
+        error.Emit(sink); throw error;
     }
-    require(c.map.FindDuplicateJointIndices().empty(), "Motion humanoid map has duplicate targets");
-    for (size_t i = 0; i < motion::HumanJointCount; ++i) {
-        const auto index = c.map.GetJointIndex(static_cast<motion::HumanJoint>(i));
-        require(index == motion::RetargetMap::kUnmapped || (index >= 0 && size_t(index) < joints.size()),
-                "Motion humanoid mapping names an invalid target index");
-        require(rotationValid(c.sourceRest.localRotations[i]) && vectorValid(c.sourceRest.localTranslations[i]),
-                "Motion source rest must be finite with unit rotations");
-        size_t walk = i, length = 0;
-        while (walk != motion::SourceRestPose::kNoParent) {
-            require(walk < motion::HumanJointCount && length++ < motion::HumanJointCount,
-                    "Motion source rest hierarchy is invalid or cyclic");
-            walk = c.sourceRest.parents[walk];
-        }
-    }
-    require(c.options.targetRest.localRotations.size() <= joints.size(), "Motion target rest exceeds the skeleton");
-    for (const auto& q : c.options.targetRest.localRotations)
-        require(!q || rotationValid(*q), "Motion target reference rest must have unit finite rotations");
-    const auto mode = c.options.rootMotion.mode;
-    require(mode == motion::RootMotionMode::Ignore || mode == motion::RootMotionMode::Hips ||
-            mode == motion::RootMotionMode::RootJoint, "Unknown motion root policy");
-    require(std::isfinite(c.options.rootMotion.translationScale), "Motion root translation scale must be finite");
-    for (auto bone : c.options.requiredBones)
-        require(motion::IsValidHumanJoint(bone), "Motion required bone is outside the owner vocabulary");
-    double previous = -std::numeric_limits<double>::infinity();
-    for (const auto& pose : c.clip.samples) {
-        require(std::isfinite(pose.timestamp) && pose.timestamp >= previous,
-                "Motion clip timestamps must be finite and nondecreasing");
-        require(!std::isfinite(previous) || std::isfinite(pose.timestamp - previous),
-                "Motion clip interpolation spans must be finite");
-        previous = pose.timestamp;
-        for (size_t i = 0; i < motion::HumanJointCount; ++i)
-            require(!pose.validRotations[i] || rotationValid(pose.localRotations[i]),
-                    "Driven motion rotations must be finite unit quaternions");
-        require(!pose.root.hasPosition || vectorValid(pose.root.worldPosition), "Motion root position must be finite");
-        require(!pose.root.hasOrientation || rotationValid(pose.root.worldOrientation), "Motion root rotation must be finite and unit");
-        // The sampler also interpolates these fields even though the adapter
-        // publishes only pose. Validate present values before calling it.
-        require(!pose.root.hasLinearVelocity || vectorValid(pose.root.linearVelocity), "Motion velocity must be finite");
-        require(!pose.root.hasAngularVelocity || vectorValid(pose.root.angularVelocity), "Motion velocity must be finite");
-        require(!pose.lookAtTarget || vectorValid(*pose.lookAtTarget), "Motion gaze point must be finite");
-        for (const auto& channel : pose.channels.entries)
-            require(!channel.name.empty() && std::isfinite(channel.value), "Motion channels must be named and finite");
-        if (pose.confidence)
-            for (float confidence : *pose.confidence)
-                require(std::isfinite(confidence) && confidence >= 0 && confidence <= 1,
-                        "Motion confidence must lie in [0,1]");
+    const auto clip = motion::ValidateMotionClip(c.clip);
+    if (!clip.IsValid()) {
+        MotionValidationError error("usd-motion-plugins.motionCore", AR_MOTION_CORE_VERSION, clip);
+        error.Emit(sink); throw error;
     }
 }
 void emit(const ArEvaluationContext& c, const char* code, const std::string& subject,
-          const char* message, ArStatus status = AR_OK, uint32_t severity = AR_SEVERITY_WARNING) {
+          const char* message, ArStatus status = AR_OK, uint32_t severity = AR_SEVERITY_WARNING,
+          const char* origin = "usd-avatar-runtime.avatarMotionAdapter") {
     ArDiagnostic d{AR_HEADER(ArDiagnostic)};
     d.status = status; d.severity = severity; d.code = code;
-    d.origin = "usd-motion-plugins.motionRetarget";
+    d.origin = origin;
     d.subject = subject.c_str(); d.message = message;
     if (c.diagnostics.emit) c.diagnostics.emit(c.diagnostics.user_data, &d);
 }
@@ -116,9 +82,11 @@ struct ClipPoseAdapter::Impl {
     motion::RetargetDiagnostics rigDiagnostics;
     std::vector<const char*> after;
     ArCapability capability{"avatar.motion.clipPose", 1};
-    static ClipPoseAdapterConfig checked(ClipPoseAdapterConfig c) { validate(c); return c; }
-    explicit Impl(ClipPoseAdapterConfig c)
-        : config(checked(std::move(c))), retargeter(config.skeleton, config.map, config.sourceRest, config.options),
+    static ClipPoseAdapterConfig checked(ClipPoseAdapterConfig c, const ArDiagnosticSink& sink) {
+        validate(c); validateOwner(c, sink); return c;
+    }
+    explicit Impl(ClipPoseAdapterConfig c, const ArDiagnosticSink& sink)
+        : config(checked(std::move(c), sink)), retargeter(config.skeleton, config.map, config.sourceRest, config.options),
           rigDiagnostics(motion::DiagnoseRig(config.skeleton, config.map, config.options)) {
         for (const auto& id : config.after) after.push_back(id.c_str());
     }
@@ -127,7 +95,8 @@ struct ClipPoseAdapter::Impl {
             const std::string code(motion::RetargetDiagnosticCodeString(d.code));
             const uint32_t severity = d.severity == motion::RetargetDiagnosticSeverity::Info ? AR_SEVERITY_INFO :
                 d.severity == motion::RetargetDiagnosticSeverity::Error ? AR_SEVERITY_ERROR : AR_SEVERITY_WARNING;
-            emit(c, code.c_str(), d.subject, d.detail.c_str(), AR_OK, severity);
+            emit(c, code.c_str(), d.subject, d.detail.c_str(), AR_OK, severity,
+                 "usd-motion-plugins.motionRetarget");
         }
     }
     ArStatus evaluate(const ArEvaluationContext& c, const ArStateWriter& writer) const {
@@ -198,12 +167,13 @@ struct ClipPoseAdapter::Impl {
         return static_cast<const Impl*>(user)->evaluate(*c, *w);
     }
 };
-ClipPoseAdapter::ClipPoseAdapter(ClipPoseAdapterConfig config) : impl_(std::make_unique<Impl>(std::move(config))) {}
+ClipPoseAdapter::ClipPoseAdapter(ClipPoseAdapterConfig config, ArDiagnosticSink diagnostics)
+    : impl_(std::make_unique<Impl>(std::move(config), diagnostics)) {}
 ClipPoseAdapter::~ClipPoseAdapter() = default;
 ArEvaluatorDesc ClipPoseAdapter::Descriptor() const {
     ArEvaluatorDesc d{AR_HEADER(ArEvaluatorDesc)};
     d.id = impl_->config.evaluatorId.c_str(); d.provider_id = "usd-motion-plugins.motionRetarget";
-    d.provider_version = "motionSampling/" AR_MOTION_SAMPLING_VERSION ";motionRetarget/" AR_MOTION_RETARGET_VERSION;
+    d.provider_version = "motionCore/" AR_MOTION_CORE_VERSION ";motionSampling/" AR_MOTION_SAMPLING_VERSION ";motionRetarget/" AR_MOTION_RETARGET_VERSION;
     d.phase = AR_PHASE_RETARGET; d.reads = AR_DOMAIN_POSE; d.writes = AR_DOMAIN_POSE;
     d.after = impl_->after.data(); d.after_count = uint32_t(impl_->after.size());
     d.supplies = &impl_->capability; d.supply_count = 1;

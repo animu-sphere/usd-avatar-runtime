@@ -58,7 +58,8 @@ Start at [docs/](docs/README.md). The
 implementation direction. The adopted
 [boundary cleanup policy](docs/design/BOUNDARY_POLICY.md) adds motion validation
 and USD skeleton/rest ownership cleanup, thin adapters and recording publication
-rules. These migrations remain planned. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
+rules. Motion validation delegation and input-bridge naming are implemented;
+USD skeleton/rest and publication migrations remain planned. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
 prioritizes real motion -> VRM -> evaluated state -> `hydra-toon` fast-path,
 then MMD validation of the shared scheduler/state model before ABI freeze.
 Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the
@@ -94,9 +95,12 @@ requires an owner install with `VRMRIG_LOOKAT_DIRECTION_API`.
 Its constructed-rig tests do not establish real-avatar acceptance.
 An optional [motion clip pose adapter](docs/architecture/MOTION_ADAPTER.md)
 connects installed owner sampling/retargeting to runtime pose. Its host-side
-input assembler maps selected motion scalar channels and world gaze points
+`MotionPoseInputBridge` (`InputAssembler` source alias) maps selected motion
+scalar channels and world gaze points
 to owned input frames, validating motion -> input -> VRM LookAt/Expression
-with constructed bindings. An optional
+with constructed bindings. The motion component requires installed owner
+validation APIs and preserves owner reports through `MotionValidationError`
+and synchronous diagnostic sinks. An optional
 [USD skeleton binding](docs/architecture/USD_BINDING.md) reads authored
 joint/rest layout into owned baseline and motion-owner values with explicit
 Humanoid mappings, metre conversion and rigid placement. Multi-source input selection,
