@@ -46,8 +46,10 @@ and USD integrations are separately optional targets:
 | `avatarVrmAdapter` / VRM USD binding targets | owner LookAt/expression evaluation and authored configuration |
 | `avatarMotionCheck` | opt-in real-asset adapter parity host |
 
-MMD, Hydra, `hydra-toon` publication, recording publication, OpenExec and
-inspect/replay/benchmark components remain planned. See
+MMD, Hydra, reusable `hydra-toon` publication, recording publication, OpenExec and
+inspect/replay/benchmark components remain planned. The optional motion-check
+host can validate resolved values through installed `Toon::AvatarState` probe
+resources. See
 [project layout](docs/architecture/PROJECT_LAYOUT.md) for current targets and
 the intended responsibility split.
 
@@ -130,3 +132,11 @@ representative captured expression/gaze and automatic native discovery remain
 open. See the [USD motion binding](docs/architecture/MOTION_USD_BINDING.md).
 
 See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.
+
+With the motion-check tool and VRM adapter enabled, `AVATAR_MOTION_CHECK_TOON=ON`
+adds an installed `Toon` `AvatarState` dependency only to that host. Use a renderer
+install containing the additive `BaseColorRgb` binding. Run
+`avatarMotionCheck --vrm --toon <avatar> <motion> [motion ...]` to check retained
+state-to-palette/morph/material transport. This constructs probe resources;
+actual avatar rendering and Hydra/direct parity remain open. See
+[output paths](docs/architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).

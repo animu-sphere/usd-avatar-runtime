@@ -159,6 +159,13 @@ milestone acceptance remain open.
 
 ## Evidence milestones
 
+The optional motion-check `--toon` mode now validates installed consumer
+transport with real-motion/actual-avatar values and explicit probe resources,
+including reset, rebinding and independent snapshot retention. Actual avatar
+resident mesh/material binding and rendering, consumer cost measurements and
+Hydra/direct parity remain workstream C/E and RT-O9 work. Probe transport does
+not complete milestone B. See [output paths](../architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
+
 These milestones describe end-to-end evidence, not completion of the similarly
 lettered Runtime Phases:
 

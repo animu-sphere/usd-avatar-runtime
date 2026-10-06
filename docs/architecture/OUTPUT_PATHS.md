@@ -58,9 +58,10 @@ requires binding invalidation; it is distinct from a value-only runtime update.
 Experimental `evaluate_frame`/`get_snapshot`/`retain_snapshot`/`release_snapshot`
 expose the complete resolved state through
 [`api.h`](../../include/avatarRuntime/api.h). Snapshot transport/lifetime are
-implemented and tested. Renderer binding, consumer capability negotiation and
-Hydra/direct parity remain unimplemented; this snapshot API alone does not
-complete Runtime Phase C.
+implemented and tested. The optional motion-check host now composes the
+installed `Toon::AvatarState` consumer over an explicit probe scene as described
+below. Actual resident-avatar binding, full consumer capability negotiation and
+Hydra/direct parity remain open; this does not complete Runtime Phase C.
 
 ```text
 EvaluatedAvatarState -> direct consumer adapter -> renderer resources
@@ -87,7 +88,45 @@ do not interpret VRM LookAt, expression arbitration, MMD morph semantics, IK
 or retargeting. Test layout change versus value-only update explicitly; a reset
 generation alone must not imply changed topology. Measure latency, bytes/copies
 and allocations with the actual input/state/layout and renderer configuration.
-These are planned adapter requirements, not existing renderer support.
+Actual avatar geometry/resource binding and rendering remain planned requirements.
+
+### Scoped Toon transport check
+
+`AVATAR_MOTION_CHECK_TOON` optionally links only `avatarMotionCheck` and its
+regression host to an installed `Toon` package's `AvatarState` component.
+It requires the VRM mode and the additive `BaseColorRgb` binding; a configure-time
+header probe rejects older same-version renderer installations. Core and
+all reusable runtime/provider targets retain their existing dependencies.
+
+`avatarMotionCheck --vrm --toon <avatar> <motion> [motion ...]` evaluates the
+existing motion/LookAt/Expression plan and compares the owner's results to
+state before handing the completed snapshot to the renderer-owned adapter.
+The host explicitly constructs a triangle probe with a reversed joint palette,
+reversed resolved morph slots and canonical material bindings from the VRM
+owner's slot table. All six colour slots map explicitly, including separate
+base RGB/alpha. Unknown material inputs and visibility layouts are refused,
+rather than silently omitted. This is a transport probe, not extraction or
+rendering of the avatar's actual meshes, inverse binds or material resources.
+
+The probe uses centimetre scene units, identity inverse binds and explicit
+renderer-space transforms. An independent double-precision USD matrix oracle
+compares parent-composed joint values, while all weights and material RGB/alpha
+are checked. Matrix/weight comparisons use
+`abs(actual-expected)/max(1,abs(expected)) <= 2e-6`; matrix translations are
+converted back to metres before comparison. Material values must exactly match
+the expected float conversion. Owner/state comparisons keep their existing
+`1e-6` tolerance. These measure transport parity, not provider mathematics.
+
+Every result also reaches `ApplyFastSnapshot` without structural changes.
+Frame/instance/generation/layout/input revision and binding epoch are checked;
+duplicate results reuse dynamic arrays/revisions, reset preserves binding,
+older generations are refused atomically and a changed layout requires rebinding.
+The host releases all producer snapshot references after runtime destruction,
+then checks independently retained old/current consumer snapshots and release
+restoration. The regression oracle rejects deliberately perturbed palettes,
+weights and materials. No GPU, per-frame USD authoring or consumer-cost claim
+is implied. Validation evidence and its asset limits belong in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).
 
 ## 3. Recording, baking and export
 

@@ -31,7 +31,7 @@ result/WS-O4 decision and final StageClip absorption remain on the
 | selected USD motion inputs | StageClip forwards owner MotionStageReadOptions through the strict reader; tool attribute selection, clip-to-world rigid gaze placement and untouched world probes implemented; generated native VRMA expression/keyed/default gaze fixtures drive an actual avatar with owner parity; automatic native discovery and representative capture evidence pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md) |
 | motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping plus seven real VRMA clips on one private avatar via owned USD clip/source rest, with all-joint parity and reset/retention; full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [USD motion binding](../architecture/MOTION_USD_BINDING.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; scoped expression/output extraction available separately | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
-| Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
+| Hydra state overlay and direct consumer API | retained direct snapshot API implemented; optional motion-check host consumes installed Toon AvatarState for joint/morph/material probe transport, duplicate/reset/rebind/retention and late draw-value parity; actual resident-avatar binding/rendering, consumer-cost evidence and Hydra/direct parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
 | USD LookAt binding | separate optional owner schema/raw range-map extraction, head/eye/rest bindings and owned adapter configuration; constructed bone quaternion/expression-weight parity; one private avatar's Expression-type rig with test gaze and actual morph outputs, also composed with seven real clips driving the working head; explicit native keyed/default VRMA fixture gaze intake validated; representative captured gaze pending | [VRM LookAt USD binding](../architecture/VRM_LOOKAT_USD_BINDING.md) |
 | USD Expression binding | optional applied owner expression discovery, explicit mesh blend-shape token mapping, indexed/legacy material binds and owned canonical RGB/alpha baseline; all-slot constructed owner parity and one private avatar's 18 expressions/48 morph slots with test scalar/gaze LookAt composition; shared-mesh targets and real-avatar material evidence pending | [VRM Expression USD binding](../architecture/VRM_EXPRESSION_USD_BINDING.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
@@ -189,6 +189,38 @@ snapshots pass after stage/runtime destruction. Paths, hashes, package versions
 and command logs remain in ignored build evidence. Real-avatar bone-eye conformance, real-motion-to-LookAt
 composition, connectors and renderer evidence remain open; no milestone or
 ABI freeze is claimed.
+
+The optional `AVATAR_MOTION_CHECK_TOON` integration was checked on 2026-10-07
+with the same Windows x64/MSVC/OpenUSD Release environment and a separately
+built/installed local `Toon::AvatarState` consumer. Its additive `BaseColorRgb`
+binding supports canonical RGB plus separate alpha; a configure-time probe
+requires that header/API. Only the opt-in host and regression executable link
+the renderer. The runtime's full 16-test configuration passes, including
+constructed bone/expression LookAt with placed roots, all six material slots,
+selected native scalar/gaze inputs and deliberately perturbed transport values.
+
+Seven private VRMA clips on the same 128-joint/48-morph avatar pass 8,286 frames
+per mode, with and without host scalar/gaze probes. Three generated owner VRMA
+expression/keyed/default-gaze fixtures add 26 frames without probes. All
+16,598 frames reach the installed adapter and late draw list; the maximum
+matrix/weight normalized error is `4.612073397e-7` against a `2e-6` bound, with
+translations compared in metres. Existing owner/state maximum component error
+remains `1.403972313e-7`. Duplicate arrays/revisions, reset without structural
+rebinding, old-generation/layout rejection, independently retained snapshots
+after producer release/destruction and baseline restoration pass. Asset hashes,
+commands and logs remain in ignored local evidence.
+
+The resident resources here are an explicit triangle probe, with reversed
+palette/morph slots and centimetre units, not the avatar's actual renderer
+resources. This avatar has no material binds; constructed fixtures supply
+RGB/alpha evidence. The renderer's focused split-RGB/alpha and installed-consumer
+tests pass in its owning repository, along with its existing runtime/GPU checks.
+A separate Toon-disabled host regression and all three core-only tests pass;
+an actual older same-version Toon install is refused by the header probe with
+the expected configure diagnostic. Actual mesh/inverse-bind/material
+extraction, GPU rendering of the avatar, visibility mapping, Hydra/direct
+parity, consumer latency/copies/allocations, milestones and ABI freeze remain
+open. See [the scoped transport contract](../architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
 
 The selected USD input handoff was checked on 2026-10-07 with the same
 Windows x64/MSVC/OpenUSD environment. `StageClip` forwards

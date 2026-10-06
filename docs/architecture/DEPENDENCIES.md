@@ -31,7 +31,10 @@ The optional [`avatarMotionUsdBinding`](MOTION_USD_BINDING.md) connects installe
 `motionUsd` semantic clip reading and owner source rest to motion evaluation,
 above the generic USD binder. The opt-in `avatarMotionCheck` host composes that
 binding, VRM schema Humanoid discovery and clip pose evaluation.
-MMD/connector adapters and OST composition remain unconfigured.
+The host's optional `AVATAR_MOTION_CHECK_TOON` mode consumes installed
+`Toon::AvatarState` for resolved-state probe transport only; no reusable runtime
+or provider target links the renderer. MMD/connector adapters and OST composition
+remain unconfigured.
 
 The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) refines
 these placement rules. The descriptions above record current integrations;

@@ -19,7 +19,9 @@ The same directory adds separate `avatarVrmLookAtUsdBinding` and
 configuration, enabled with the VRM evaluator adapter.
 Registry/diagnostics library separation remains prospective. The opt-in
 `tools/avatarMotionCheck` host is implemented; inspect/replay/benchmark hosts,
-MMD and publication adapters remain prospective. Do not create empty targets
+MMD and reusable publication adapters remain prospective. The motion-check host
+optionally consumes installed `Toon::AvatarState` for probe transport parity;
+it is not a renderer dependency of core or a resident-avatar binding. Do not create empty targets
 or rename working directories merely to match a responsibility sketch.
 
 ## Current targets
@@ -32,7 +34,7 @@ or rename working directories merely to match a responsibility sketch.
 | `avatarMotionUsdBinding` | `adapters/motion-usd`: thin strict owner clip read and descriptor/source-rest builder composition; final StageClip absorption pending |
 | `avatarVrmAdapter` | `adapters/vrm`: owner LookAt/expression registration and common-state mapping |
 | `avatarVrmUsdBinding`, `avatarVrmLookAtUsdBinding`, `avatarVrmExpressionUsdBinding` | `adapters/vrm-usd`: separately optional owner schema/configuration bindings |
-| `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host |
+| `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host, optionally with installed Toon probe transport checks |
 
 All adapter targets are optional; linking/finding only core must not resolve
 OpenUSD, VRM, MMD, Hydra or renderer packages.

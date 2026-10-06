@@ -8,6 +8,9 @@
 #include "vrmRig/RequiredBones.h"
 #include "VrmCheck.h"
 #endif
+#ifdef AR_CHECK_TOON
+#include "ToonCheck.h"
+#endif
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -91,7 +94,7 @@ double compare(const ArStateView& v, const avatarUsd::SkeletonBinding& binding,
     return error;
 }
 void check(const avatarUsd::SkeletonBinding& binding, const char* file,
-           const motion::MotionStageReadOptions& inputs
+           const motion::MotionStageReadOptions& inputs, bool withToon
 #ifdef AR_CHECK_VRM
            , avatarMotionCheck::VrmCheck* vrm = nullptr
 #endif
@@ -150,6 +153,12 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
     d.evaluators = ids.data(); d.evaluator_count = uint32_t(ids.size());
     d.bound_capabilities = capabilities.data(); d.bound_capability_count = uint32_t(capabilities.size());
     ArInstance instance = 0; ok(host.api.create_instance(host.runtime,&d,&sink,&instance),"create instance");
+#ifdef AR_CHECK_TOON
+    std::unique_ptr<avatarMotionCheck::ToonCheck> toon;
+    if (withToon) toon = std::make_unique<avatarMotionCheck::ToonCheck>(baseline);
+#else
+    (void)withToon;
+#endif
     std::set<double> times;
     for (size_t i = 0; i < c.clip.samples.size(); ++i) {
         times.insert(c.clip.samples[i].timestamp);
@@ -213,6 +222,9 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
         host.retained.push_back(snapshot);
         ArStateView view{AR_HEADER(ArStateView)}; ok(host.api.get_snapshot(snapshot,&view),"get snapshot");
         verifySnapshot(view,sourceSeconds,probes,stale,absent);
+#ifdef AR_CHECK_TOON
+        if (toon) toon->Apply(host.api,snapshot);
+#endif
         require(view.frame_id == input.frame_id && view.generation == generation &&
                 view.evaluation_seconds == input.evaluation_seconds && view.input_revision == frame &&
                 view.layout_id == c.layoutId && view.layout_version == c.layoutVersion &&
@@ -265,6 +277,15 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
     ArStateView reset{AR_HEADER(ArStateView)}; ok(host.api.get_snapshot(host.retained.back(),&reset),"retained reset snapshot");
     require(reset.frame_id == frame && reset.generation == 2,"reset snapshot identity changed");
     verifySnapshot(reset,(reset.evaluation_seconds-c.clockOffset)/c.clockScale,false,false,true);
+#ifdef AR_CHECK_TOON
+    if (toon) {
+        for (const auto snapshot : host.retained) ok(host.api.release_snapshot(snapshot),"release producer snapshot");
+        host.retained.clear();
+        toon->AfterProducerDestruction();
+        std::cout << std::setprecision(10) << "  toon probe_scene_frames=" << toon->Frames() << " max_relative_error=" << toon->MaxError()
+            << " duplicate/reset/rebind/retention=passed (transport only; no avatar rendering)\n";
+    }
+#endif
     require(!changedMotion.empty(),"Motion produced no observable avatar pose change before LookAt");
     std::cout << std::setprecision(10) << file << ": samples=" << c.clip.samples.size()
         << " duration=" << c.clip.samples.back().timestamp-c.clip.samples.front().timestamp
@@ -291,6 +312,7 @@ int avatarMotionCheckMain(int argc, char** argv) {
     try {
         int first = 1;
         bool withVrm = false;
+        bool withToon = false;
         std::map<std::string,float> weights;
         std::optional<pxr::GfVec3f> gaze;
         motion::MotionStageReadOptions inputs;
@@ -302,6 +324,7 @@ int avatarMotionCheckMain(int argc, char** argv) {
         while (first < argc && std::string(argv[first]).rfind("--",0) == 0) {
             const std::string option = argv[first++];
             if (option == "--vrm") withVrm = true;
+            else if (option == "--toon") withToon = true;
             else if (option == "--channel-input") {
                 require(first+3 <= argc,"--channel-input requires name-attribute value-attribute prefix");
                 const std::string name = argv[first++], value = argv[first++], prefix = argv[first++];
@@ -321,11 +344,15 @@ int avatarMotionCheckMain(int argc, char** argv) {
             } else throw std::runtime_error("Unknown option: "+option);
         }
         require(withVrm || (!gaze && weights.empty()),"Probe options require --vrm");
+        require(!withToon || withVrm,"--toon requires --vrm");
+#ifndef AR_CHECK_TOON
+        require(!withToon,"--toon requires AVATAR_MOTION_CHECK_TOON and an installed Toon AvatarState component");
+#endif
 #ifndef AR_CHECK_VRM
         require(!withVrm,"--vrm requires AVATAR_BUILD_VRM_ADAPTER");
 #endif
         if (argc-first < 2) {
-            std::cerr << "Usage: avatarMotionCheck [--channel-input name-attribute value-attribute prefix ...] [--gaze-input attribute] [--vrm [--gaze-point X Y Z] [--weight expression=value ...]] <avatar> <motion> [motion ...]\n";
+            std::cerr << "Usage: avatarMotionCheck [--channel-input name-attribute value-attribute prefix ...] [--gaze-input attribute] [--vrm [--toon] [--gaze-point X Y Z] [--weight expression=value ...]] <avatar> <motion> [motion ...]\n";
             return 2;
         }
         auto stage = pxr::UsdStage::Open(argv[first++]);
@@ -343,7 +370,7 @@ int avatarMotionCheckMain(int argc, char** argv) {
         }
 #endif
         stage.Reset();
-        for (int i = first; i < argc; ++i) check(binding.Skeleton(),argv[i],inputs
+        for (int i = first; i < argc; ++i) check(binding.Skeleton(),argv[i],inputs,withToon
 #ifdef AR_CHECK_VRM
             ,vrm.get()
 #endif
