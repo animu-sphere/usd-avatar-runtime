@@ -20,9 +20,10 @@ struct SkeletonBindingConfig {
 };
 
 // Read authored default-time skeleton/rest and placement once. The caller
-// asserts the canonical +Z-forward basis; Y-up and units are checked here.
-// Uses owner BuildSkeletonDescriptor/RetargetMap, never name heuristics.
-// Throws invalid_argument with a diagnostic code and subject on bad bindings.
+// asserts the canonical +Z-forward basis; owner ReadSkeleton checks Y-up,
+// units, rest/topology and rigid placement. Owner builders supply descriptor/map.
+// Binding errors throw invalid_argument; owner reading refusals use its
+// MotionUsdReadError subclass with owned code/subject/detail and version.
 // Immutable owned values outlive the stage and can be shared across copies.
 class SkeletonBinding {
 public:

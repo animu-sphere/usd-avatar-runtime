@@ -8,38 +8,44 @@ owner: usd-avatar-runtime
 The optional `avatarMotionUsdBinding` owns a host-side connection from an
 already composed semantic motion stage to the existing
 [clip pose adapter](MOTION_ADAPTER.md). It calls installed `motionUsd` to read
-the clip and installed `motionRetarget` to build its source rest. File parsing,
+the canonical clip/rest arrays and installed `motionRetarget` to build source
+descriptor/rest values. File parsing,
 sampling and retarget mathematics remain with their owners. Runtime core and
 its revision-3 C ABI are unchanged.
 
-## Boundary cleanup target
+## Scoped owner reading split
 
 The adopted [boundary policy section 7](../design/BOUNDARY_POLICY.md#7-stageclip-cleanup)
-phases out the current `StageClip` form. Although it already calls the owner
-reader and source-rest builder, local source skeleton interpretation and generic
-USD validation still run through runtime's `SkeletonBinding`. Move that work,
-including source-rest preparation, to `motionUsd` owner APIs. Runtime keeps
-only a thin helper connecting owner clip/source-rest results to evaluator
-registration and target runtime bindings; it must not reconstruct a private
-`MotionStageRead` equivalent. The owner result/signature must be agreed upstream.
+phases out the current `StageClip` form. `StageClip` now calls the installed
+`motionUsd::ReadCanonicalMotionStage`, which owns source skeleton reading and
+generic units/axis/rate/placement validation. It no longer creates a runtime
+`SkeletonBinding` for the source. The helper preserves the owner's
+`MotionStageRead` and invokes the existing owner descriptor/source-rest builders;
+it contains no USD motion conversion or private motion result vocabulary.
 
-The API and rejection rules below describe the current implementation.
-Migration is open in [cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams);
-this documentation change does not remove or rename `StageClip`.
+The owner's WS-O4 decision and coherent typed clip/source-rest read remain open.
+This scoped migration keeps `StageClip` source compatibility while that result
+and final wrapper absorption are settled in
+[cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams).
 
 ## Build and use
 
 Enable `AVATAR_BUILD_USD_BINDING` and `AVATAR_BUILD_MOTION_USD_BINDING`, with
 installed `motionUsd`/`motionRetarget` 0.5.3, `motionCore` and OpenUSD packages.
+The strict reader is additive and unreleased; a configure-time header/link
+probe rejects older same-version owner installations.
 This binding alone does not require `motionSampling`, `vrmRig` or `vrmSchema`.
 Installed consumers request `COMPONENTS motion_usd` and link
 `AvatarRuntime::avatarMotionUsdBinding`; the generic `usd` component resolves
-transitively. Core-only, `usd` and `vrm_usd` lookups do not resolve `motionUsd`.
+transitively. The generic `usd`/`vrm_usd` bindings now resolve `motionUsd` for
+owner skeleton reading, while importing no source-clip adapter or sampler.
+Core-only lookups still resolve no provider package.
 
 [`StageClip`](../../adapters/motion-usd/include/avatarMotionUsd/StageClip.h)
-requires a stage and an explicit skeleton prim path. It validates the source
-skeleton using the generic USD binder, reads its bound animation through the
-owner and constructs `SourceRestPose` from the validated source skeleton.
+requires a stage and an explicit skeleton prim path. The strict owner reader
+validates source skeleton and clip-space metadata and reads the bound animation.
+The helper invokes the owner builders for `SourceRestPose` from validated rest
+arrays without runtime avatar/layout identities for the source.
 Copies share immutable storage and survive stage changes/destruction.
 `Read()` preserves the owner's clip, skeleton, animation identity, encoding
 rate, optional metadata and warnings. No reader warning is suppressed.
@@ -55,11 +61,14 @@ separate host responsibility.
 The scoped source boundary accepts Y-up metre stages with identity skeleton
 placement, authored rest and a finite positive time-code rate. It rejects
 other units and placements rather than silently treating their translations
-as canonical world metres. The generic binder checks rest/topology/TRS;
+as canonical world metres. The owner reader checks rest/topology/TRS;
 the owner rejects ambiguous semantic rest roles. Missing rest is rejected,
 even when the reader could synthesize identity, because that would change
-root-height interpretation. Failures throw `invalid_argument` with
-`MOTION_USD_*` or delegated `USD_BINDING_*` codes and subjects. There is no
+root-height interpretation. Owner reader refusals throw the shared
+`avatarUsd::MotionUsdReadError`, retaining unmodified code/subject/detail and
+installed owner version; existing `invalid_argument` handlers remain valid.
+Owner builder failures retain the scoped `MOTION_USD_SOURCE_REST` integration
+error. There is no
 joint-name heuristic for target avatars, source polling, per-frame stage
 authoring or new C++ cross-toolchain ABI guarantee.
 

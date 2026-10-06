@@ -49,6 +49,7 @@ write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfig
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfigVersion.cmake
     cmake/AvatarMotionValidation.cmake
+    cmake/AvatarMotionUsdReading.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
 
 if(AVATAR_BUILD_TESTS)

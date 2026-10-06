@@ -1,4 +1,5 @@
 #include "avatarUsd/SkeletonBinding.h"
+#include "avatarUsd/MotionUsdReadError.h"
 #include "avatarRuntime/api.h"
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/metrics.h"
@@ -15,6 +16,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 
 #define CHECK(x) do { if (!(x)) { std::cerr << "Line " << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while (0)
@@ -92,35 +94,35 @@ void invalid() {
     auto c = config(); c.layoutVersion = 0; reject(stage(),c,"USD_BINDING_LAYOUT");
     c = config(); c.avatarRoot = pxr::SdfPath("/Missing"); reject(stage(),c,"USD_BINDING_AVATAR_ROOT");
     c = config(); c.skeleton = pxr::SdfPath("/Other"); reject(stage(),c,"USD_BINDING_SKELETON_PATH");
-    c = config(); c.skeleton = c.avatarRoot; reject(stage(),c,"USD_BINDING_SKELETON");
+    c = config(); c.skeleton = c.avatarRoot; reject(stage(),c,"MOTION_USD_SKELETON");
     c = config(); c.humanoid[0].joint = "Missing"; reject(stage(),c,"USD_BINDING_HUMANOID_JOINT");
     c = config(); c.humanoid[1].joint = c.humanoid[0].joint; reject(stage(),c,"USD_BINDING_HUMANOID_DUPLICATE");
     c = config(); c.humanoid[1].bone = c.humanoid[0].bone; reject(stage(),c,"USD_BINDING_HUMANOID_DUPLICATE");
-    auto s = stage(); CHECK(pxr::UsdGeomSetStageUpAxis(s,pxr::UsdGeomTokens->z)); reject(s,config(),"USD_BINDING_UP_AXIS");
-    s = stage(); CHECK(pxr::UsdGeomSetStageMetersPerUnit(s,0)); reject(s,config(),"USD_BINDING_UNITS");
+    auto s = stage(); CHECK(pxr::UsdGeomSetStageUpAxis(s,pxr::UsdGeomTokens->z)); reject(s,config(),"MOTION_USD_UP_AXIS");
+    s = stage(); CHECK(pxr::UsdGeomSetStageMetersPerUnit(s,0)); reject(s,config(),"MOTION_USD_UNITS");
     s = stage(); auto sk = pxr::UsdSkelSkeleton(s->GetPrimAtPath(config().skeleton));
-    CHECK(sk.GetRestTransformsAttr().Set(pxr::VtMatrix4dArray{})); reject(s,config(),"USD_BINDING_REST_COUNT");
+    CHECK(sk.GetRestTransformsAttr().Set(pxr::VtMatrix4dArray{})); reject(s,config(),"MOTION_USD_REST_COUNT");
     auto badTokens = [&](pxr::VtTokenArray tokens, const char* code) {
         auto st = stage(); auto skeleton = pxr::UsdSkelSkeleton(st->GetPrimAtPath(config().skeleton));
         CHECK(skeleton.GetJointsAttr().Set(tokens)); reject(st,config(),code);
     };
-    badTokens({pxr::TfToken("A"),pxr::TfToken("A"),pxr::TfToken("B"),pxr::TfToken("C")},"USD_BINDING_JOINT_TOKEN");
-    badTokens({pxr::TfToken("A/B"),pxr::TfToken("A"),pxr::TfToken("B"),pxr::TfToken("C")},"USD_BINDING_PARENT_ORDER");
+    badTokens({pxr::TfToken("A"),pxr::TfToken("A"),pxr::TfToken("B"),pxr::TfToken("C")},"MOTION_USD_JOINT_TOKEN");
+    badTokens({pxr::TfToken("A/B"),pxr::TfToken("A"),pxr::TfToken("B"),pxr::TfToken("C")},"MOTION_USD_TOPOLOGY");
     auto badMatrix = [&](pxr::GfMatrix4d matrix, const char* code) {
         auto st = stage(); auto skeleton = pxr::UsdSkelSkeleton(st->GetPrimAtPath(config().skeleton));
         pxr::VtMatrix4dArray matrices; CHECK(skeleton.GetRestTransformsAttr().Get(&matrices));
         matrices[0] = matrix; CHECK(skeleton.GetRestTransformsAttr().Set(matrices)); reject(st,config(),code);
     };
-    auto m = trs(pxr::GfVec3d(0)); m[0][1] = 0.2; badMatrix(m,"USD_BINDING_SHEAR");
-    badMatrix(trs(pxr::GfVec3d(0),0,pxr::GfVec3d(-1,1,1)),"USD_BINDING_REFLECTION");
-    badMatrix(trs(pxr::GfVec3d(0),0,pxr::GfVec3d(0,1,1)),"USD_BINDING_SCALE");
-    m = trs(pxr::GfVec3d(0)); m[0][3] = 1; badMatrix(m,"USD_BINDING_NONAFFINE");
-    m = trs(pxr::GfVec3d(0)); m[3][3] = 1 + 2e-12; badMatrix(m,"USD_BINDING_NONAFFINE");
-    m = trs(pxr::GfVec3d(0)); m[0][3] = 2e-12; badMatrix(m,"USD_BINDING_NONAFFINE");
-    m = trs(pxr::GfVec3d(0)); m[0][0] = std::numeric_limits<double>::infinity(); badMatrix(m,"USD_BINDING_NONFINITE");
-    badMatrix(trs(pxr::GfVec3d(1e100,0,0)),"USD_BINDING_FLOAT_RANGE");
+    auto m = trs(pxr::GfVec3d(0)); m[0][1] = 0.2; badMatrix(m,"MOTION_USD_SHEAR");
+    badMatrix(trs(pxr::GfVec3d(0),0,pxr::GfVec3d(-1,1,1)),"MOTION_USD_REFLECTION");
+    badMatrix(trs(pxr::GfVec3d(0),0,pxr::GfVec3d(0,1,1)),"MOTION_USD_SCALE");
+    m = trs(pxr::GfVec3d(0)); m[0][3] = 1; badMatrix(m,"MOTION_USD_NONAFFINE");
+    m = trs(pxr::GfVec3d(0)); m[3][3] = 1 + 2e-12; badMatrix(m,"MOTION_USD_NONAFFINE");
+    m = trs(pxr::GfVec3d(0)); m[0][3] = 2e-12; badMatrix(m,"MOTION_USD_NONAFFINE");
+    m = trs(pxr::GfVec3d(0)); m[0][0] = std::numeric_limits<double>::infinity(); badMatrix(m,"MOTION_USD_NONFINITE");
+    badMatrix(trs(pxr::GfVec3d(1e100,0,0)),"MOTION_USD_FLOAT_RANGE");
     s = stage(); CHECK(pxr::UsdGeomXform(s->GetPrimAtPath(config().avatarRoot)).AddScaleOp().Set(pxr::GfVec3f(2)));
-    reject(s,config(),"USD_BINDING_PLACEMENT_SCALE");
+    reject(s,config(),"MOTION_USD_PLACEMENT_SCALE");
 }
 void affineRoundoff() {
     auto s = stage(); auto sk = pxr::UsdSkelSkeleton(s->GetPrimAtPath(config().skeleton));
@@ -134,6 +136,40 @@ void affineRoundoff() {
     // Normalization is private to binding; authored values remain untouched.
     pxr::VtMatrix4dArray authored; CHECK(sk.GetRestTransformsAttr().Get(&authored));
     CHECK(authored == matrices);
+}
+void ownerReading() {
+    auto s = stage();
+    motion::SkeletonStageRead read; motion::SkeletonReadDiagnostic diagnostic;
+    CHECK(motion::ReadSkeleton(s,config().skeleton,&read,&diagnostic));
+    const auto expected = motion::BuildSkeletonDescriptor(read.skeleton.jointTokens,read.skeleton.restTransforms);
+    CHECK(expected.skeleton);
+    avatarUsd::SkeletonBinding binding(s,config());
+    CHECK(binding.JointIds() == read.skeleton.jointTokens);
+    for (size_t i = 0; i < binding.Skeleton().GetSize(); ++i) {
+        const auto& actual = binding.Skeleton().GetJoints()[i];
+        const auto& owner = expected.skeleton->GetJoints()[i];
+        CHECK(actual.token == owner.token && actual.parent == read.parents[i]);
+        CHECK(actual.restTranslation == owner.restTranslation && actual.restScale == owner.restScale);
+        CHECK(actual.restRotation == owner.restRotation.GetNormalized());
+    }
+    for (int k = 0; k < 3; ++k) {
+        CHECK(binding.RootPlacement().translation[k] == read.worldTranslation[k]);
+        CHECK(binding.RootPlacement().rotation[k] == read.worldRotation.GetImaginary()[k]);
+    }
+    CHECK(binding.RootPlacement().rotation[3] == read.worldRotation.GetReal());
+    // Keep the owner's record after the failed binding and source stage die.
+    CHECK(pxr::UsdGeomSetStageUpAxis(s,pxr::UsdGeomTokens->z));
+    CHECK(!motion::ReadSkeleton(s,config().skeleton,&read,&diagnostic));
+    std::optional<avatarUsd::MotionUsdReadError> retained;
+    try { avatarUsd::SkeletonBinding rejected(s,config()); }
+    catch (const avatarUsd::MotionUsdReadError& e) { retained = e; }
+    CHECK(retained);
+    s.Reset();
+    CHECK(retained->Diagnostic().code == diagnostic.code);
+    CHECK(retained->Diagnostic().subject == diagnostic.subject);
+    CHECK(retained->Diagnostic().detail == diagnostic.detail);
+    CHECK(std::string(retained->Owner()) == "motionUsd" && !retained->OwnerVersion().empty());
+    CHECK(std::string(retained->what()).find(diagnostic.code) == 0);
 }
 #ifdef AR_TEST_MOTION
 void composition() {
@@ -240,7 +276,7 @@ void composition() {
 } // namespace
 int main() {
     try {
-        baseline(); invalid(); affineRoundoff();
+        baseline(); invalid(); affineRoundoff(); ownerReading();
 #ifdef AR_TEST_MOTION
         composition();
 #endif

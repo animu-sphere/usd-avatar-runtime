@@ -23,7 +23,7 @@ before freeze; owner API work stays in its owning repository.
 
 | Workstream | Remaining work | Acceptance gate | Original Runtime Phase |
 | --- | --- | --- | --- |
-| B: USD/motion ownership | move StageClip motion-domain preparation to motionUsd; split SkeletonBinding into owner skeleton/rest conversion and runtime binding; delete duplicate conversion | owner supplies clip/source-rest and skeleton results with diagnostics; runtime retains avatar/layout/skeleton/joint identity, baseline and root placement; existing stage/copy lifetime, units, rejection and parity behavior remains verified | A/B |
+| B: USD/motion ownership | consolidate the scoped owner-reader/builder composition into typed skeleton/source-rest results after owner WS-O4 resolution; finish StageClip absorption | owner supplies clip/source-rest and skeleton results with diagnostics; runtime retains avatar/layout/skeleton/joint identity, baseline and root placement; existing stage/copy lifetime, units, rejection and parity behavior remains verified | A/B |
 | C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
 | D: MMD second provider | register owner MMD evaluator; validate bone/morph/control dependencies and shared pre/post-physics handoff | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; physics boundary order is explicit | A/B |
 | E: publication | finish fast-path and Hydra adapters, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
@@ -45,6 +45,15 @@ runtime binding checks remain, and `MotionPoseInputBridge` supplies compatible
 owned version/lifetime and installed-consumer evidence. The remaining
 workstreams above and the retained owner-version C ABI review under F remain
 open; this does not close Runtime Phase A or an evidence milestone.
+
+Workstream B now has a scoped reader split: installed `motionUsd::ReadSkeleton`
+owns generic rest/token/topology/matrix, units and rigid-placement validation;
+`ReadCanonicalMotionStage` additionally owns source clip-space/rate checks.
+Runtime binders invoke these and the existing owner descriptor/rest builders,
+retaining runtime identity/baseline/placement and owned owner refusals.
+Generic motionUsd validation no longer lives in runtime, and `StageClip` no
+longer creates a source avatar binding. The coherent typed owner result still
+needs WS-O4; this is not completion of workstream B or ABI freeze.
 
 ## Near-term implementation sequence
 

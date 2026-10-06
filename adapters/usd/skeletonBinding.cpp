@@ -1,12 +1,8 @@
 #include "avatarUsd/SkeletonBinding.h"
+#include "avatarUsd/MotionUsdReadError.h"
 #include "pxr/base/gf/rotation.h"
-#include "pxr/usd/usdGeom/metrics.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdGeom/xformCache.h"
-#include "pxr/usd/usdSkel/skeleton.h"
-#include "pxr/usd/usdSkel/topology.h"
+#include "pxr/usd/usd/prim.h"
 #include <cmath>
-#include <limits>
 #include <set>
 #include <stdexcept>
 
@@ -15,35 +11,6 @@ namespace {
 namespace motion = openstrata::motion;
 void require(bool condition, const char* code, const std::string& subject) {
     if (!condition) throw std::invalid_argument(std::string(code) + ": " + subject);
-}
-// The owner decomposition intentionally removes shear. Reject anything the
-// dense TRS boundary cannot reproduce before calling the owner.
-void validateMatrix(pxr::GfMatrix4d& m, const std::string& subject, bool rigid) {
-    for (int r = 0; r < 4; ++r)
-        for (int c = 0; c < 4; ++c)
-            require(std::isfinite(m[r][c]), "USD_BINDING_NONFINITE", subject);
-    // Imported parent-local transforms may contain inverse/multiply roundoff
-    // in the homogeneous column. Canonicalize only a tightly bounded residual
-    // before owner decomposition; perspective remains unsupported.
-    for (int r = 0; r < 4; ++r) {
-        const double expected = r == 3 ? 1.0 : 0.0;
-        require(std::abs(m[r][3] - expected) <= 1e-12,
-                "USD_BINDING_NONAFFINE", subject);
-        m[r][3] = expected;
-    }
-    pxr::GfVec3d rows[3];
-    for (int r = 0; r < 3; ++r) {
-        rows[r] = pxr::GfVec3d(m[r][0], m[r][1], m[r][2]);
-        const double length = rows[r].GetLength();
-        require(std::isfinite(length) && length > 0 && length <= std::numeric_limits<float>::max(),
-                "USD_BINDING_SCALE", subject);
-        require(!rigid || std::abs(length - 1) <= 1e-6, "USD_BINDING_PLACEMENT_SCALE", subject);
-        rows[r] /= length;
-    }
-    for (int r = 0; r < 3; ++r)
-        for (int c = r + 1; c < 3; ++c)
-            require(std::abs(pxr::GfDot(rows[r], rows[c])) <= 1e-6, "USD_BINDING_SHEAR", subject);
-    require(m.GetDeterminant3() > 0, "USD_BINDING_REFLECTION", subject);
 }
 ArTransform transform(const motion::SkeletonJoint& joint) {
     ArTransform t{};
@@ -80,45 +47,17 @@ struct SkeletonBinding::Impl {
                 bool(stage->GetPrimAtPath(config.avatarRoot)), "USD_BINDING_AVATAR_ROOT", config.avatarRoot.GetString());
         require(config.skeleton.IsAbsolutePath() && config.skeleton.IsPrimPath() &&
                 config.skeleton.HasPrefix(config.avatarRoot), "USD_BINDING_SKELETON_PATH", config.skeleton.GetString());
-        const pxr::UsdSkelSkeleton usdSkeleton(stage->GetPrimAtPath(config.skeleton));
-        require(bool(usdSkeleton), "USD_BINDING_SKELETON", config.skeleton.GetString());
-        require(pxr::UsdGeomGetStageUpAxis(stage) == pxr::UsdGeomTokens->y,
-                "USD_BINDING_UP_AXIS", config.avatarRoot.GetString());
-        const double units = pxr::UsdGeomGetStageMetersPerUnit(stage);
-        require(std::isfinite(units) && units > 0, "USD_BINDING_UNITS", config.avatarRoot.GetString());
-        pxr::VtTokenArray tokens;
-        pxr::VtMatrix4dArray rest;
-        require(usdSkeleton.GetJointsAttr().Get(&tokens) && !tokens.empty() &&
-                tokens.size() <= size_t(std::numeric_limits<int32_t>::max()),
-                "USD_BINDING_JOINTS", config.skeleton.GetString());
-        require(usdSkeleton.GetRestTransformsAttr().Get(&rest) && rest.size() == tokens.size(),
-                "USD_BINDING_REST_COUNT", config.skeleton.GetString());
-        std::set<std::string> unique;
-        std::vector<pxr::GfMatrix4d> matrices;
-        for (size_t i = 0; i < tokens.size(); ++i) {
-            const auto token = tokens[i].GetString();
-            const pxr::SdfPath path(token);
-            require(!token.empty() && path.IsPrimPath() && !path.IsAbsolutePath() &&
-                    unique.insert(token).second, "USD_BINDING_JOINT_TOKEN", token);
-            ids.push_back(token);
-            validateMatrix(rest[i], token, false);
-            auto matrix = rest[i];
-            for (int k = 0; k < 3; ++k) {
-                matrix[3][k] *= units;
-                require(std::isfinite(matrix[3][k]) && std::abs(matrix[3][k]) <= std::numeric_limits<float>::max(),
-                        "USD_BINDING_FLOAT_RANGE", token);
-            }
-            matrices.push_back(matrix);
-        }
-        auto built = motion::BuildSkeletonDescriptor(ids, matrices);
+        motion::SkeletonStageRead read;
+        motion::SkeletonReadDiagnostic diagnostic;
+        if (!motion::ReadSkeleton(stage, config.skeleton, &read, &diagnostic))
+            throw MotionUsdReadError(std::move(diagnostic), AR_MOTION_USD_VERSION);
+        ids = read.skeleton.jointTokens;
+        auto built = motion::BuildSkeletonDescriptor(ids, read.skeleton.restTransforms);
         require(bool(built.skeleton), "USD_BINDING_OWNER_SKELETON", config.skeleton.GetString());
         skeleton = std::move(*built.skeleton);
-        require(skeleton.IsTopologicallyOrdered(), "USD_BINDING_PARENT_ORDER", config.skeleton.GetString());
-        pxr::UsdSkelTopology topology(tokens);
-        std::string reason;
-        require(topology.Validate(&reason), "USD_BINDING_TOPOLOGY", config.skeleton.GetString() + ": " + reason);
+        // The owner readers must agree on the joint order used by the runtime.
         for (size_t i = 0; i < ids.size(); ++i)
-            require(topology.GetParent(i) == skeleton.GetJoints()[i].parent,
+            require(read.parents[i] == skeleton.GetJoints()[i].parent,
                     "USD_BINDING_PARENT_MAPPING", ids[i]);
         // Preserve owner float rotations, normalized for the runtime tolerance.
         std::vector<motion::SkeletonJoint> normalized = skeleton.GetJoints();
@@ -136,12 +75,9 @@ struct SkeletonBinding::Impl {
             require(map.SetJointToken(binding.bone, binding.joint, skeleton),
                     "USD_BINDING_HUMANOID_JOINT", binding.joint);
         }
-        pxr::UsdGeomXformCache cache;
-        auto world = cache.GetLocalToWorldTransform(usdSkeleton.GetPrim());
-        validateMatrix(world, config.skeleton.GetString(), true);
-        const auto rotation = world.ExtractRotationQuat().GetNormalized();
+        const auto& rotation = read.worldRotation;
         for (int k = 0; k < 3; ++k) {
-            placement.translation[k] = world[3][k] * units;
+            placement.translation[k] = read.worldTranslation[k];
             placement.rotation[k] = rotation.GetImaginary()[k];
             require(std::isfinite(placement.translation[k]), "USD_BINDING_PLACEMENT_RANGE", config.skeleton.GetString());
         }

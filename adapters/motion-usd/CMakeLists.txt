@@ -2,6 +2,7 @@ find_package(motionUsd 0.5.3 CONFIG REQUIRED)
 add_library(avatarMotionUsdBinding STATIC stageClip.cpp)
 add_library(AvatarRuntime::avatarMotionUsdBinding ALIAS avatarMotionUsdBinding)
 target_compile_features(avatarMotionUsdBinding PUBLIC cxx_std_17)
+target_compile_definitions(avatarMotionUsdBinding PRIVATE AR_MOTION_USD_VERSION="${motionUsd_VERSION}")
 set_target_properties(avatarMotionUsdBinding PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(avatarMotionUsdBinding PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)

@@ -9,7 +9,9 @@ namespace avatarMotionUsd {
 // Explicit skeleton selection is required. Scoped to Y-up, metre stages with
 // identity skeleton placement and authored rest. No stage is retained or edited.
 // Copy Read().clip and SourceRest() into ClipPoseAdapterConfig together.
-// Throws invalid_argument with MOTION_USD_* or delegated USD_BINDING_* codes.
+// Throws avatarUsd::MotionUsdReadError for owner reading refusals, preserving
+// code/subject/detail and version; it remains an invalid_argument subclass.
+// Owner source-rest builder failures retain MOTION_USD_SOURCE_REST.
 class StageClip {
 public:
     StageClip(const pxr::UsdStagePtr& stage, const pxr::SdfPath& skeleton);

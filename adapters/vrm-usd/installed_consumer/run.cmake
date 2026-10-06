@@ -20,6 +20,7 @@ set(configure_args ${generator_args}
     "-DCMAKE_RC_COMPILER=${RC_COMPILER}" "-DCMAKE_MT=${MT}"
     "-DmotionSampling_DIR=${SAMPLING_DIR}" "-DmotionRetarget_DIR=${RETARGET_DIR}"
     "-DmotionCore_DIR=${MOTION_DIR}" "-Dpxr_DIR=${USD_DIR}"
+    "-DmotionUsd_DIR=${MOTION_USD_DIR}"
     "-DvrmSchema_DIR=${SCHEMA_DIR}" "-DWITH_MOTION=${WITH_MOTION}"
     "-DvrmRig_DIR=${VRM_DIR}" "-DWITH_LOOKAT=${WITH_LOOKAT}")
 run("${CMAKE_COMMAND}" -S "${CONSUMER_SOURCE}" -B "${consumer_binary}" ${configure_args})
