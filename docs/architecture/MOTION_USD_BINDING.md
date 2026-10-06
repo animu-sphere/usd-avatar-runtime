@@ -34,6 +34,8 @@ Enable `AVATAR_BUILD_USD_BINDING` and `AVATAR_BUILD_MOTION_USD_BINDING`, with
 installed `motionUsd`/`motionRetarget` 0.5.3, `motionCore` and OpenUSD packages.
 The strict reader is additive and unreleased; a configure-time header/link
 probe rejects older same-version owner installations.
+The `motion_usd` component also checks the strict reader's options overload;
+the generic `usd` component does not require that additive input API.
 This binding alone does not require `motionSampling`, `vrmRig` or `vrmSchema`.
 Installed consumers request `COMPONENTS motion_usd` and link
 `AvatarRuntime::avatarMotionUsdBinding`; the generic `usd` component resolves
@@ -47,6 +49,10 @@ validates source skeleton and clip-space metadata and reads the bound animation.
 The helper invokes the owner builders for `SourceRestPose` from validated rest
 arrays without runtime avatar/layout identities for the source.
 Copies share immutable storage and survive stage changes/destruction.
+The additive constructor accepts owner `MotionStageReadOptions` for selected
+scalar name/value paths, prefixes and a gaze path. It forwards these to the
+strict owner reader, preserving its refusals and diagnostics. Attribute
+discovery remains format-owner/host configuration; no VRMA layout is inferred.
 `Read()` preserves the owner's clip, skeleton, animation identity, encoding
 rate, optional metadata and warnings. No reader warning is suppressed.
 
@@ -104,8 +110,12 @@ and the atomic LookAt/Expression adapter, and deliberately selects the latter
 first to verify dependency ordering. The host maps common motion channels
 named `vrm:<verbatim avatar expression name>` to that expression; other channels
 are reported as unmapped. This is a scoped explicit host policy, without aliases
-or automatic VRM-version name conversion. Selected owner world gaze points use
-the existing input assembler and the same affine sample clock.
+or automatic VRM-version name conversion. Reader gaze points are in canonical
+clip space. This host chooses the avatar's rigid root placement as clip
+placement and applies it once before world-gaze assembly, without animated
+hips, retarget height scaling or a source-rig LookAt offset. The same affine
+sample clock applies. Explicit probe gaze points are already in runtime-world
+space and are not transformed.
 
 Optional `--gaze-point X Y Z` and repeated `--weight expression=value` override
 selected input with **host test probes**. They require `--vrm`; weights must name
@@ -128,13 +138,22 @@ probe input; coverage counters exclude the additional lifecycle checks.
 Motion-driven joint changes are counted before LookAt so probe eye rotations
 cannot hide a clip that produces no pose change from target rest.
 
-The current installed `motionUsd` reader carries common `motion:channelName` /
-`motion:channelValue` attributes. It does **not** convert the VRMA file-format
-owner's `vrm:expressionWeight` and `vrm:lookAtTarget` attributes. Zero native
-counters therefore describe this reader boundary, not absence in the original
-file. Native VRMA expression/gaze ingestion and its coordinate conversion must
-be resolved with the format/motion owners; probes do not establish that coverage.
-The generic gaze round-trip and format-owner handoff are tracked in
+The reader carries common `motion:channelName` / `motion:channelValue` and
+`motion:lookAtTarget` attributes. Repeated `--channel-input name-attribute
+value-attribute prefix` and one `--gaze-input attribute` select additional
+owner fields explicitly, through `MotionStageReadOptions`. These options
+apply to every supplied motion; select compatible paths or invoke separately.
+Missing or declared-only values stay absent, and the selected gaze replaces
+the common gaze. The host does not automatically discover native attributes.
+For a VRMA owner-selected expression and gaze, an example is:
+
+```sh
+avatarMotionCheck --vrm --channel-input /Animation/Expressions/happy.vrm:expressionName /Animation/Expressions/happy.vrm:expressionWeight vrm: --gaze-input /Animation/LookAt.vrm:lookAtTarget <avatar.vrm> <motion.vrma>
+```
+
+Names come from the authored attribute rather than the prim path. Common and
+selected duplicate channel identities and malformed values retain owner
+refusals. This consumes the handoff from
 [usd-motion-plugins issue #37](https://github.com/animu-sphere/usd-motion-plugins/issues/37).
 
 ## Evidence and remaining scope
@@ -180,9 +199,31 @@ channels, explicit zero/absence, stale holds, reset and retained snapshots.
 It also rejects malformed probe options and deliberately perturbed oracle
 morph/material output. The optional combined build now passes sixteen tests.
 
-This establishes real motion pose + host test gaze/expression -> actual-avatar
-LookAt/Expression -> retained state composition. Native VRMA expression/gaze
-intake, live connectors,
+On 2026-10-07, the options handoff passed all sixteen runtime tests, including
+the installed source-clip consumer. Constructed regressions cover selected
+native-style expression/gaze, between-body keys, origin/absence, malformed
+owner input, stage/options lifetime and translated/rotated avatar placement.
+Separate origin and axis checks validate placement independently of the output
+oracle; world probes remain unchanged.
+
+Three generated VRMA format-owner fixtures were opened by the installed file
+plugin and explicitly selected on the same actual avatar, without probes.
+The expression fixture drove four morph frames, and keyed/default gaze
+fixtures each drove three, over 26 evaluation frames in total. All pose/morph
+outputs matched the independent owner oracle within `7.058422424e-8`; reset
+and retained state passed. These are generated-format-input/real-avatar
+integration evidence, not representative captured expression/gaze evidence.
+The seven private MotionPack clips still pass 8,286 frames within
+`1.403972313e-7`; inspecting their imported stages found no native expression
+or gaze attributes, so their zero counters cannot validate those inputs.
+Direct inspection of all seven source GLB JSON chunks also found only
+`specVersion` and `humanoid` in `VRMC_vrm_animation`, with neither `expressions`
+nor `lookAt`. Their missing native input is therefore a source-asset fact,
+not evidence that the importer discarded declared expression/gaze data.
+
+This establishes explicit native-attribute intake and clip placement through
+actual-avatar LookAt/Expression. Representative captured expression/gaze,
+format-owner automatic discovery, live connectors,
 source provenance in retained state, renderer output, milestones A/B/C and
 ABI freeze remain open. See the [capability matrix](../reference/CAPABILITY_MATRIX.md)
 and [roadmap](../roadmap/current.md).

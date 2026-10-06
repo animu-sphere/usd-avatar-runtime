@@ -4,6 +4,7 @@
 #include "vrmSchema/vrmLookAtAPI.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/scope.h"
+#include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdSkel/skeleton.h"
 #include "pxr/usd/usdSkel/animation.h"
@@ -108,6 +109,34 @@ int main(int argc, char** argv) {
             verify(native.second.find("unmapped_channel=custom:unmapped") != std::string::npos,"unmapped channel not reported");
             verify(native.second.find("changed_morph_frames=0") == std::string::npos,"native morph never changed");
             verify(native.second.find("probe_weights=0 probe_gaze=0") != std::string::npos,"native run injected probes");
+            auto projected = clip();
+            verify(projected->RemovePrim(pxr::SdfPath("/Clip/Happy")),"remove common scalar");
+            auto ownerInput = projected->DefinePrim(pxr::SdfPath("/Clip/Opaque"));
+            ownerInput.CreateAttribute(pxr::TfToken("vrm:expressionName"),pxr::SdfValueTypeNames->Token).Set(pxr::TfToken("happy"));
+            auto weight = ownerInput.CreateAttribute(pxr::TfToken("vrm:expressionWeight"),pxr::SdfValueTypeNames->Float);
+            weight.Set(.4f,0); weight.Set(.9f,30); weight.Set(0.f,60);
+            auto target = ownerInput.CreateAttribute(pxr::TfToken("vrm:lookAtTarget"),pxr::SdfValueTypeNames->Point3f);
+            target.Set(pxr::GfVec3f(0),15); target.Set(pxr::GfVec3f(1,1.5f,3),45);
+            const auto projectedPath = (root/"owner-input.usda").string();
+            verify(projected->GetRootLayer()->Export(projectedPath),"export owner inputs");
+            std::vector<std::string> options{"--vrm","--channel-input","/Clip/Opaque.vrm:expressionName",
+                "/Clip/Opaque.vrm:expressionWeight","vrm:","--gaze-input","/Clip/Opaque.vrm:lookAtTarget"};
+            auto arguments = options; arguments.insert(arguments.end(),{asset,projectedPath});
+            auto selected = run(arguments); verify(selected.first == 0,"owner-selected composition failed");
+            verify(selected.second.find("native_gazes=0") == std::string::npos,"owner gaze never reached input");
+            verify(selected.second.find("changed_morph_frames=0") == std::string::npos,"owner scalar never changed morph");
+            verify(selected.second.find("probe_weights=0 probe_gaze=0") != std::string::npos,"owner run injected probes");
+            verify(run({"--vrm",asset,projectedPath}).second.find("native_gazes=0") != std::string::npos,
+                   "native attribute was discovered implicitly");
+            // Native points follow avatar placement; explicit probe points are world-space.
+            pxr::GfMatrix4d placement(1);
+            placement.SetRotate(pxr::GfRotation(pxr::GfVec3d(0,1,0),90));
+            placement.SetTranslateOnly(pxr::GfVec3d(3,0,5));
+            verify(pxr::UsdGeomXform::Define(stage,pxr::SdfPath("/Avatar")).AddTransformOp().Set(placement),"avatar placement");
+            const auto placed = (root/(bone ? "placed-bone.usda" : "placed-expression.usda")).string();
+            verify(stage->GetRootLayer()->Export(placed),"export placed avatar");
+            arguments = options; arguments.insert(arguments.end(),{placed,projectedPath});
+            verify(run(arguments).first == 0,"placed native composition failed");
             auto probe = run({"--vrm","--gaze-point","1","1.5","3","--weight","blink=.8",asset,source});
             verify(probe.first == 0,"gaze composition failed");
             verify(run({asset,source}).first == 0,"pose mode regression");
@@ -127,6 +156,15 @@ int main(int argc, char** argv) {
             avatarVrmUsd::ExpressionBinding expressions(stage,{hc,{}});
             avatarVrmUsd::LookAtBinding look(stage,{hc,{}});
             avatarMotionCheck::VrmCheck oracle(expressions,look,{},{});
+            openstrata::motion::MotionPose inputPoint; inputPoint.lookAtTarget = pxr::GfVec3f(0);
+            const auto origin = oracle.Select(inputPoint,false,expressions.Humanoid().Skeleton());
+            verify((*origin.lookAtTarget-pxr::GfVec3f(3,0,5)).GetLength() < 1e-6,"origin gaze placement wrong");
+            inputPoint.lookAtTarget = pxr::GfVec3f(1,1.5f,0);
+            const auto rotated = oracle.Select(inputPoint,false,expressions.Humanoid().Skeleton());
+            verify((*rotated.lookAtTarget-pxr::GfVec3f(3,1.5f,4)).GetLength() < 1e-6,"gaze rotation/translation wrong");
+            oracle.probeGaze = pxr::GfVec3f(1,2,3);
+            verify(oracle.Select(inputPoint,true,expressions.Humanoid().Skeleton()).lookAtTarget == oracle.probeGaze,
+                   "world probe was transformed twice");
             auto state = expressions.Baseline();
             std::vector<ArBlendShape> morphs(state.blend_shapes,state.blend_shapes+state.blend_shape_count);
             state.blend_shapes = morphs.data(); morphs[0].weight = .1;

@@ -90,7 +90,8 @@ double compare(const ArStateView& v, const avatarUsd::SkeletonBinding& binding,
     require(error <= 1e-6,"owner/runtime pose mismatch: " + std::to_string(error));
     return error;
 }
-void check(const avatarUsd::SkeletonBinding& binding, const char* file
+void check(const avatarUsd::SkeletonBinding& binding, const char* file,
+           const motion::MotionStageReadOptions& inputs
 #ifdef AR_CHECK_VRM
            , avatarMotionCheck::VrmCheck* vrm = nullptr
 #endif
@@ -102,7 +103,7 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file
         require(path.IsEmpty(),"Motion must contain exactly one skeleton"); path = prim.GetPath();
     }
     require(!path.IsEmpty(),"Motion contains no skeleton");
-    avatarMotionUsd::StageClip loaded(stage,path);
+    avatarMotionUsd::StageClip loaded(stage,path,inputs);
     stage.Reset();
     for (const auto& warning : loaded.Read().warnings) std::cerr << "motionUsd: " << warning << '\n';
     const auto& baseline =
@@ -176,7 +177,7 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file
         }
 #ifdef AR_CHECK_VRM
         if (vrm) {
-            auto selected = absent ? motion::MotionPose{} : vrm->Select(*sampled.pose,probes);
+            auto selected = absent ? motion::MotionPose{} : vrm->Select(*sampled.pose,probes,binding);
             const auto expected = vrm->Resolve(binding,pose,selected,stale,seconds*c.clockScale+c.clockOffset);
             maxError = std::max(maxError,compare(view,binding,pose,expected.eyes));
             maxError = std::max(maxError,vrm->Compare(view,expected));
@@ -195,7 +196,7 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file
         if (vrm) {
             const auto sampled = motion::SampleClip(c.clip,sourceSeconds);
             require(bool(sampled),"input sample unavailable");
-            auto selected = vrm->Select(*sampled.pose,probes);
+            auto selected = vrm->Select(*sampled.pose,probes,binding);
             assembled = std::make_unique<avatarMotion::MotionInputFrame>(assembler->Assemble(absent ? nullptr : &selected,input,
                 stale ? AR_OBSERVATION_STALE : AR_OBSERVATION_VALID));
             input = assembled->View();
@@ -292,6 +293,7 @@ int avatarMotionCheckMain(int argc, char** argv) {
         bool withVrm = false;
         std::map<std::string,float> weights;
         std::optional<pxr::GfVec3f> gaze;
+        motion::MotionStageReadOptions inputs;
         auto number = [](const std::string& s) {
             size_t end = 0; const double value = std::stod(s,&end);
             require(end == s.size() && std::isfinite(value) && std::abs(value) <= std::numeric_limits<float>::max(),"Invalid finite float option");
@@ -300,7 +302,14 @@ int avatarMotionCheckMain(int argc, char** argv) {
         while (first < argc && std::string(argv[first]).rfind("--",0) == 0) {
             const std::string option = argv[first++];
             if (option == "--vrm") withVrm = true;
-            else if (option == "--gaze-point") {
+            else if (option == "--channel-input") {
+                require(first+3 <= argc,"--channel-input requires name-attribute value-attribute prefix");
+                const std::string name = argv[first++], value = argv[first++], prefix = argv[first++];
+                inputs.channels.push_back({name,value,prefix});
+            } else if (option == "--gaze-input") {
+                require(first < argc && inputs.lookAtTargetAttributePath.empty(),"--gaze-input requires exactly one attribute path");
+                inputs.lookAtTargetAttributePath = argv[first++];
+            } else if (option == "--gaze-point") {
                 require(first+3 <= argc && !gaze,"--gaze-point requires exactly one XYZ point");
                 const auto x = number(argv[first++]); const auto y = number(argv[first++]); const auto z = number(argv[first++]);
                 gaze = pxr::GfVec3f(x,y,z);
@@ -316,7 +325,7 @@ int avatarMotionCheckMain(int argc, char** argv) {
         require(!withVrm,"--vrm requires AVATAR_BUILD_VRM_ADAPTER");
 #endif
         if (argc-first < 2) {
-            std::cerr << "Usage: avatarMotionCheck [--vrm [--gaze-point X Y Z] [--weight expression=value ...]] <avatar> <motion> [motion ...]\n";
+            std::cerr << "Usage: avatarMotionCheck [--channel-input name-attribute value-attribute prefix ...] [--gaze-input attribute] [--vrm [--gaze-point X Y Z] [--weight expression=value ...]] <avatar> <motion> [motion ...]\n";
             return 2;
         }
         auto stage = pxr::UsdStage::Open(argv[first++]);
@@ -334,7 +343,7 @@ int avatarMotionCheckMain(int argc, char** argv) {
         }
 #endif
         stage.Reset();
-        for (int i = first; i < argc; ++i) check(binding.Skeleton(),argv[i]
+        for (int i = first; i < argc; ++i) check(binding.Skeleton(),argv[i],inputs
 #ifdef AR_CHECK_VRM
             ,vrm.get()
 #endif
