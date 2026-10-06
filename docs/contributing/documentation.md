@@ -29,8 +29,12 @@ interfaces. Focused proposals develop them and become binding only with
 reviewed decisions and implementation evidence.
 
 The adopted [near-term direction](../design/NEAR_TERM_PLAN.md) refines the
-original phase sequence. Keep integration priorities and freeze gates aligned
-with it without treating planned channels or milestones as implemented support.
+original phase sequence. The adopted
+[boundary cleanup policy](../design/BOUNDARY_POLICY.md) preserves its supplied
+21 sections and refines ownership and migration priorities. Keep both source
+documents' numbering stable. Cleanup workstreams A–F are distinct from Runtime
+Phases A–F and evidence milestones A/B/C. Keep integration priorities and freeze
+gates aligned without treating planned channels or migrations as implemented support.
 
 Design, architecture and contract documents carry front matter with `owner`
 and `status`. Use `proposed` for unresolved target designs, `accepted` for
@@ -70,6 +74,9 @@ For every documentation change, check:
 5. Contract changes update their open questions and acceptance criteria.
 6. Source-policy section numbers and existing cross-repository citations stay
    stable when editing the adopted policy.
+7. Binding adapter pages retain current behavior and evidence while clearly
+   labeling planned owner migrations; conceptual API names are not advertised
+   as available upstream or in installed headers.
 
 When code lands, update implementation status and evidence in the same change.
 Keep completed work out of the active roadmap, preserving its decision or

@@ -9,6 +9,20 @@ This proposal develops [design policy section 13](DESIGN_POLICY.md). It adds
 runtime evaluation provenance around motion recording, not a parallel motion
 format.
 
+The adopted [boundary policy section 12](BOUNDARY_POLICY.md#12-recording-boundary)
+makes recording a publication boundary:
+
+```text
+EvaluatedAvatarState -> RecordingPublicationAdapter -> motion owner recorder
+```
+
+Do not implement a generic recorder or motion replay algorithm here. Storage
+formats, resampling, compression and motion clip construction stay with
+`usd-motion-plugins`. Runtime capture/replay hosts own evaluation configuration,
+initial state/checkpoints, orchestration and provenance, invoking owner motion
+algorithms where needed. Avatar-specific non-motion state encoding requires a
+separate design; the capture envelope below remains proposed.
+
 ## 1. Capture contents
 
 | Content | Purpose |

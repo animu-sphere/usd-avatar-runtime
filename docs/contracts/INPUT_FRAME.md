@@ -162,6 +162,14 @@ empty arrays; multi-source merging/arbitration, live connector intake and
 retained owner metadata remain open. See the
 [assembly boundary](../architecture/MOTION_ADAPTER.md#host-input-assembly).
 
+Under the adopted [boundary policy section 6](../design/BOUNDARY_POLICY.md#6-inputassembler-cleanup),
+this bridge remains runtime-owned, with a clearer name to be selected. It maps
+owner fields to runtime channels and source/actor attribution, owns input
+lifetime and reports unmapped fields. External device/network clock and actor
+normalization, protocol decoding and generic channel normalization stay with
+their owners. Supplying runtime clock metadata is distinct from normalizing
+an external source clock.
+
 The runtime bridge binds source actors to avatar instances, selects a declared
 input snapshot, and delegates generic sampling/blending to motion evaluators.
 Device decoding, source normalization and connector buffering remain upstream.

@@ -11,6 +11,26 @@ It addresses the skeleton portion of RT-O4. It is not a full VRM binding
 adapter. The separate [VRM USD Humanoid binding](VRM_USD_BINDING.md) supplies
 schema-derived mappings and records scoped local real-avatar evidence.
 
+## Boundary cleanup target
+
+The adopted [boundary policy section 8](../design/BOUNDARY_POLICY.md#8-skeletonbinding-split)
+splits this helper into motion-owner conversion and runtime binding. Move
+UsdSkel-to-`SkeletonDescriptor` conversion, rest decomposition, generic topology
+validation and source/target-rest generation to motion-owner APIs. Current
+delegation of decomposition to `motionRetarget` does not complete this split:
+local matrix, token and topology validation still lives in the runtime binder.
+
+Retain avatar-root identity, runtime layout ID/version, skeleton and joint-ID
+mapping, baseline `ArStateView`, root placement and common-state layout binding
+here. The target is owner skeleton reading -> owner `SkeletonDescriptor` ->
+runtime avatar binding -> baseline; conceptual `ReadSkeleton` and
+`AvatarSkeletonBinding` names do not imply available APIs or a selected rename.
+Runtime checks of owner results against runtime layout/representation remain.
+
+The behavior and evidence below describe the existing `SkeletonBinding`.
+Owner API extension, migration and deletion of duplicate conversion are open
+in [cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams).
+
 ## Dependencies and build
 
 Enable `AVATAR_BUILD_USD_BINDING` with installed `motionRetarget` 0.5.3 or

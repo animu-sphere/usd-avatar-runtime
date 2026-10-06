@@ -8,6 +8,36 @@ dates or package pins have been assigned.
 Related provider work is tracked by its owner; this page tracks runtime
 integration and the evidence needed here.
 
+The adopted 2026-10-06 [boundary cleanup policy](../design/BOUNDARY_POLICY.md)
+adds ownership cleanup ahead of further integration. Current APIs and existing
+evidence remain in place until owner replacements and runtime conformance are
+validated; this roadmap does not claim the migrations are complete.
+
+## Boundary cleanup workstreams
+
+These preserve the supplied cleanup sequence A–F, separately from the original
+Runtime Phases A–F and evidence milestones A/B/C. Start with motion and
+USD/motion ownership cleanup, then validate state with VRM and MMD, complete
+publication and stabilize the ABI. Early fast-path work still supplies feedback
+before freeze; owner API work stays in its owning repository.
+
+| Workstream | Remaining work | Acceptance gate | Original Runtime Phase |
+| --- | --- | --- | --- |
+| A: motion boundary | delegate ClipPoseAdapter generic validation to motion-owner APIs; retain runtime binding checks; document/choose a bridge-oriented InputAssembler name | owner validates timestamps, quaternions, source-rest hierarchy, confidence, root modes, vocabulary and channels; runtime only registers/invokes/maps results and runtime identities; bridge preserves owned lifetime, clocks, identities and unmapped diagnostics | A/B |
+| B: USD/motion ownership | move StageClip motion-domain preparation to motionUsd; split SkeletonBinding into owner skeleton/rest conversion and runtime binding; delete duplicate conversion | owner supplies clip/source-rest and skeleton results with diagnostics; runtime retains avatar/layout/skeleton/joint identity, baseline and root placement; existing stage/copy lifetime, units, rejection and parity behavior remains verified | A/B |
+| C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
+| D: MMD second provider | register owner MMD evaluator; validate bone/morph/control dependencies and shared pre/post-physics handoff | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; physics boundary order is explicit | A/B |
+| E: publication | finish fast-path and Hydra adapters, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
+| F: ABI stabilization | review C/provider/consumer ABI revisions and capability versions; broaden installed-consumer and OST composition validation | real VRM/MMD and consumer evidence supports freeze; dependency-free core installation/import still passes; actual package composition is reproducible | A with C/E and packaging evidence |
+
+Completion requires a provider/OpenUSD/renderer-independent core, no generic
+motion algorithms or motionUsd domain logic here, one shared VRM/MMD scheduler
+and state, identical Hydra/fast-path source state, recording through adapters,
+and preserved owner diagnostic identity/version/subject. Adapter validation
+tests cover invocation/mapping/lifetime; generic numerical correctness tests
+remain with the owner. Code changes must update the capability matrix with
+evidence rather than marking work complete from this documentation alone.
+
 ## Near-term implementation sequence
 
 The first slice is connector/test input -> `AvatarInputFrame` -> owner motion
@@ -208,6 +238,11 @@ Add adapters for generic motion evaluation, VRM LookAt/expressions, MMD
 morph/control/IK evaluation and connector input assembly. Compose providers
 through registration and explicit per-avatar bindings. Preserve owner libraries
 and extend missing boundaries with their owners instead of copying algorithms.
+
+First complete the motion and USD/motion ownership cleanup above. Runtime
+input assembly remains a bridge; generic skeleton conversion and motion
+invariants do not become runtime responsibilities merely because existing
+optional adapters currently validate them locally.
 
 Begin this work during Phase A. VRM Humanoid/LookAt/Expression is the first
 family; motion completes that slice, then MMD challenges scheduler generality.

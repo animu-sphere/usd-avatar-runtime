@@ -23,6 +23,13 @@ EvaluatedAvatarState +-- Hydra adapter --> render delegates (later)
 Hydra and direct consumers share frame/state identity and evaluated values.
 Hydra publication is transport, not a second evaluation of avatar semantics.
 
+Under [boundary policy section 13](../design/BOUNDARY_POLICY.md#13-hydra-and-fast-path-boundary),
+fast-path transport may use zero/minimal-copy views, dirty masks, late
+publication and GPU-friendly packed views with frame/generation identity.
+These are allowed optimizations, not current support claims; canonical values
+and semantics remain in evaluated state. GPU resource management, shaders,
+draw submission and late-latching implementation stay with the renderer.
+
 ## 1. Hydra
 
 ```text
@@ -83,6 +90,11 @@ and allocations with the actual input/state/layout and renderer configuration.
 These are planned adapter requirements, not existing renderer support.
 
 ## 3. Recording, baking and export
+
+Recording is a publication adapter to the motion-owner recorder. The runtime
+must not implement generic resampling, compression, clip construction or a
+replacement motion storage format. Avatar-specific non-motion state recording
+needs a separate design; no recording adapter is implemented yet.
 
 Capture observes the same resolved snapshot plus evaluation provenance;
 [recording and replay](../design/RECORDING_AND_REPLAY.md) owns its format proposal.

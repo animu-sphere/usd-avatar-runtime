@@ -30,6 +30,18 @@ backend in the initial slice. Real owner calls may combine substeps atomically.
 
 ## 1. Initial phase sequence
 
+The adopted [boundary policy section 10](../design/BOUNDARY_POLICY.md#10-shared-phase-model)
+adds a conceptual common graph: input -> motion sample -> retarget -> format
+pre-physics -> physics boundary -> format post-physics -> expression/LookAt/control
+-> resolve -> publish. Its labels are not new ABI enum values. Runtime owns
+the graph, dependency validation and deterministic handoff; format owners
+register calls without exposing their algorithms to core.
+
+The table below records the earlier proposal and current prototype mapping.
+Reconcile it with pre/post-physics provider requirements under RT-O3 before
+freeze. Preserve MMD bone-morph/control/IK dependencies and atomic owner calls;
+the conceptual graph does not require all control work to occur after physics.
+
 Numeric positions preserve the policy's conceptual order. They are not frozen
 C ABI enum values.
 

@@ -10,6 +10,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | --- | --- |
 | [Design policy](design/DESIGN_POLICY.md) | adopted implementation direction, original sections 1–22 |
 | [Near-term direction](design/NEAR_TERM_PLAN.md) | adopted 2026-10-05 priorities: VRM first, fast-path consumer, MMD validation before freeze |
+| [Boundary cleanup policy](design/BOUNDARY_POLICY.md) | adopted 2026-10-06 ownership rules, motion/USD cleanup, thin adapters and publication boundary; source sections 1–21 |
 | [Recording and replay](design/RECORDING_AND_REPLAY.md) | capture composition, reproducibility and validation proposals |
 
 ## Architecture
@@ -22,9 +23,9 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Output paths](architecture/OUTPUT_PATHS.md) | Hydra, direct consumers, bake/export and parity |
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
-| [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | optional owner clip sampling/retarget registration, host scalar/gaze input assembly, pose binding, clocks and VRM composition evidence |
-| [Scoped USD motion clip binding](architecture/MOTION_USD_BINDING.md) | owned semantic stage clip/source-rest connection and opt-in real-motion/avatar parity tool |
-| [Scoped USD skeleton binding](architecture/USD_BINDING.md) | owned authored skeleton baseline, explicit owner Humanoid mapping, metre conversion and rigid root placement |
+| [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | current clip sampling/retarget registration and scalar/gaze input bridge; planned owner validation delegation |
+| [Scoped USD motion clip binding](architecture/MOTION_USD_BINDING.md) | current StageClip integration and parity tool; planned motion-domain migration to motionUsd |
+| [Scoped USD skeleton binding](architecture/USD_BINDING.md) | current baseline/Humanoid/placement binding; planned split of motion conversion from runtime identity/layout |
 | [Scoped VRM USD Humanoid binding](architecture/VRM_USD_BINDING.md) | owner schema discovery, skeleton relationship resolution, standard role mapping and local asset evidence limits |
 | [Scoped VRM USD LookAt binding](architecture/VRM_LOOKAT_USD_BINDING.md) | owner range-map extraction, explicit head/eye/rest binding, adapter configuration and real-avatar evidence limits |
 | [Scoped VRM USD Expression binding](architecture/VRM_EXPRESSION_USD_BINDING.md) | owner expression/output extraction, canonical morph/material baseline, LookAt composition and evidence limits |
@@ -50,7 +51,7 @@ is not a frozen wire/ABI representation. Adoption is gated by
 | --- | --- |
 | [Capability matrix](reference/CAPABILITY_MATRIX.md) | implementation facts in this repository |
 | [Roadmap index](roadmap/README.md) | roadmap navigation and sequence |
-| [Current roadmap](roadmap/current.md) | Runtime Phases A–F, acceptance criteria and unresolved decisions |
+| [Current roadmap](roadmap/current.md) | boundary cleanup workstreams, Runtime Phases A–F, acceptance criteria and unresolved decisions |
 
 ## Maintenance
 
@@ -58,8 +59,9 @@ is not a frozen wire/ABI representation. Adoption is gated by
 ownership, metadata, cross-repository references and validation.
 [CONTRIBUTING.md](../CONTRIBUTING.md) is the contribution entry point.
 
-The adopted policy is authoritative for architectural direction; the near-term
-direction refines its implementation sequence. Focused
+The adopted design policy is the architectural baseline; the near-term
+direction refines its implementation sequence, and the boundary cleanup policy
+refines ownership and migration priorities. Focused
 proposals elaborate it without silently freezing new choices. A conflict
 with a sibling contract is an integration question to resolve with its owner;
 it does not authorize redefining that contract here.

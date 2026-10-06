@@ -8,7 +8,10 @@ owner: usd-avatar-runtime
 Adopted from the near-term policy supplied on 2026-10-05. This document owns
 the current priorities and refines the sequencing in
 [design policy section 20](DESIGN_POLICY.md). The original policy remains the
-architectural baseline; the [current roadmap](../roadmap/current.md) owns
+architectural baseline. The adopted 2026-10-06
+[boundary cleanup policy](BOUNDARY_POLICY.md) refines ownership and adds motion
+validation and USD/motion cleanup ahead of further integration. The
+[current roadmap](../roadmap/current.md) owns
 actionable work and acceptance gates. Implementation evidence remains in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
@@ -172,6 +175,12 @@ resolved fast-path and Hydra outputs. Pixel parity is a separate renderer test.
 The [roadmap](../roadmap/current.md#validation-tiers) owns the acceptance matrix.
 
 ## 13. Implementation sequence
+
+First address the [boundary cleanup workstreams](../roadmap/current.md#boundary-cleanup-workstreams):
+move generic validation and skeleton/rest conversion to owner APIs, retain
+runtime binding checks and the motion-input bridge, and thin the USD motion
+helper. This is prerequisite ownership work for the sequence below; early
+fast-path feedback and real VRM/MMD evidence still precede ABI freeze.
 
 1. Harden pose, gaze, expression and snapshot/layout contracts using provider needs.
 2. Connect callable VRM Humanoid, LookAt and Expression boundaries with a real avatar.

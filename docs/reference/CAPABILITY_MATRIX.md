@@ -5,6 +5,14 @@ not a promise about sibling repositories or a release/support declaration.
 The experimental direct runtime and CMake installation/export are implemented.
 Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
 
+The [boundary cleanup policy](../design/BOUNDARY_POLICY.md) is accepted intent.
+Cleanup is not implemented: `ClipPoseAdapter` still validates generic motion
+invariants locally, `InputAssembler` keeps its existing name, `StageClip` still
+uses the runtime USD skeleton binder for source preparation, and
+`SkeletonBinding` still performs generic matrix/token/topology checks around
+owner conversion. These facts are visible in the respective adapter sources;
+the [roadmap](../roadmap/current.md#boundary-cleanup-workstreams) tracks migration.
+
 | Surface | Current status | Owning documentation |
 | --- | --- | --- |
 | implementation direction | adopted documentation; real-provider/fast-path integration prioritized before freeze | [design policy](../design/DESIGN_POLICY.md), [near-term direction](../design/NEAR_TERM_PLAN.md) |
