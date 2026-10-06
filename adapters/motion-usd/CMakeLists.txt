@@ -1,4 +1,5 @@
 find_package(motionUsd 0.5.3 CONFIG REQUIRED)
+avatar_require_motion_usd_inputs()
 add_library(avatarMotionUsdBinding STATIC stageClip.cpp)
 add_library(AvatarRuntime::avatarMotionUsdBinding ALIAS avatarMotionUsdBinding)
 target_compile_features(avatarMotionUsdBinding PUBLIC cxx_std_17)

@@ -1,6 +1,6 @@
 # Capability matrix
 
-Checked against this repository on 2026-10-06. This is implementation status,
+Checked against this repository on 2026-10-07. This is implementation status,
 not a promise about sibling repositories or a release/support declaration.
 The experimental direct runtime and CMake installation/export are implemented.
 Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
@@ -28,10 +28,11 @@ result/WS-O4 decision and final StageClip absorption remain on the
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion validation boundary | installed owner clip/retarget validators invoked before retargeter construction; selected timestamp/scalar/gaze validation delegated by MotionPoseInputBridge; runtime binding/clock/C-string checks retained; owned MotionValidationError and synchronous C sink forwarding preserve owner report identity/order and package version; old InputAssembler source names retained | [motion adapters](../architecture/MOTION_ADAPTER.md) |
+| selected USD motion inputs | StageClip forwards owner MotionStageReadOptions through the strict reader; tool attribute selection, clip-to-world rigid gaze placement and untouched world probes implemented; generated native VRMA expression/keyed/default gaze fixtures drive an actual avatar with owner parity; automatic native discovery and representative capture evidence pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md) |
 | motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping plus seven real VRMA clips on one private avatar via owned USD clip/source rest, with all-joint parity and reset/retention; full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [USD motion binding](../architecture/MOTION_USD_BINDING.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; scoped expression/output extraction available separately | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; Hydra/renderer binding and parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
-| USD LookAt binding | separate optional owner schema/raw range-map extraction, head/eye/rest bindings and owned adapter configuration; constructed bone quaternion/expression-weight parity; one private avatar's Expression-type rig with test gaze and actual morph outputs, also composed with seven real clips driving the working head; native VRMA gaze intake pending | [VRM LookAt USD binding](../architecture/VRM_LOOKAT_USD_BINDING.md) |
+| USD LookAt binding | separate optional owner schema/raw range-map extraction, head/eye/rest bindings and owned adapter configuration; constructed bone quaternion/expression-weight parity; one private avatar's Expression-type rig with test gaze and actual morph outputs, also composed with seven real clips driving the working head; explicit native keyed/default VRMA fixture gaze intake validated; representative captured gaze pending | [VRM LookAt USD binding](../architecture/VRM_LOOKAT_USD_BINDING.md) |
 | USD Expression binding | optional applied owner expression discovery, explicit mesh blend-shape token mapping, indexed/legacy material binds and owned canonical RGB/alpha baseline; all-slot constructed owner parity and one private avatar's 18 expressions/48 morph slots with test scalar/gaze LookAt composition; shared-mesh targets and real-avatar material evidence pending | [VRM Expression USD binding](../architecture/VRM_EXPRESSION_USD_BINDING.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
 | capture, replay, inspection and benchmarks | opt-in local avatar/motion pose checker plus actual LookAt/Expression composition mode, independent owner pose/morph/material oracle and explicit probe/native input counters implemented; recording, comprehensive inspection/replay and benchmarks pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md), [recording/replay](../design/RECORDING_AND_REPLAY.md) |
@@ -188,6 +189,29 @@ snapshots pass after stage/runtime destruction. Paths, hashes, package versions
 and command logs remain in ignored build evidence. Real-avatar bone-eye conformance, real-motion-to-LookAt
 composition, connectors and renderer evidence remain open; no milestone or
 ABI freeze is claimed.
+
+The selected USD input handoff was checked on 2026-10-07 with the same
+Windows x64/MSVC/OpenUSD environment. `StageClip` forwards
+`MotionStageReadOptions` to the additive strict owner overload; in-tree and
+installed-consumer tests preserve owner errors, sparse input timing and owned
+values after stage/options destruction. All sixteen runtime tests pass.
+The tool's constructed tests cover native-style attributes, origin gaze,
+translated/rotated clip placement and unchanged world probes for both LookAt
+types, with separate known-coordinate placement assertions.
+
+Three generated VRMA owner fixtures drive the private avatar without probes:
+expression, keyed gaze and default gaze produce 26 evaluation frames with
+maximum pose/morph error `7.058422424e-8`, observable morph effects, reset and
+retained snapshots. Unknown custom expression input is reported as unmapped.
+The seven private clips still pass 8,286 frames at `1.403972313e-7`, and their
+imported-stage inventory contains no native expression/gaze attributes.
+Direct source GLB JSON inspection confirms that all seven
+`VRMC_vrm_animation` objects contain only `specVersion` and `humanoid`;
+`expressions` and `lookAt` are absent in the source files themselves.
+This closes explicit reader/adapter intake with generated-format evidence;
+representative captured expression/gaze, native automatic discovery, real
+material binds, connectors and renderer evidence remain open. Asset paths,
+hashes, arguments and logs stay in ignored local evidence.
 
 A fresh motion-USD-only Release configuration passes seven tests without
 importing `motionSampling`, `vrmRig` or `vrmSchema`. The default core-only

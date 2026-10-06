@@ -86,7 +86,10 @@ Material extraction has constructed-USD evidence, not real-avatar evidence.
 The [motion parity tool](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) now
 composes seven real motion clips with these actual bindings and explicit host
 scalar/gaze probes, checking every morph and joint against separate owner calls.
-Native VRMA expression/gaze intake remains a distinct missing owner boundary.
+Its explicit owner-selected reader handoff now also accepts generated native
+VRMA expression/keyed/default gaze fixtures without probes, with actual-avatar
+owner parity. Representative captured expression/gaze and format-owner
+automatic discovery remain open; see the tool's scoped evidence.
 
 Additional avatars (including
 bone eyes and material binds), shared-mesh targets, live connectors, renderer

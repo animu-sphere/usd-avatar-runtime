@@ -40,8 +40,15 @@ struct VrmCheck {
         for (const auto& weight : probeWeights)
             verify(expressions.Rig().Find(weight.first) != nullptr,"Probe expression is not declared by avatar");
     }
-    motion::MotionPose Select(const motion::MotionPose& sampled, bool probes) const {
+    motion::MotionPose Select(const motion::MotionPose& sampled, bool probes,
+                             const avatarUsd::SkeletonBinding& binding) const {
         auto selected = sampled;
+        if (selected.lookAtTarget) {
+            const auto& p = binding.RootPlacement();
+            const pxr::GfQuatd rotation(p.rotation[3],pxr::GfVec3d(p.rotation[0],p.rotation[1],p.rotation[2]));
+            selected.lookAtTarget = pxr::GfVec3f(rotation.Transform(pxr::GfVec3d(*selected.lookAtTarget)) +
+                pxr::GfVec3d(p.translation[0],p.translation[1],p.translation[2]));
+        }
         if (probes) {
             for (const auto& weight : probeWeights) selected.channels.Set("vrm:"+weight.first,weight.second);
             if (probeGaze) selected.lookAtTarget = probeGaze;

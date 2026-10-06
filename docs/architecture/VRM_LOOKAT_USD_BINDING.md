@@ -94,8 +94,10 @@ asset is copied or included in default tests.
 This validates one real-avatar LookAt configuration with test gaze. The
 [motion parity tool](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) additionally
 checks that test gaze against the head pose from seven real clips, using actual
-expression outputs and an independent owner head calculation. Native VRMA
-gaze/expression intake, real-avatar bone-eye conformance, connectors, rendering,
+expression outputs and an independent owner head calculation. Explicit native
+VRMA keyed/default gaze fixtures now drive the same avatar without probes,
+through the tool's owner-selected reader handoff and clip placement policy.
+Representative captured gaze, real-avatar bone-eye conformance, connectors, rendering,
 milestones and ABI freeze remain open in
 the [roadmap](../roadmap/current.md).
 Actual expression/output extraction and test-gaze composition now have scoped

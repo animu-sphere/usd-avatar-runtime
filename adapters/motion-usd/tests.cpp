@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>
+#include <limits>
 
 #define CHECK(x) do { if (!(x)) { std::cerr << "Line " << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while (0)
 namespace {
@@ -69,6 +70,37 @@ int main() {
     CHECK(s->RemovePrim(pxr::SdfPath("/Clip"))); s.Reset();
     CHECK(copy.Read().clip.samples[1].root.worldPosition[2] == 1);
     CHECK(copy.Read().skeleton.path == path.GetString());
+    // Explicit format-owner selection travels through the strict owner reader.
+    s = stage();
+    auto native = s->DefinePrim(pxr::SdfPath("/Native"));
+    CHECK(native.CreateAttribute(pxr::TfToken("name"),pxr::SdfValueTypeNames->Token).Set(pxr::TfToken("happy")));
+    auto weight = native.CreateAttribute(pxr::TfToken("weight"),pxr::SdfValueTypeNames->Float);
+    CHECK(weight.Set(1.5f,30));
+    auto gaze = native.CreateAttribute(pxr::TfToken("target"),pxr::SdfValueTypeNames->Point3f);
+    CHECK(gaze.Set(pxr::GfVec3f(0),15));
+    motion::MotionStageReadOptions inputs;
+    inputs.channels.push_back({"/Native.name","/Native.weight","vrm:"});
+    inputs.lookAtTargetAttributePath = "/Native.target";
+    motion::MotionStageRead expected; motion::SkeletonReadDiagnostic selectedDiagnostic;
+    CHECK(motion::ReadCanonicalMotionStage(s,path,inputs,&expected,&selectedDiagnostic));
+    avatarMotionUsd::StageClip selected(s,path,inputs); auto selectedCopy = selected;
+    CHECK(selected.Read().clip == expected.clip);
+    CHECK(selected.Read().clip.samples.size() == 4);
+    CHECK(selected.Read().clip.samples[1].lookAtTarget == pxr::GfVec3f(0));
+    CHECK(*selected.Read().clip.samples[2].channels.Find("vrm:happy") == 1.5f);
+    CHECK(!selected.Read().clip.samples[2].lookAtTarget);
+    CHECK(avatarMotionUsd::StageClip(s,path).Read().clip.samples.size() == 2);
+    CHECK(weight.Set(std::numeric_limits<float>::infinity(),30));
+    CHECK(!motion::ReadCanonicalMotionStage(s,path,inputs,&expected,&selectedDiagnostic));
+    bool selectedRefused = false;
+    try { avatarMotionUsd::StageClip bad(s,path,inputs); }
+    catch (const avatarUsd::MotionUsdReadError& e) {
+        selectedRefused = true;
+        CHECK(e.Diagnostic().code == selectedDiagnostic.code && e.Diagnostic().detail == selectedDiagnostic.detail);
+    }
+    CHECK(selectedRefused);
+    CHECK(s->RemovePrim(pxr::SdfPath("/Native"))); s.Reset(); inputs = {};
+    CHECK(*selectedCopy.Read().clip.samples[2].channels.Find("vrm:happy") == 1.5f);
     s = stage(); CHECK(pxr::UsdGeomSetStageMetersPerUnit(s,0.01));
     motion::MotionStageRead ownerRead; motion::SkeletonReadDiagnostic diagnostic;
     CHECK(!motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));

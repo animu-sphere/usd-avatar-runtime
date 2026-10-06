@@ -15,6 +15,11 @@ namespace avatarMotionUsd {
 class StageClip {
 public:
     StageClip(const pxr::UsdStagePtr& stage, const pxr::SdfPath& skeleton);
+    // Attribute selection is supplied by the format owner or host. The adapter
+    // neither discovers native attributes nor interprets them itself. Gaze is
+    // returned in canonical clip space; place it before world-gaze assembly.
+    StageClip(const pxr::UsdStagePtr& stage, const pxr::SdfPath& skeleton,
+              const openstrata::motion::MotionStageReadOptions& inputs);
     const openstrata::motion::MotionStageRead& Read() const;
     const openstrata::motion::SourceRestPose& SourceRest() const;
 private:

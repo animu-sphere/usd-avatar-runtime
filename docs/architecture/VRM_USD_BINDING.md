@@ -111,4 +111,5 @@ gaze and constructed output sinks. Subsequent
 expression/morph target extraction and test-gaze/scalar output parity.
 The [motion checker](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) now composes
 real clip pose with actual LookAt/Expression bindings and explicit host probes;
-native VRMA expression/gaze intake remains open.
+explicit native VRMA fixtures now use the owner-selected input handoff without
+probes. Representative captured expression/gaze remains open.
