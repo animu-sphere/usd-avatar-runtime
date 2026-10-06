@@ -122,6 +122,13 @@ still pending.
 
 ## Host input assembly
 
+This helper is a runtime-owned repository-boundary bridge from `MotionPose` to
+`AvatarInputFrame`, following [boundary policy section 6](../design/BOUNDARY_POLICY.md#6-inputassembler-cleanup).
+`InputAssembler` is the current API name; a bridge-oriented rename is planned
+but no replacement name is selected. Its runtime source/actor attribution and
+supplied clock mappings do not implement external identity tracking, device
+clock normalization, network synchronization or generic channel normalization.
+
 [`InputAssembler`](../../adapters/motion/include/avatarMotion/InputAssembler.h)
 maps an already selected owner `MotionPose` into an owned revision-3 input
 frame. It does not sample, poll a connector, retarget or perform format
@@ -170,6 +177,22 @@ copy remains alive, independently of the source pose/configuration/assembler.
 Later assemblies do not alter earlier views. Invalid assembly throws
 `invalid_argument` and advances no cursor/provider state. There is no
 cross-toolchain C++ ABI guarantee or asynchronous runtime retention.
+
+## Boundary cleanup target
+
+Under [boundary policy section 5](../design/BOUNDARY_POLICY.md#5-clipposeadapter-cleanup),
+retain registration, phase/capability declarations, layout/version checks,
+runtime joint lookup, owner/runtime parent mapping, owner diagnostic forwarding
+and `ArStateWriter` publication. Keep runtime clock and root-placement contract
+checks distinct from generic owner invariants.
+
+Move clip timestamps/interpolation spans, owner quaternion/channel/confidence
+invariants, skeleton/source-rest hierarchy, root-motion mode and human-joint
+vocabulary validation to motion-owner validation APIs. The configuration
+rejection rules above describe current local checks, not the final ownership.
+Required upstream APIs must be added and validated before deleting those checks.
+Sampling/retarget numerical correctness belongs to owner tests; runtime tests
+compare owner results to marshaled state, diagnostics and lifetime behavior.
 
 ## Evidence and limits
 

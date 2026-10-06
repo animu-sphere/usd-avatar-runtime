@@ -88,6 +88,13 @@ invalid parent order and invalid typed values prevent activation/publication.
 
 ## 2. Semantic convergence
 
+The adopted [boundary policy section 14](../design/BOUNDARY_POLICY.md#14-common-runtime-state)
+requires format-independent resolved channels. Do not add core fields such as
+`vrmExpressionHappy`, `mmdBoneMorph` or `pmxMaterialMorph`; adapters convert
+those semantics into common pose, morph and material values. Namespaced format
+identity may survive as provenance without requiring consumers to evaluate it.
+Custom extensible named values are a target concept, not a revision-3 field.
+
 ```text
 VRM expressions -> resolved blend-shape weights + material overrides
 VRM LookAt      -> eye transforms and/or expression contributions

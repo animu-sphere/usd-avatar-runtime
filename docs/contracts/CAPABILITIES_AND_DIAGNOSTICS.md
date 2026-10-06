@@ -99,6 +99,15 @@ snapshot-retained diagnostic records in revision 3.
 
 ## 3. Observation hooks
 
+The adopted [boundary policy section 15](../design/BOUNDARY_POLICY.md#15-diagnostics)
+requires owner name, version and subject to survive forwarding without
+redefining domain codes. Revision 3 preserves callback origin/code/subject and
+provider descriptor version metadata; it has no dedicated diagnostic-record
+owner-version field or retained envelope. Settle their association and capture
+representation before ABI stabilization. Runtime's own diagnostics cover plan,
+dependency/capability, lifecycle/layout, transaction and publication failures;
+publication adapters still need implementation and acceptance evidence.
+
 Expose optional phase/evaluator timings, frame status, state hashes and a trace:
 
 ```text

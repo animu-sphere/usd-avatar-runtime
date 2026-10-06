@@ -3,7 +3,12 @@
 [Current work](current.md) owns the incomplete implementation sequence and
 acceptance criteria. It refines
 [design policy section 20](../design/DESIGN_POLICY.md) using the adopted
-[near-term direction](../design/NEAR_TERM_PLAN.md):
+[near-term direction](../design/NEAR_TERM_PLAN.md).
+
+The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) adds
+[cleanup workstreams](current.md#boundary-cleanup-workstreams) for motion
+validation, USD/motion ownership, VRM state validation, MMD, publication and
+ABI stabilization. Their A–F labels are separate from the Runtime Phases below.
 
 1. Runtime Phase A — freeze common contracts.
 2. Runtime Phase B — integrate motion, VRM, MMD and connector providers.

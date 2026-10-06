@@ -12,6 +12,21 @@ the clip and installed `motionRetarget` to build its source rest. File parsing,
 sampling and retarget mathematics remain with their owners. Runtime core and
 its revision-3 C ABI are unchanged.
 
+## Boundary cleanup target
+
+The adopted [boundary policy section 7](../design/BOUNDARY_POLICY.md#7-stageclip-cleanup)
+phases out the current `StageClip` form. Although it already calls the owner
+reader and source-rest builder, local source skeleton interpretation and generic
+USD validation still run through runtime's `SkeletonBinding`. Move that work,
+including source-rest preparation, to `motionUsd` owner APIs. Runtime keeps
+only a thin helper connecting owner clip/source-rest results to evaluator
+registration and target runtime bindings; it must not reconstruct a private
+`MotionStageRead` equivalent. The owner result/signature must be agreed upstream.
+
+The API and rejection rules below describe the current implementation.
+Migration is open in [cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams);
+this documentation change does not remove or rename `StageClip`.
+
 ## Build and use
 
 Enable `AVATAR_BUILD_USD_BINDING` and `AVATAR_BUILD_MOTION_USD_BINDING`, with

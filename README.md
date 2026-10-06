@@ -34,25 +34,31 @@ the direct consumer API receive the same resolved state. See the
 
 ## Components
 
-The first direct implementation is one reusable `avatarRuntime` target with
-public C headers. Additional component targets remain a
-[layout proposal](docs/architecture/PROJECT_LAYOUT.md).
+The reusable `avatarRuntime` target exposes common C contracts and owns
+lifecycle, state storage, scheduling, registration and diagnostics. Provider
+and USD integrations are separately optional targets:
 
 | Component | Responsibility |
 | --- | --- |
-| `avatarCore` | common input and evaluated-state contracts |
-| `avatarRuntime` | instances, ordered evaluation and frame lifecycle |
-| `avatarRegistry` | evaluator registration and capability discovery |
-| `avatarDiagnostics` | structured diagnostics, tracing and timing |
-| `avatarImaging` | optional Hydra publication adapter |
-| `execAvatar` | optional OpenExec execution integration |
-| inspect / replay / benchmark tools | observation and reproducible validation |
+| `avatarRuntime` | common contracts, instances, ordered evaluation, frame lifecycle, registry and diagnostics |
+| `avatarMotionAdapter` | owner sampling/retarget calls and selected-motion input bridge |
+| `avatarUsdBinding` / `avatarMotionUsdBinding` | current skeleton/baseline and motion-stage integration; owner conversion cleanup planned |
+| `avatarVrmAdapter` / VRM USD binding targets | owner LookAt/expression evaluation and authored configuration |
+| `avatarMotionCheck` | opt-in real-asset adapter parity host |
+
+MMD, Hydra, `hydra-toon` publication, recording publication, OpenExec and
+inspect/replay/benchmark components remain planned. See
+[project layout](docs/architecture/PROJECT_LAYOUT.md) for current targets and
+the intended responsibility split.
 
 ## Documentation
 
 Start at [docs/](docs/README.md). The
 [design policy](docs/design/DESIGN_POLICY.md) preserves the supplied
-implementation direction. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
+implementation direction. The adopted
+[boundary cleanup policy](docs/design/BOUNDARY_POLICY.md) adds motion validation
+and USD skeleton/rest ownership cleanup, thin adapters and recording publication
+rules. These migrations remain planned. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
 prioritizes real motion -> VRM -> evaluated state -> `hydra-toon` fast-path,
 then MMD validation of the shared scheduler/state model before ABI freeze.
 Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the

@@ -20,6 +20,12 @@ owner: usd-avatar-runtime
 > refines section 20's sequencing: Runtime Phases A/B overlap, the first slice
 > uses VRM and `hydra-toon` fast-path, MMD validates generality, and ABI freeze
 > follows real-provider evidence. Original section numbers remain preserved.
+>
+> The [boundary cleanup policy](BOUNDARY_POLICY.md), supplied on 2026-10-06,
+> further refines ownership: adapters invoke/marshal owner algorithms, generic
+> motion validation and USD skeleton/rest conversion move to the motion owner,
+> and recording is a publication boundary. Its cleanup workstreams do not
+> renumber this document's Runtime Phases or freeze conceptual APIs.
 
 # usd-avatar-runtime — Implementation and Extension Policy
 

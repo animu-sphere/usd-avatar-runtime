@@ -1,6 +1,7 @@
 # Contributing
 
 Read the [design policy](docs/design/DESIGN_POLICY.md),
+[boundary cleanup policy](docs/design/BOUNDARY_POLICY.md),
 [dependency boundary](docs/architecture/DEPENDENCIES.md) and
 [documentation guidelines](docs/contributing/documentation.md) first.
 
@@ -8,6 +9,12 @@ Before implementing a feature, identify its owner. Common contracts,
 cross-format ordering, runtime lifecycle and state publication belong here.
 VRM/MMD semantics, generic motion algorithms, device adapters and rendering
 belong to their respective repositories.
+
+Adapters receive owner values, invoke owner algorithms and marshal/publish
+common state. Keep runtime layout, identity and lifetime checks here; generic
+motion validation, skeleton/rest conversion and USD motion interpretation belong
+to `usd-motion-plugins`. Extend missing owner APIs instead of implementing
+private substitutes. Recording is a publication adapter to the owner recorder.
 
 Contract drafts are under [docs/contracts/](docs/README.md#contracts).
 Changes should resolve a named open question or include an explicit rationale

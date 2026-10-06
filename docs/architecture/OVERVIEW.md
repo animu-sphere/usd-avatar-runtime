@@ -9,6 +9,12 @@ This is the target architecture, following
 [design policy sections 1–4 and 17](../design/DESIGN_POLICY.md).
 Implementation status is the [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
+The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) specifies
+the kernel's ownership: lifecycle, scheduling, registration, capabilities,
+common state and publication. Owner algorithms are invoked through thin
+adapters. Motion validation and USD skeleton/rest interpretation are upstream
+responsibilities; current adapter overlap is tracked as cleanup work.
+
 The [near-term direction](../design/NEAR_TERM_PLAN.md) prioritizes real motion
 -> VRM Humanoid/LookAt/Expression -> evaluated state -> `hydra-toon` fast-path,
 then MMD under the same scheduler/state model. Runtime Phases A/B overlap to
@@ -40,8 +46,11 @@ The planned USD binding adapter builds instance configuration from avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation target identities. It preserves owner
 semantics and validates layout/version identity and invalidation before frames.
-It is distinct from high-frequency value publication; revision 3 currently
-accepts caller-supplied layouts and has no USD binding adapter.
+It is distinct from high-frequency value publication. Revision 3 core accepts
+caller-supplied layouts; optional [USD skeleton](USD_BINDING.md) and
+[VRM USD](VRM_USD_BINDING.md) binders now supply scoped configuration. Generic
+skeleton conversion in the former still needs the owner/runtime split described
+by the boundary policy; no full format-independent binding system is claimed.
 
 ## 2. Instances and resources
 
@@ -87,5 +96,6 @@ sets, starting with independent avatars where resource ownership permits it.
 
 The host/stage-runner boundary for shared physics stepping needs agreement;
 the runtime owns ordering of avatar contributions, rather than silently
-claiming a physics world or backend. See
+claiming a physics world or backend. Boundary handoff and avatar state versioning
+belong here; solver, collision and fixed-step implementation stay outside runtime. See
 [dependency questions](DEPENDENCIES.md#3-integration-questions).

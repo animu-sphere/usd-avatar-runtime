@@ -31,12 +31,18 @@ above the generic USD binder. The opt-in `avatarMotionCheck` host composes that
 binding, VRM schema Humanoid discovery and clip pose evaluation.
 MMD/connector adapters and OST composition remain unconfigured.
 
+The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) refines
+these placement rules. The descriptions above record current integrations;
+generic validation in the motion adapter and USD skeleton/rest interpretation
+in the binders remain cleanup work, not exceptions to the intended boundary.
+See the [cleanup workstreams](../roadmap/current.md#boundary-cleanup-workstreams).
+
 ## 1. Owners
 
 | Repository | Owns | Canonical reference |
 | --- | --- | --- |
 | `motion-connectors` | external intake, normalization, source clocks, actors and observations | [connector contract](https://github.com/animu-sphere/motion-connectors/blob/main/docs/design/CONNECTOR_CONTRACT.md) |
-| `usd-motion-plugins` | motion values, sampling, blending, retargeting and recording primitives | [motion contract](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/MOTION_CONTRACT.md), [retarget policy](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/RETARGETING_POLICY.md), [execution contract](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/EXEC_CONTRACT.md) |
+| `usd-motion-plugins` | motion values, sampling/interpolation/filtering/blending/retargeting, generic validation/skeleton conversion/source rest, recording/replay algorithms and USD motion read/write | [motion contract](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/MOTION_CONTRACT.md), [retarget policy](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/RETARGETING_POLICY.md), [execution contract](https://github.com/animu-sphere/usd-motion-plugins/blob/main/docs/design/EXEC_CONTRACT.md) |
 | `usd-vrm-plugins` | VRM/VRMA formats, humanoid binding rules, expressions, LookAt and format evaluator cores | [VRM motion policy](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/docs/design/VRM_MOTION_POLICY.md), [vrmRig](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/libs/vrmRig/README.md) |
 | `usd-mmd-plugins` | PMX/VMD formats, MMD morph/control/IK meaning and format adapters | [MMD motion contract](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/design/MOTION_CONTRACT.md), [physics integration](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/design/PHYSICS_INTEGRATION.md) |
 | `usd-avatar-runtime` | discovery, composition, order, lifecycle, runtime state, scheduling and publication | [design policy](../design/DESIGN_POLICY.md) |
@@ -63,6 +69,18 @@ Provider adapters may depend on the runtime's small registration contract.
 The orchestration core must not depend on provider-private parser/model APIs.
 An adapter marshals existing library values into the common contract; it does
 not move or copy the algorithm into the runtime.
+
+The `MotionPose -> AvatarInputFrame` bridge remains runtime-owned: it maps
+runtime channel/source/actor identities, owns input arrays and reports unmapped
+fields. External source clock/actor normalization stays in `motion-connectors`.
+Supplied affine mappings are preserved rather than recomputed by the bridge.
+
+USD integration follows the same rule. `motionUsd` owns stage motion reading,
+source skeleton interpretation, generic validation and skeleton/rest conversion.
+Runtime binding owns avatar/layout/skeleton identity, joint-ID mapping, baseline
+state and root placement. The existing `StageClip` and `SkeletonBinding` have
+not yet completed this split. Recording adapters publish resolved motion to
+the owner recorder; runtime does not own resampling, compression or clip construction.
 
 Renderer consumers receive resolved outputs. They do not call back into VRM
 LookAt, expression arbitration, MMD morph interpretation or IK. Rendering
@@ -112,8 +130,10 @@ avatar post-physics evaluation -> EvaluatedAvatarState
 ```
 
 This is the intended ownership boundary, not an implemented physics adapter.
-The runtime owns avatar evaluation order. Physics backend/world lifetime,
-fixed timestep and shared-world stepping ownership remain RT-O6 decisions.
+The runtime owns boundary scheduling, input/output handoff, avatar state
+versioning and deterministic evaluation order. Physics backend/world lifetime,
+solver, collision and fixed-step implementation belong outside runtime. Exact
+shared-world host/stepping integration remains an RT-O6 decision.
 Format-specific MMD/VRM physics semantics remain with their owners. Validate
 this boundary in the MMD slice without requiring full physics integration or
 putting a solver/world into runtime core.
