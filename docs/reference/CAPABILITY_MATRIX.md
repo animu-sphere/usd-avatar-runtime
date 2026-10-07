@@ -370,3 +370,20 @@ without explicit scalar/world-gaze probes, maximum component error
 `1.403972313e-7`, owner pose/morph parity, reset and retained snapshots. Asset
 paths/hashes and logs remain ignored local evidence. Final wrapper absorption,
 representative native capture, renderer evidence and ABI freeze remain open.
+
+The owner [v0.5.4 release](https://github.com/animu-sphere/usd-motion-plugins/releases/tag/v0.5.4)
+was published on 2026-10-07 after all three OS release lanes passed. All 70
+assets, 69 SHA-256 checksums and 33 package pins were checked, together with
+tagged source identity and the public `motionUsd` retarget dependency. Runtime
+motion/USD source and installed components now require 0.5.4 while retaining
+header/link probes for incomplete installations. An older 0.5.3 `motionUsd`
+package is rejected at version discovery in both source and installed consumers.
+
+The runtime's Windows configuration was switched to published digest-pinned
+`motionCore`, `motionSampling`, `motionRetarget` and `motionUsd` packages fetched
+from OCI. Its build and all 16 tests pass, including installed consumers and
+core-only lookup isolation. Both seven-clip real-avatar parity modes pass again,
+8,286 frames per mode and maximum component error `1.403972313e-7`, with reset
+and retained snapshots. Package digests, build/test logs and private-asset
+evidence remain in ignored local storage. The experimental runtime C ABI and
+remaining milestone gates are unchanged.

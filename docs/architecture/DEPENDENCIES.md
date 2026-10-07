@@ -17,6 +17,10 @@ The optional [`avatarUsdBinding`](USD_BINDING.md) reads USD skeleton/rest and
 placement into owned baseline and motion-owner values, using installed
 `motionUsd` typed strict reading and its public `motionRetarget` dependency,
 alongside `usdSkel`/`usdGeom`; it adds no core dependency.
+The motion and USD components require the owner's 0.5.4 release or a compatible
+later package, which supplies validation and typed skeleton/clip/rest APIs.
+Installed component lookup keeps the same version requirements and header/link
+checks; core-only lookup still resolves no provider.
 The optional [`avatarVrmUsdBinding`](VRM_USD_BINDING.md) adds installed
 `vrmSchema` only to a separate schema discovery target above the generic binder.
 The optional [`avatarVrmLookAtUsdBinding`](VRM_LOOKAT_USD_BINDING.md) composes
