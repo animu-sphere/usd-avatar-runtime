@@ -1,5 +1,5 @@
-# Reading is additive to the local owner package; the version alone does not
-# prove that an installed archive exports the strict skeleton/clip APIs.
+# Typed reading ships in 0.5.4. Also verify that the installed headers/archive
+# provide the required skeleton/clip APIs.
 function(avatar_require_motion_usd_reading)
     include(CheckCXXSourceCompiles)
     set(CMAKE_REQUIRED_LIBRARIES motionUsd::motionUsd)
@@ -13,17 +13,19 @@ function(avatar_require_motion_usd_reading)
         #include <motionUsd/SkeletonReader.h>
         int main() {
             namespace motion = openstrata::motion;
-            motion::SkeletonStageRead skeleton;
+            motion::MotionSkeletonRead skeleton;
             motion::MotionStageRead clip;
             motion::SkeletonReadDiagnostic diagnostic;
             const pxr::UsdStagePtr stage;
             const pxr::SdfPath path("/Skeleton");
-            motion::ReadSkeleton(stage, path, &skeleton, &diagnostic);
+            motion::ReadMotionSkeleton(stage, path, motion::SkeletonReadRole::Generic, &skeleton, &diagnostic);
             motion::ReadCanonicalMotionStage(stage, path, &clip, &diagnostic);
+            return skeleton.skeleton.GetSize() + (clip.descriptor.has_value() ? 1 : 0)
+                + (clip.sourceRest.has_value() ? 1 : 0);
         }
     ]] AR_MOTION_USD_OWNER_READING)
     if(NOT AR_MOTION_USD_OWNER_READING)
-        message(FATAL_ERROR "USD bindings require installed motionUsd strict skeleton/clip reading APIs. Rebuild/install motionUsd with motionUsd/SkeletonReader.h and its linked symbols; older packages with the same version are insufficient.")
+        message(FATAL_ERROR "USD bindings require installed motionUsd typed skeleton/clip reading APIs: ReadMotionSkeleton and MotionStageRead descriptor/sourceRest. Use a complete motionUsd 0.5.4 or compatible later install with motionUsd/SkeletonReader.h and its linked symbols.")
     endif()
 endfunction()
 
@@ -47,9 +49,10 @@ function(avatar_require_motion_usd_inputs)
             inputs.lookAtTargetAttributePath = "/Input.target";
             const pxr::UsdStagePtr stage;
             motion::ReadCanonicalMotionStage(stage, pxr::SdfPath("/Skeleton"), inputs, &clip, &diagnostic);
+            return (clip.descriptor.has_value() ? 1 : 0) + (clip.sourceRest.has_value() ? 1 : 0);
         }
     ]] AR_MOTION_USD_OWNER_INPUTS)
     if(NOT AR_MOTION_USD_OWNER_INPUTS)
-        message(FATAL_ERROR "Motion USD binding requires installed motionUsd owner-selected input APIs, including the ReadCanonicalMotionStage options overload. Rebuild/install motionUsd; older packages with the same version are insufficient.")
+        message(FATAL_ERROR "Motion USD binding requires installed motionUsd owner-selected input APIs, including the ReadCanonicalMotionStage options overload. Use a complete motionUsd 0.5.4 or compatible later install.")
     endif()
 endfunction()

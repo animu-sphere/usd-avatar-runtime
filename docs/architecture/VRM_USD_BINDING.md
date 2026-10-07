@@ -14,7 +14,8 @@ core or changing the revision-3 C ABI.
 ## Dependencies and installation
 
 Enable `AVATAR_BUILD_USD_BINDING` and `AVATAR_BUILD_VRM_USD_BINDING` with installed
-`vrmSchema` 0.9.0 or compatible later, `motionRetarget` 0.5.3 and OpenUSD.
+`vrmSchema` 0.9.0 or compatible later, `motionUsd`/`motionRetarget` 0.5.4
+or compatible later and OpenUSD.
 Motion evaluation and `vrmRig` evaluation are independently optional. The
 adapter links installed owner targets; no sibling source is compiled here.
 

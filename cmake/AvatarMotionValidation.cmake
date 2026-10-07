@@ -1,5 +1,5 @@
-# Owner validation is an additive local API: the package version alone does
-# not distinguish old installs. Verify installed headers and linked symbols.
+# Owner validation ships in 0.5.4. Verify installed headers and linked symbols
+# as well as the package version to catch incomplete owner installations.
 function(avatar_require_motion_validation)
     include(CheckCXXSourceCompiles)
     set(CMAKE_REQUIRED_LIBRARIES motionRetarget::motionRetarget)
@@ -21,6 +21,6 @@ function(avatar_require_motion_validation)
         }
     ]] AR_MOTION_OWNER_VALIDATION)
     if(NOT AR_MOTION_OWNER_VALIDATION)
-        message(FATAL_ERROR "The motion adapter requires installed motionCore and motionRetarget validation APIs. Rebuild/install the owner libraries with motionCore/Validation.h and motionRetarget/Validation.h; older packages with the same version are insufficient.")
+        message(FATAL_ERROR "The motion adapter requires installed motionCore and motionRetarget validation APIs. Use a complete motion owner 0.5.4 or compatible later install with motionCore/Validation.h, motionRetarget/Validation.h and their linked symbols.")
     endif()
 endfunction()

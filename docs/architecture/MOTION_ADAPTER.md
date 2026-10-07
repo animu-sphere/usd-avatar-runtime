@@ -17,15 +17,14 @@ scalar channels and world gaze points, without changing the runtime C ABI.
 ## Build and installation
 
 Enable `AVATAR_BUILD_MOTION_ADAPTER` and provide installed `motionSampling`,
-`motionRetarget` (0.5.3 or compatible later version), `motionCore` and OpenUSD
+`motionRetarget` (0.5.4 or compatible later version), `motionCore` and OpenUSD
 CMake packages. The adapter links only owner value libraries; core still has
 no provider dependency. No sibling sources are compiled into the runtime.
-The local additive validation APIs in `motionCore/Validation.h` and
-`motionRetarget/Validation.h` are required. CMake probes installed headers and
-linked symbols both in-tree and for the installed `motion` component; older
-packages with the same version may lack them. Core-only lookup does not run
-this probe or import the owners. This is unpublished owner API evidence,
-not a claim that all 0.5.3 installations expose validation.
+The validation APIs in `motionCore/Validation.h` and
+`motionRetarget/Validation.h` ship in the owner's 0.5.4 release. CMake requires
+that version and also probes installed headers and linked symbols both in-tree
+and for the installed `motion` component. Core-only lookup does not run this
+probe or import the owners.
 In an x64 developer shell with dependency DLLs on `PATH`:
 
 ```sh

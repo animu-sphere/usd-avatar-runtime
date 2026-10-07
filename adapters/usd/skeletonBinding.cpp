@@ -47,26 +47,13 @@ struct SkeletonBinding::Impl {
                 bool(stage->GetPrimAtPath(config.avatarRoot)), "USD_BINDING_AVATAR_ROOT", config.avatarRoot.GetString());
         require(config.skeleton.IsAbsolutePath() && config.skeleton.IsPrimPath() &&
                 config.skeleton.HasPrefix(config.avatarRoot), "USD_BINDING_SKELETON_PATH", config.skeleton.GetString());
-        motion::SkeletonStageRead read;
+        motion::MotionSkeletonRead read;
         motion::SkeletonReadDiagnostic diagnostic;
-        if (!motion::ReadSkeleton(stage, config.skeleton, &read, &diagnostic))
+        if (!motion::ReadMotionSkeleton(stage, config.skeleton, motion::SkeletonReadRole::Generic,
+                                        &read, &diagnostic))
             throw MotionUsdReadError(std::move(diagnostic), AR_MOTION_USD_VERSION);
-        ids = read.skeleton.jointTokens;
-        auto built = motion::BuildSkeletonDescriptor(ids, read.skeleton.restTransforms);
-        require(bool(built.skeleton), "USD_BINDING_OWNER_SKELETON", config.skeleton.GetString());
-        skeleton = std::move(*built.skeleton);
-        // The owner readers must agree on the joint order used by the runtime.
-        for (size_t i = 0; i < ids.size(); ++i)
-            require(read.parents[i] == skeleton.GetJoints()[i].parent,
-                    "USD_BINDING_PARENT_MAPPING", ids[i]);
-        // Preserve owner float rotations, normalized for the runtime tolerance.
-        std::vector<motion::SkeletonJoint> normalized = skeleton.GetJoints();
-        for (auto& joint : normalized) {
-            const auto t = transform(joint);
-            joint.restRotation = pxr::GfQuatf(float(t.rotation[3]), pxr::GfVec3f(
-                float(t.rotation[0]), float(t.rotation[1]), float(t.rotation[2])));
-        }
-        skeleton = motion::SkeletonDescriptor(std::move(normalized));
+        skeleton = std::move(read.skeleton);
+        for (const auto& joint : skeleton.GetJoints()) ids.push_back(joint.token);
         std::set<motion::HumanJoint> bones;
         std::set<std::string> targets;
         for (const auto& binding : config.humanoid) {
@@ -75,9 +62,9 @@ struct SkeletonBinding::Impl {
             require(map.SetJointToken(binding.bone, binding.joint, skeleton),
                     "USD_BINDING_HUMANOID_JOINT", binding.joint);
         }
-        const auto& rotation = read.worldRotation;
+        const auto& rotation = read.metadata.worldRotation;
         for (int k = 0; k < 3; ++k) {
-            placement.translation[k] = read.worldTranslation[k];
+            placement.translation[k] = read.metadata.worldTranslation[k];
             placement.rotation[k] = rotation.GetImaginary()[k];
             require(std::isfinite(placement.translation[k]), "USD_BINDING_PLACEMENT_RANGE", config.skeleton.GetString());
         }

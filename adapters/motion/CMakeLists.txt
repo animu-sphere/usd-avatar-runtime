@@ -1,5 +1,5 @@
-find_package(motionSampling CONFIG REQUIRED)
-find_package(motionRetarget 0.5.3 CONFIG REQUIRED)
+find_package(motionSampling 0.5.4 CONFIG REQUIRED)
+find_package(motionRetarget 0.5.4 CONFIG REQUIRED)
 include(${PROJECT_SOURCE_DIR}/cmake/AvatarMotionValidation.cmake)
 avatar_require_motion_validation()
 add_library(avatarMotionAdapter STATIC clipPoseAdapter.cpp motionPoseInputBridge.cpp)

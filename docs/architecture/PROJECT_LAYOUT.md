@@ -30,8 +30,8 @@ or rename working directories merely to match a responsibility sketch.
 | --- | --- |
 | `avatarRuntime` | `libs/avatarRuntime`: common C contracts, lifecycle, storage, registration, scheduling and diagnostics; no external provider dependency |
 | `avatarMotionAdapter` | `adapters/motion`: owner sampling/retarget/validation invocation, owned diagnostic reports and MotionPoseInputBridge with legacy source aliases |
-| `avatarUsdBinding` | `adapters/usd`: owner strict skeleton reading/descriptor construction to runtime identity/baseline/placement binding; coherent typed owner result pending |
-| `avatarMotionUsdBinding` | `adapters/motion-usd`: thin strict owner clip read and descriptor/source-rest builder composition; final StageClip absorption pending |
+| `avatarUsdBinding` | `adapters/usd`: typed owner skeleton/placement read to runtime identity/baseline/placement binding |
+| `avatarMotionUsdBinding` | `adapters/motion-usd`: thin immutable wrapper over typed owner clip/descriptor/source-rest read; final StageClip absorption pending |
 | `avatarVrmAdapter` | `adapters/vrm`: owner LookAt/expression registration and common-state mapping |
 | `avatarVrmUsdBinding`, `avatarVrmLookAtUsdBinding`, `avatarVrmExpressionUsdBinding` | `adapters/vrm-usd`: separately optional owner schema/configuration bindings |
 | `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host, optionally with installed Toon probe transport checks |

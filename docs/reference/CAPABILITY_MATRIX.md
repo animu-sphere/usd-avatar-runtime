@@ -12,11 +12,11 @@ retains `InputAssembler` source aliases. Owned owner reports preserve
 code/subject/detail and package identity and can be emitted to C sinks.
 The scoped USD reader split is also implemented: `SkeletonBinding` delegates
 generic matrix/token/topology/unit/placement checks to installed
-`motionUsd::ReadSkeleton`, and `StageClip` calls `ReadCanonicalMotionStage`
-without creating a source runtime binding. Existing owner builders supply
-descriptor/source rest. Reading refusals retain owner code/subject/detail and
-package identity/version in `MotionUsdReadError`. The coherent typed owner
-result/WS-O4 decision and final StageClip absorption remain on the
+`motionUsd::ReadMotionSkeleton` with the explicit `Generic` role, and `StageClip`
+retains the coherent clip/descriptor/source-rest result of `ReadCanonicalMotionStage`.
+Neither binding rebuilds the owner descriptor or source rest. Reading refusals
+retain owner code/subject/detail and package identity/version in `MotionUsdReadError`.
+WS-O4 is resolved upstream; final StageClip wrapper absorption remains on the
 [roadmap](../roadmap/current.md#boundary-cleanup-workstreams).
 
 | Surface | Current status | Owning documentation |
@@ -347,6 +347,26 @@ reset and retained active/held snapshots. Asset hashes/commands/logs stay in
 ignored local evidence; no asset is copied or authored. Native scalar/gaze
 counters remain zero and real material binds remain absent. This preserves
 the earlier integration evidence, without closing native intake or any
-milestone. Coherent typed descriptor/source-rest owner results and final
-`StageClip` absorption remain WS-O4/workstream B work; no package release or
-ABI freeze is claimed.
+milestone. Typed owner descriptor/source-rest adoption is described below;
+final `StageClip` wrapper absorption remains workstream B work. No package
+release or ABI freeze is claimed.
+
+Typed owner results were adopted and checked on 2026-10-07 with Windows
+x64/MSVC 19.51/OpenUSD 26.08 Release and separately installed `motionUsd` 0.5.3
+with unreleased typed-reader additions. `SkeletonBinding` consumes the generic
+descriptor unchanged and marshals normalized baseline transforms; `StageClip`
+retains `MotionStageRead::descriptor` and `sourceRest`, with `SourceRest()`
+referencing that owned result. No raw-array descriptor/rest builders remain in
+these runtime binders. Tests compare exact owner descriptors, all source-rest
+arrays, joint/parent/placement mapping and copy/stage lifetime, and forward
+semantic duplicate-bone diagnostics without replacing their subject/detail.
+
+The full runtime configuration passes 16 tests, USD-only passes five, and
+motion-USD-only passes seven, including separate installed consumers and
+core-only imports without providers. Source and installed USD configurations
+reject an older same-version strict-reader package with an actionable typed-API
+diagnostic. The same seven private clips pass 8,286 frames per mode with and
+without explicit scalar/world-gaze probes, maximum component error
+`1.403972313e-7`, owner pose/morph parity, reset and retained snapshots. Asset
+paths/hashes and logs remain ignored local evidence. Final wrapper absorption,
+representative native capture, renderer evidence and ABI freeze remain open.
