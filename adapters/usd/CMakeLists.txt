@@ -1,5 +1,5 @@
-find_package(motionRetarget 0.5.3 CONFIG REQUIRED)
-find_package(motionUsd 0.5.3 CONFIG REQUIRED)
+find_package(motionRetarget 0.5.4 CONFIG REQUIRED)
+find_package(motionUsd 0.5.4 CONFIG REQUIRED)
 include(${PROJECT_SOURCE_DIR}/cmake/AvatarMotionUsdReading.cmake)
 avatar_require_motion_usd_reading()
 find_package(pxr CONFIG REQUIRED)

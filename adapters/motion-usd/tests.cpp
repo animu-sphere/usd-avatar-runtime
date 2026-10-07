@@ -55,6 +55,14 @@ int main() {
     CHECK(clip.Read().timeCodesPerSecond == 60);
     CHECK(clip.Read().animationPath == "/Clip/Animation");
     CHECK(clip.Read().skeleton.restTransformsAuthored);
+    motion::MotionStageRead ownerRead; motion::SkeletonReadDiagnostic diagnostic;
+    CHECK(motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));
+    CHECK(clip.Read().descriptor && clip.Read().sourceRest);
+    CHECK(clip.Read().descriptor == ownerRead.descriptor);
+    CHECK(&clip.SourceRest() == &*clip.Read().sourceRest);
+    CHECK(clip.SourceRest().localRotations == ownerRead.sourceRest->localRotations);
+    CHECK(clip.SourceRest().localTranslations == ownerRead.sourceRest->localTranslations);
+    CHECK(clip.SourceRest().parents == ownerRead.sourceRest->parents);
     CHECK(!clip.Read().metadata.contractVersion);
     CHECK(std::abs(clip.SourceRest().localTranslations[size_t(motion::HumanJoint::Hips)][1] - 0.8f) < 1e-6);
     CHECK(clip.SourceRest().parents[size_t(motion::HumanJoint::Head)] == size_t(motion::HumanJoint::Hips));
@@ -70,6 +78,9 @@ int main() {
     CHECK(s->RemovePrim(pxr::SdfPath("/Clip"))); s.Reset();
     CHECK(copy.Read().clip.samples[1].root.worldPosition[2] == 1);
     CHECK(copy.Read().skeleton.path == path.GetString());
+    CHECK(copy.Read().descriptor == ownerRead.descriptor);
+    CHECK(&copy.SourceRest() == &clip.SourceRest());
+    CHECK(copy.SourceRest().localRotations == ownerRead.sourceRest->localRotations);
     // Explicit format-owner selection travels through the strict owner reader.
     s = stage();
     auto native = s->DefinePrim(pxr::SdfPath("/Native"));
@@ -85,6 +96,10 @@ int main() {
     CHECK(motion::ReadCanonicalMotionStage(s,path,inputs,&expected,&selectedDiagnostic));
     avatarMotionUsd::StageClip selected(s,path,inputs); auto selectedCopy = selected;
     CHECK(selected.Read().clip == expected.clip);
+    CHECK(selected.Read().descriptor == expected.descriptor);
+    CHECK(selected.SourceRest().localRotations == expected.sourceRest->localRotations);
+    CHECK(selected.SourceRest().localTranslations == expected.sourceRest->localTranslations);
+    CHECK(selected.SourceRest().parents == expected.sourceRest->parents);
     CHECK(selected.Read().clip.samples.size() == 4);
     CHECK(selected.Read().clip.samples[1].lookAtTarget == pxr::GfVec3f(0));
     CHECK(*selected.Read().clip.samples[2].channels.Find("vrm:happy") == 1.5f);
@@ -102,7 +117,6 @@ int main() {
     CHECK(s->RemovePrim(pxr::SdfPath("/Native"))); s.Reset(); inputs = {};
     CHECK(*selectedCopy.Read().clip.samples[2].channels.Find("vrm:happy") == 1.5f);
     s = stage(); CHECK(pxr::UsdGeomSetStageMetersPerUnit(s,0.01));
-    motion::MotionStageRead ownerRead; motion::SkeletonReadDiagnostic diagnostic;
     CHECK(!motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));
     bool ownerRefused = false;
     try { avatarMotionUsd::StageClip rejected(s,path); }
@@ -125,6 +139,18 @@ int main() {
     s = stage(); CHECK(s->RemovePrim(pxr::SdfPath("/Clip/Animation"))); reject(s,"MOTION_USD_READ");
     s = stage(); auto sk = pxr::UsdSkelSkeleton(s->GetPrimAtPath(path));
     CHECK(sk.GetJointsAttr().Set(pxr::VtTokenArray{pxr::TfToken("hips"),pxr::TfToken("hips/hips")}));
-    reject(s,"MOTION_USD_SOURCE_REST");
+    CHECK(!motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));
+    CHECK(diagnostic.code == "MOTION_USD_SOURCE_REST_DUPLICATE_BONE");
+    bool duplicateRefused = false;
+    try { avatarMotionUsd::StageClip rejected(s,path); }
+    catch (const avatarUsd::MotionUsdReadError& e) {
+        const auto retained = e; s.Reset(); duplicateRefused = true;
+        CHECK(retained.Diagnostic().code == diagnostic.code && retained.Diagnostic().subject == diagnostic.subject &&
+              retained.Diagnostic().detail == diagnostic.detail);
+    }
+    CHECK(duplicateRefused);
+    s = stage(); sk = pxr::UsdSkelSkeleton(s->GetPrimAtPath(path));
+    CHECK(sk.GetJointsAttr().Set(pxr::VtTokenArray{pxr::TfToken("Pelvis"),pxr::TfToken("Pelvis/Skull")}));
+    reject(s,"MOTION_USD_SOURCE_REST_NO_HUMAN_BONE");
     std::cout << "Motion USD clip binding contracts passed\n";
 }

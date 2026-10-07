@@ -139,27 +139,24 @@ void affineRoundoff() {
 }
 void ownerReading() {
     auto s = stage();
-    motion::SkeletonStageRead read; motion::SkeletonReadDiagnostic diagnostic;
-    CHECK(motion::ReadSkeleton(s,config().skeleton,&read,&diagnostic));
-    const auto expected = motion::BuildSkeletonDescriptor(read.skeleton.jointTokens,read.skeleton.restTransforms);
-    CHECK(expected.skeleton);
+    motion::MotionSkeletonRead read; motion::SkeletonReadDiagnostic diagnostic;
+    CHECK(motion::ReadMotionSkeleton(s,config().skeleton,motion::SkeletonReadRole::Generic,&read,&diagnostic));
+    CHECK(!read.sourceRest);
     avatarUsd::SkeletonBinding binding(s,config());
-    CHECK(binding.JointIds() == read.skeleton.jointTokens);
+    CHECK(binding.Skeleton() == read.skeleton);
     for (size_t i = 0; i < binding.Skeleton().GetSize(); ++i) {
-        const auto& actual = binding.Skeleton().GetJoints()[i];
-        const auto& owner = expected.skeleton->GetJoints()[i];
-        CHECK(actual.token == owner.token && actual.parent == read.parents[i]);
-        CHECK(actual.restTranslation == owner.restTranslation && actual.restScale == owner.restScale);
-        CHECK(actual.restRotation == owner.restRotation.GetNormalized());
+        const auto& owner = read.skeleton.GetJoints()[i];
+        CHECK(binding.JointIds()[i] == owner.token);
+        CHECK(binding.Baseline().joints[i].parent_index == owner.parent);
     }
     for (int k = 0; k < 3; ++k) {
-        CHECK(binding.RootPlacement().translation[k] == read.worldTranslation[k]);
-        CHECK(binding.RootPlacement().rotation[k] == read.worldRotation.GetImaginary()[k]);
+        CHECK(binding.RootPlacement().translation[k] == read.metadata.worldTranslation[k]);
+        CHECK(binding.RootPlacement().rotation[k] == read.metadata.worldRotation.GetImaginary()[k]);
     }
-    CHECK(binding.RootPlacement().rotation[3] == read.worldRotation.GetReal());
+    CHECK(binding.RootPlacement().rotation[3] == read.metadata.worldRotation.GetReal());
     // Keep the owner's record after the failed binding and source stage die.
     CHECK(pxr::UsdGeomSetStageUpAxis(s,pxr::UsdGeomTokens->z));
-    CHECK(!motion::ReadSkeleton(s,config().skeleton,&read,&diagnostic));
+    CHECK(!motion::ReadMotionSkeleton(s,config().skeleton,motion::SkeletonReadRole::Generic,&read,&diagnostic));
     std::optional<avatarUsd::MotionUsdReadError> retained;
     try { avatarUsd::SkeletonBinding rejected(s,config()); }
     catch (const avatarUsd::MotionUsdReadError& e) { retained = e; }

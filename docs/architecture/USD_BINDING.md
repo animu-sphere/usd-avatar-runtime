@@ -15,30 +15,29 @@ schema-derived mappings and records scoped local real-avatar evidence.
 
 The adopted [boundary policy section 8](../design/BOUNDARY_POLICY.md#8-skeletonbinding-split)
 splits this helper into motion-owner conversion and runtime binding. The
-implemented slice calls installed `motionUsd::ReadSkeleton` for authored rest,
-token/topology/matrix validation, metre conversion and rigid placement values.
-It then invokes `motionRetarget::BuildSkeletonDescriptor` on the returned owned
-arrays. No generic USD conversion or matrix validator remains in this binder.
+implemented binding calls installed `motionUsd::ReadMotionSkeleton` with the
+explicit `Generic` role for a validated typed descriptor and separate rigid
+placement in metres. Descriptor building and validation stay with the owner;
+the runtime does not rebuild the returned skeleton from raw arrays.
 
 Retain avatar-root identity, runtime layout ID/version, skeleton and joint-ID
 mapping, baseline `ArStateView`, root placement and common-state layout binding
-here. Owner parent results are checked against descriptor slots before runtime
-publication; runtime transform representation and normalized-quaternion checks
-remain. `SkeletonBinding` keeps its public name and lifetime behavior.
+here. Joint IDs and parent slots come directly from the owner descriptor;
+runtime transform representation and normalized-quaternion checks remain when
+marshalling the baseline. `SkeletonBinding` keeps its public name and lifetime
+behavior, and `Skeleton()` preserves the owner's descriptor unchanged.
 
-The owner reader returns plain skeleton arrays, preserving the existing
-`motionUsd` dependency on `motionCore` alone. A coherent owner read containing
-typed descriptor/source rest still needs the owner's WS-O4 dependency decision;
+The owner's resolved WS-O4 dependency makes `motionRetarget` public through
+`motionUsd`. Typed skeleton/source-rest results are now consumed here;
 [cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams)
-remains open for that consolidation and final `StageClip` absorption.
+retains final `StageClip` wrapper absorption.
 
 ## Dependencies and build
 
 Enable `AVATAR_BUILD_USD_BINDING` with installed `motionUsd` and `motionRetarget`
-0.5.3 or compatible later, their `motionCore` dependency and OpenUSD.
-The strict reader is an unreleased additive owner API: configuration checks
-both its installed header and linked symbols, since older 0.5.3 installs do not
-provide it. The target links
+0.5.4 or compatible later, their `motionCore` dependency and OpenUSD.
+The typed reader ships in the owner's 0.5.4 release. Configuration checks the
+package version, installed header and linked symbols. The target links
 `usdSkel`/`usdGeom`; `avatarRuntime` remains independent of USD and providers.
 Motion evaluation and VRM evaluation are separately optional. No sibling
 sources are compiled into this repository.
@@ -74,12 +73,11 @@ the adapter does not infer roles from names or read VRM schema attributes.
 Partial/empty role maps are allowed. Required-bone policy belongs to the owner
 evaluator and is supplied separately through its retarget options.
 
-The owner reader supplies checked joint tokens, parent indices, metre rest
-matrices and separate placement. The adapter calls the owner's
-`BuildSkeletonDescriptor` and resolves the explicit map with owner
-`RetargetMap::SetJointToken`. Rest decomposition and parent derivation stay
-with `motionRetarget`; runtime binding validates agreement with owner reader
-parent indices. Joint tokens, order and auxiliary/non-humanoid joints are
+The owner reader supplies checked joint tokens, parent indices and metre rest
+values in its descriptor, plus separate placement metadata. The adapter resolves
+the explicit map with owner `RetargetMap::SetJointToken`. Rest decomposition,
+parent derivation and descriptor validation stay with the owner. Joint tokens,
+order and auxiliary/non-humanoid joints are
 preserved. The absolute skeleton prim path is the runtime skeleton identity.
 
 The scoped profile requires Y-up and the caller's assertion that the stage
@@ -93,10 +91,10 @@ ordering/topology disagreement, duplicate roles/targets, missing mapped joints,
 non-finite or out-of-owner-float-range rest values, zero scale, reflection,
 homogeneous-column deviations beyond `1e-12` and shear beyond `1e-6` are
 rejected. Accepted homogeneous-column roundoff is canonicalized to `(0,0,0,1)`
-in private binding storage before decomposition; authored values stay unchanged.
+in the owner's returned copy before decomposition; authored values stay unchanged.
 Positive nonuniform rest scale
 is preserved without half narrowing. The owner float decomposition is
-normalized to the runtime quaternion tolerance.
+normalized to the runtime quaternion tolerance when marshalling baseline transforms.
 
 The skeleton's composed local-to-world transform includes placement inherited
 through the avatar root and its ancestors. Placement must be rigid within
@@ -145,11 +143,12 @@ empty-clip baseline, repeat/reset behavior and bone LookAt numeric parity with
 the installed owner evaluator at `1e-6`. `adapters.usd_installed` repeats these
 checks through a separately configured installed consumer.
 
-The owner-reading split also compares descriptor/parent/placement values with
-direct installed owner calls and retains identical refusal code/subject/detail
-and package identity/version after stage destruction. The strict owner suite,
-full 16-test runtime configuration and repeated installed USD tests pass;
-seven real clips retain the prior avatar composition parity. See the
+The typed owner-reading integration compares the unchanged descriptor, joint-ID
+and baseline parent mapping, and placement with direct installed owner calls.
+It retains identical refusal code/subject/detail and package identity/version
+after stage destruction. The full 16-test runtime configuration and isolated
+USD/component installed-consumer checks pass; seven real clips retain the prior
+avatar composition parity. See the
 [capability matrix](../reference/CAPABILITY_MATRIX.md) for the checked scope.
 
 These tests construct USD stages and supply explicit mappings; they also

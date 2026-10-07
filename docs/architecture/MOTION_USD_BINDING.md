@@ -8,9 +8,8 @@ owner: usd-avatar-runtime
 The optional `avatarMotionUsdBinding` owns a host-side connection from an
 already composed semantic motion stage to the existing
 [clip pose adapter](MOTION_ADAPTER.md). It calls installed `motionUsd` to read
-the canonical clip/rest arrays and installed `motionRetarget` to build source
-descriptor/rest values. File parsing,
-sampling and retarget mathematics remain with their owners. Runtime core and
+the canonical clip, descriptor and source rest as one coherent owner result.
+File parsing, sampling and retarget mathematics remain with their owners. Runtime core and
 its revision-3 C ABI are unchanged.
 
 ## Scoped owner reading split
@@ -20,20 +19,21 @@ phases out the current `StageClip` form. `StageClip` now calls the installed
 `motionUsd::ReadCanonicalMotionStage`, which owns source skeleton reading and
 generic units/axis/rate/placement validation. It no longer creates a runtime
 `SkeletonBinding` for the source. The helper preserves the owner's
-`MotionStageRead` and invokes the existing owner descriptor/source-rest builders;
-it contains no USD motion conversion or private motion result vocabulary.
+`MotionStageRead`, including its owner-built `descriptor` and `sourceRest`;
+it contains no descriptor/source-rest rebuilding, USD motion conversion or
+private motion result vocabulary. `SourceRest()` references the rest in `Read()`.
 
-The owner's WS-O4 decision and coherent typed clip/source-rest read remain open.
-This scoped migration keeps `StageClip` source compatibility while that result
-and final wrapper absorption are settled in
+The owner's WS-O4 dependency decision is resolved and its typed results are
+consumed here. This migration keeps `StageClip` source compatibility while
+final wrapper absorption is settled in
 [cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams).
 
 ## Build and use
 
 Enable `AVATAR_BUILD_USD_BINDING` and `AVATAR_BUILD_MOTION_USD_BINDING`, with
-installed `motionUsd`/`motionRetarget` 0.5.3, `motionCore` and OpenUSD packages.
-The strict reader is additive and unreleased; a configure-time header/link
-probe rejects older same-version owner installations.
+installed `motionUsd`/`motionRetarget` 0.5.4 or compatible later, `motionCore`
+and OpenUSD packages. The typed strict reader ships in the owner's 0.5.4 release;
+configuration requires that version and also verifies installed headers/linked symbols.
 The `motion_usd` component also checks the strict reader's options overload;
 the generic `usd` component does not require that additive input API.
 This binding alone does not require `motionSampling`, `vrmRig` or `vrmSchema`.
@@ -46,15 +46,19 @@ Core-only lookups still resolve no provider package.
 [`StageClip`](../../adapters/motion-usd/include/avatarMotionUsd/StageClip.h)
 requires a stage and an explicit skeleton prim path. The strict owner reader
 validates source skeleton and clip-space metadata and reads the bound animation.
-The helper invokes the owner builders for `SourceRestPose` from validated rest
-arrays without runtime avatar/layout identities for the source.
+The helper retains the owner-built `SourceRestPose` without runtime avatar/layout
+identities for the source or a second rest copy.
 Copies share immutable storage and survive stage changes/destruction.
+Contract tests compare the retained descriptor and every source-rest array with
+the direct strict owner result, verify the `SourceRest()` alias after stage
+destruction, and preserve duplicate-bone refusal code/subject/detail.
 The additive constructor accepts owner `MotionStageReadOptions` for selected
 scalar name/value paths, prefixes and a gaze path. It forwards these to the
 strict owner reader, preserving its refusals and diagnostics. Attribute
 discovery remains format-owner/host configuration; no VRMA layout is inferred.
 `Read()` preserves the owner's clip, skeleton, animation identity, encoding
-rate, optional metadata and warnings. No reader warning is suppressed.
+rate, optional metadata, warnings and typed descriptor/source rest. No reader
+warning is suppressed.
 
 Supply **both** `Read().clip` and `SourceRest()` to `ClipPoseAdapterConfig`.
 Source rest is required to subtract the source hip height before adding root
@@ -73,8 +77,9 @@ even when the reader could synthesize identity, because that would change
 root-height interpretation. Owner reader refusals throw the shared
 `avatarUsd::MotionUsdReadError`, retaining unmodified code/subject/detail and
 installed owner version; existing `invalid_argument` handlers remain valid.
-Owner builder failures retain the scoped `MOTION_USD_SOURCE_REST` integration
-error. There is no
+Semantic source-rest failures preserve owner diagnostics such as
+`MOTION_USD_SOURCE_REST_DUPLICATE_BONE` and
+`MOTION_USD_SOURCE_REST_NO_HUMAN_BONE`. There is no
 joint-name heuristic for target avatars, source polling, per-frame stage
 authoring or new C++ cross-toolchain ABI guarantee.
 

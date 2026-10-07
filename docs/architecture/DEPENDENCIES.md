@@ -15,8 +15,12 @@ The optional [`avatarMotionAdapter`](MOTION_ADAPTER.md) consumes installed
 maps selected owner scalar/gaze fields through a host-side input assembler.
 The optional [`avatarUsdBinding`](USD_BINDING.md) reads USD skeleton/rest and
 placement into owned baseline and motion-owner values, using installed
-`motionUsd` strict reading and `motionRetarget` builders with
-`usdSkel`/`usdGeom`; it adds no core dependency.
+`motionUsd` typed strict reading and its public `motionRetarget` dependency,
+alongside `usdSkel`/`usdGeom`; it adds no core dependency.
+The motion and USD components require the owner's 0.5.4 release or a compatible
+later package, which supplies validation and typed skeleton/clip/rest APIs.
+Installed component lookup keeps the same version requirements and header/link
+checks; core-only lookup still resolves no provider.
 The optional [`avatarVrmUsdBinding`](VRM_USD_BINDING.md) adds installed
 `vrmSchema` only to a separate schema discovery target above the generic binder.
 The optional [`avatarVrmLookAtUsdBinding`](VRM_LOOKAT_USD_BINDING.md) composes
@@ -41,7 +45,7 @@ these placement rules. The descriptions above record current integrations;
 generic validation in the motion adapter now delegates to installed owner
 APIs. USD skeleton and canonical clip-space validation now also delegate to
 installed owner readers. Coherent typed descriptor/source-rest read results
-remain owner consolidation work.
+are consumed directly, with no runtime rebuilding from raw arrays.
 See the [cleanup workstreams](../roadmap/current.md#boundary-cleanup-workstreams).
 
 ## 1. Owners
@@ -86,8 +90,9 @@ USD integration follows the same rule. `motionUsd` owns stage motion reading,
 source skeleton interpretation, generic validation and skeleton/rest conversion.
 Runtime binding owns avatar/layout/skeleton identity, joint-ID mapping, baseline
 state and root placement. The existing `StageClip` and `SkeletonBinding` now
-compose owner readers/builders; the owner's WS-O4 dependency/result decision
-and final `StageClip` absorption remain open. Recording adapters publish resolved motion to
+consume typed owner reader results; the owner's WS-O4 dependency/result decision
+is resolved, while final `StageClip` wrapper absorption remains open.
+Recording adapters publish resolved motion to
 the owner recorder; runtime does not own resampling, compression or clip construction.
 
 Renderer consumers receive resolved outputs. They do not call back into VRM
