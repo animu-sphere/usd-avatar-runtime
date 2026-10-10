@@ -42,7 +42,7 @@ and USD integrations are separately optional targets:
 | --- | --- |
 | `avatarRuntime` | common contracts, instances, ordered evaluation, frame lifecycle, registry and diagnostics |
 | `avatarMotionAdapter` | owner sampling/retarget calls and selected-motion input bridge |
-| `avatarUsdBinding` / `avatarMotionUsdBinding` | current skeleton/baseline and motion-stage integration; owner conversion cleanup planned |
+| `avatarUsdBinding` / `avatarMotionUsdBinding` | runtime skeleton/baseline binding and direct owner motion-stage results; legacy StageClip compatibility |
 | `avatarVrmAdapter` / VRM USD binding targets | owner LookAt/expression evaluation and authored configuration |
 | `avatarMotionCheck` | opt-in real-asset adapter parity host |
 
@@ -61,7 +61,8 @@ implementation direction. The adopted
 [boundary cleanup policy](docs/design/BOUNDARY_POLICY.md) adds motion validation
 and USD skeleton/rest ownership cleanup, thin adapters and recording publication
 rules. Motion validation delegation and input-bridge naming are implemented;
-USD skeleton/rest and publication migrations remain planned. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
+USD skeleton/rest reading and direct owner-result host integration are implemented;
+publication work remains planned. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
 prioritizes real motion -> VRM -> evaluated state -> `hydra-toon` fast-path,
 then MMD validation of the shared scheduler/state model before ABI freeze.
 Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the

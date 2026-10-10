@@ -4,8 +4,10 @@
 #include <memory>
 
 namespace avatarMotionUsd {
-// Host-side, immutable configuration. The installed format plugin opens the
-// stage; motionUsd returns coherent semantic samples, descriptor and source rest.
+// Compatibility wrapper; new integrations use ReadStageClip.h and the owner
+// MotionStageRead value directly. Host-side, immutable configuration. The
+// installed format plugin opens the stage; motionUsd returns coherent semantic
+// samples, descriptor and source rest.
 // Explicit skeleton selection is required. Scoped to Y-up, metre stages with
 // identity skeleton placement and authored rest. No stage is retained or edited.
 // Copy Read().clip and SourceRest() into ClipPoseAdapterConfig together.

@@ -1,4 +1,5 @@
 #include "avatarMotionUsd/StageClip.h"
+#include "avatarMotionUsd/ReadStageClip.h"
 #include "avatarUsd/MotionUsdReadError.h"
 #include "motionRetarget/PoseRetargeter.h"
 #include "pxr/usd/usdGeom/metrics.h"
@@ -41,10 +42,35 @@ pxr::UsdStageRefPtr stage() {
     return s;
 }
 void reject(const pxr::UsdStagePtr& s, const char* code, pxr::SdfPath p = path) {
-    bool threw = false;
-    try { avatarMotionUsd::StageClip clip(s,p); }
-    catch (const std::invalid_argument& e) { threw = true; CHECK(std::string(e.what()).find(code) == 0); }
-    CHECK(threw);
+    for (bool legacy : {false, true}) {
+        bool threw = false;
+        try {
+            if (legacy) { avatarMotionUsd::StageClip clip(s,p); }
+            else { (void)avatarMotionUsd::ReadStageClip(s,p); }
+        }
+        catch (const std::invalid_argument& e) { threw = true; CHECK(std::string(e.what()).find(code) == 0); }
+        CHECK(threw);
+    }
+}
+void compareRead(const motion::MotionStageRead& read, const motion::MotionStageRead& owner) {
+    CHECK(read.clip == owner.clip);
+    CHECK(read.descriptor == owner.descriptor && read.sourceRest && owner.sourceRest);
+    CHECK(read.sourceRest->localRotations == owner.sourceRest->localRotations);
+    CHECK(read.sourceRest->localTranslations == owner.sourceRest->localTranslations);
+    CHECK(read.sourceRest->parents == owner.sourceRest->parents);
+    CHECK(read.skeleton.path == owner.skeleton.path);
+    CHECK(read.skeleton.jointTokens == owner.skeleton.jointTokens);
+    CHECK(read.skeleton.restTransforms == owner.skeleton.restTransforms);
+    CHECK(read.skeleton.restTransformsAuthored == owner.skeleton.restTransformsAuthored);
+    CHECK(read.animationPath == owner.animationPath && read.timeCodesPerSecond == owner.timeCodesPerSecond);
+    CHECK(read.metadata.contractVersion == owner.metadata.contractVersion);
+    CHECK(read.metadata.jointVocabularyVersion == owner.metadata.jointVocabularyVersion);
+    CHECK(read.metadata.sourceFormat == owner.metadata.sourceFormat);
+    CHECK(read.metadata.sourceProvider == owner.metadata.sourceProvider);
+    CHECK(read.metadata.rootMotionSource == owner.metadata.rootMotionSource);
+    CHECK(read.metadata.nominalFrameRate == owner.metadata.nominalFrameRate);
+    CHECK(read.metadata.provenance == owner.metadata.provenance);
+    CHECK(read.warnings == owner.warnings);
 }
 }
 int main() {
@@ -57,6 +83,13 @@ int main() {
     CHECK(clip.Read().skeleton.restTransformsAuthored);
     motion::MotionStageRead ownerRead; motion::SkeletonReadDiagnostic diagnostic;
     CHECK(motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));
+    const auto read = avatarMotionUsd::ReadStageClip(s,path);
+    compareRead(read, ownerRead);
+    compareRead(clip.Read(), read);
+    auto readCopy = read;
+    readCopy.clip.samples[0].timestamp = 99;
+    readCopy.sourceRest->localTranslations[size_t(motion::HumanJoint::Hips)][1] = 99;
+    compareRead(read, ownerRead); // Caller mutation cannot affect another value.
     CHECK(clip.Read().descriptor && clip.Read().sourceRest);
     CHECK(clip.Read().descriptor == ownerRead.descriptor);
     CHECK(&clip.SourceRest() == &*clip.Read().sourceRest);
@@ -67,13 +100,35 @@ int main() {
     CHECK(std::abs(clip.SourceRest().localTranslations[size_t(motion::HumanJoint::Hips)][1] - 0.8f) < 1e-6);
     CHECK(clip.SourceRest().parents[size_t(motion::HumanJoint::Head)] == size_t(motion::HumanJoint::Hips));
     CHECK(std::abs(clip.SourceRest().localRotations[size_t(motion::HumanJoint::Head)].GetImaginary()[1]) > 0.1);
+    // A future contract warning and declared producer/provenance must survive
+    // the helper intact; success must not discard owner warnings or metadata.
+    auto animation = s->GetPrimAtPath(pxr::SdfPath("/Clip/Animation"));
+    s->SetDefaultPrim(animation);
+    pxr::VtDictionary metadata;
+    metadata["contractVersion"] = pxr::VtValue(999);
+    metadata["jointVocabularyVersion"] = pxr::VtValue(1);
+    metadata["sourceFormat"] = pxr::VtValue(std::string("test-format"));
+    metadata["sourceProvider"] = pxr::VtValue(std::string("test-provider"));
+    metadata["rootMotionSource"] = pxr::VtValue(std::string("hips"));
+    metadata["nominalFrameRate"] = pxr::VtValue(120.0);
+    animation.SetCustomDataByKey(pxr::TfToken("motion"), pxr::VtValue(metadata));
+    pxr::VtDictionary provenance;
+    provenance["capture"] = pxr::VtValue(std::string("test-capture"));
+    animation.SetCustomDataByKey(pxr::TfToken("source"), pxr::VtValue(provenance));
+    motion::MotionStageRead metadataOwner;
+    CHECK(motion::ReadCanonicalMotionStage(s,path,&metadataOwner,&diagnostic));
+    const auto metadataRead = avatarMotionUsd::ReadStageClip(s,path);
+    CHECK(!metadataRead.warnings.empty() && metadataRead.metadata.contractVersion == 999);
+    CHECK(metadataRead.metadata.provenance.at("capture") == "test-capture");
+    compareRead(metadataRead, metadataOwner);
+    compareRead(avatarMotionUsd::StageClip(s,path).Read(), metadataRead);
     // Carry source height into the retarget configuration: the clip's rest
     // root position must yield target height, not target + source height.
     motion::SkeletonJoint targetHip; targetHip.token = "Pelvis";
     targetHip.restTranslation = pxr::GfVec3f(0,1.6f,0);
     motion::SkeletonDescriptor target({targetHip}); motion::RetargetMap map;
     CHECK(map.SetJointIndex(motion::HumanJoint::Hips,0,1));
-    const auto resolved = motion::PoseRetargeter(target,map,clip.SourceRest()).Retarget(clip.Read().clip.samples[0]);
+    const auto resolved = motion::PoseRetargeter(target,map,*read.sourceRest).Retarget(read.clip.samples[0]);
     CHECK(std::abs(resolved.translations[0][1] - 1.6f) < 1e-6);
     CHECK(s->RemovePrim(pxr::SdfPath("/Clip"))); s.Reset();
     CHECK(copy.Read().clip.samples[1].root.worldPosition[2] == 1);
@@ -81,6 +136,8 @@ int main() {
     CHECK(copy.Read().descriptor == ownerRead.descriptor);
     CHECK(&copy.SourceRest() == &clip.SourceRest());
     CHECK(copy.SourceRest().localRotations == ownerRead.sourceRest->localRotations);
+    compareRead(read, ownerRead); // Owner value survives removal/destruction of the stage.
+    compareRead(metadataRead, metadataOwner);
     // Explicit format-owner selection travels through the strict owner reader.
     s = stage();
     auto native = s->DefinePrim(pxr::SdfPath("/Native"));
@@ -94,6 +151,8 @@ int main() {
     inputs.lookAtTargetAttributePath = "/Native.target";
     motion::MotionStageRead expected; motion::SkeletonReadDiagnostic selectedDiagnostic;
     CHECK(motion::ReadCanonicalMotionStage(s,path,inputs,&expected,&selectedDiagnostic));
+    const auto selectedRead = avatarMotionUsd::ReadStageClip(s,path,inputs);
+    compareRead(selectedRead, expected);
     avatarMotionUsd::StageClip selected(s,path,inputs); auto selectedCopy = selected;
     CHECK(selected.Read().clip == expected.clip);
     CHECK(selected.Read().descriptor == expected.descriptor);
@@ -114,12 +173,24 @@ int main() {
         CHECK(e.Diagnostic().code == selectedDiagnostic.code && e.Diagnostic().detail == selectedDiagnostic.detail);
     }
     CHECK(selectedRefused);
+    selectedRefused = false;
+    try { (void)avatarMotionUsd::ReadStageClip(s,path,inputs); }
+    catch (const avatarUsd::MotionUsdReadError& e) {
+        const auto retained = e;
+        selectedRefused = true;
+        CHECK(retained.Diagnostic().code == selectedDiagnostic.code &&
+              retained.Diagnostic().subject == selectedDiagnostic.subject &&
+              retained.Diagnostic().detail == selectedDiagnostic.detail);
+        CHECK(std::string(retained.Owner()) == "motionUsd" && !retained.OwnerVersion().empty());
+    }
+    CHECK(selectedRefused);
     CHECK(s->RemovePrim(pxr::SdfPath("/Native"))); s.Reset(); inputs = {};
     CHECK(*selectedCopy.Read().clip.samples[2].channels.Find("vrm:happy") == 1.5f);
+    compareRead(selectedRead, selectedCopy.Read()); // Selected paths/options are not retained.
     s = stage(); CHECK(pxr::UsdGeomSetStageMetersPerUnit(s,0.01));
     CHECK(!motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));
     bool ownerRefused = false;
-    try { avatarMotionUsd::StageClip rejected(s,path); }
+    try { (void)avatarMotionUsd::ReadStageClip(s,path); }
     catch (const avatarUsd::MotionUsdReadError& e) {
         const auto retained = e; s.Reset(); ownerRefused = true;
         CHECK(retained.Diagnostic().code == diagnostic.code && retained.Diagnostic().subject == diagnostic.subject &&
@@ -142,7 +213,7 @@ int main() {
     CHECK(!motion::ReadCanonicalMotionStage(s,path,&ownerRead,&diagnostic));
     CHECK(diagnostic.code == "MOTION_USD_SOURCE_REST_DUPLICATE_BONE");
     bool duplicateRefused = false;
-    try { avatarMotionUsd::StageClip rejected(s,path); }
+    try { (void)avatarMotionUsd::ReadStageClip(s,path); }
     catch (const avatarUsd::MotionUsdReadError& e) {
         const auto retained = e; s.Reset(); duplicateRefused = true;
         CHECK(retained.Diagnostic().code == diagnostic.code && retained.Diagnostic().subject == diagnostic.subject &&

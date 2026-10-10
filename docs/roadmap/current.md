@@ -23,7 +23,6 @@ before freeze; owner API work stays in its owning repository.
 
 | Workstream | Remaining work | Acceptance gate | Original Runtime Phase |
 | --- | --- | --- | --- |
-| B: USD/motion ownership | finish StageClip wrapper absorption now that typed owner skeleton/source-rest results are consumed | retain owner clip/source-rest and skeleton results with diagnostics, runtime avatar/layout/skeleton/joint identity, baseline and root placement, and verified stage/copy lifetime, units, rejection and parity behavior | A/B |
 | C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
 | D: MMD second provider | register owner MMD evaluator; validate bone/morph/control dependencies and shared pre/post-physics handoff | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; physics boundary order is explicit | A/B |
 | E: publication | finish fast-path and Hydra adapters, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
@@ -51,8 +50,13 @@ with the `Generic` role supplies the validated skeleton and separate placement;
 `ReadCanonicalMotionStage` supplies the clip, descriptor and semantic source rest
 together. Runtime binders retain identity/baseline/placement and owned owner
 refusals without rebuilding descriptors or rest. WS-O4 is resolved upstream.
-`StageClip` remains a compatible immutable wrapper; final wrapper absorption
-remains workstream B work. This does not close Runtime Phase A or freeze the ABI.
+The parity host now consumes the owner value from `ReadStageClip` directly for
+motion registration and input assembly. `StageClip` is a compatibility wrapper
+over that same entry point. Source/installed tests and owner parity validate the
+scoped workstream B gate, including stage/copy lifetime, selected inputs and
+diagnostic retention; details remain in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md). This does not close
+Runtime Phase A or freeze the ABI.
 
 ## Near-term implementation sequence
 

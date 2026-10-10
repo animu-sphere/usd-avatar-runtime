@@ -24,7 +24,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
 | [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | clip sampling/retarget registration, MotionPoseInputBridge, installed-owner validation delegation and owned diagnostic reports |
-| [Scoped USD motion clip binding](architecture/MOTION_USD_BINDING.md) | typed owner clip/source-rest integration, compatible StageClip wrapper and parity tool |
+| [Scoped USD motion clip binding](architecture/MOTION_USD_BINDING.md) | direct typed owner clip/source-rest integration, compatible StageClip wrapper and parity tool |
 | [Scoped USD skeleton binding](architecture/USD_BINDING.md) | current baseline/Humanoid/placement binding; planned split of motion conversion from runtime identity/layout |
 | [Scoped VRM USD Humanoid binding](architecture/VRM_USD_BINDING.md) | owner schema discovery, skeleton relationship resolution, standard role mapping and local asset evidence limits |
 | [Scoped VRM USD LookAt binding](architecture/VRM_LOOKAT_USD_BINDING.md) | owner range-map extraction, explicit head/eye/rest binding, adapter configuration and real-avatar evidence limits |
