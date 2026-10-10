@@ -57,7 +57,6 @@ usd-avatar-runtime/
     motion-usd/                  thin owner motion read/registration helper
     vrm/ vrm-usd/ mmd/            owner semantics/configuration adapters
     hydra/                       optional avatarImaging publication
-    hydra-toon/                  optional avatarHydraToonBridge publication
     openexec/                    optional execAvatar execution integration
   tools/
     inspect/ replay/ benchmark/   runtime hosts
@@ -65,6 +64,10 @@ usd-avatar-runtime/
   tests/
     contracts/ parity/ replay/
 ```
+
+Direct consumers need no runtime-side bridge target: a renderer-side host
+matches runtime targets to resident resources and its adapter reads retained
+snapshots ([resident target matching](OUTPUT_PATHS.md#resident-target-matching)).
 
 ## Dependency placement
 

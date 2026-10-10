@@ -6,7 +6,7 @@ owner: usd-avatar-runtime
 # Scoped motion adapters
 
 The optional `avatarMotionAdapter` connects installed `motionSampling` and
-`motionRetarget` owner libraries to the revision-3 runtime. It validates a
+`motionRetarget` owner libraries to the revision-4 runtime. It validates a
 scoped RT-O3/RT-O4 path: immutable clip -> owner sampling -> explicit humanoid
 retarget map -> dense runtime rig pose -> ordered VRM LookAt/Expression.
 Constructed bindings do not establish real-avatar or milestone acceptance.
@@ -53,6 +53,9 @@ above the unchanged C ABI, without a cross-toolchain C++ ABI guarantee.
 copies an owner `MotionClip`, `SkeletonDescriptor`, `RetargetMap`, source/reference
 rest and `RetargetOptions`, plus evaluator/layout/skeleton identity, a runtime
 joint ID for every owner joint slot, explicit clock mapping and predecessors.
+`sourceId`, `actorId` and `channelId` name its retained pose sample; empty
+source/actor default to the evaluator/skeleton identity and the channel defaults
+to `motion:pose`. The channel must be namespaced.
 The host supplies the bindings, optionally from the
 [USD skeleton binding](USD_BINDING.md); this evaluator does not read a USD stage or
 infer humanoid roles from joint names. A VRM host supplies its owner's
@@ -80,7 +83,7 @@ configuration destruction. `Emit(sink)` forwards all report entries as C
 diagnostics with `AR_INVALID_ARGUMENT` and error severity. An optional
 `ClipPoseAdapter(config, sink)` sink receives the same report synchronously on
 rejection and is never retained. There is no runtime instance/frame/evaluator
-identity at construction. Revision 3 has no diagnostic owner-version field;
+identity at construction. Revision 4 has no diagnostic owner-version field;
 version remains in the exception envelope and evaluator descriptor. Runtime
 binding errors remain plain `invalid_argument`.
 
@@ -108,7 +111,16 @@ Scale must be positive and finite; offset and the mapped request must be finite.
 Snapshot evaluation time and input revision continue to describe the host frame,
 not the clip's source time. The clip/configuration is a bound source rather than
 a new `ArInputFrame` array. Hosts must capture that configuration for replay;
-full motion observation/provenance transport remains open under RT-O1/RT-O2.
+live motion observation transport remains open under RT-O1/RT-O2.
+
+After writing the pose, the callback reports the sample it used as retained
+[source-sample provenance](../contracts/EVALUATED_STATE.md#source-sample-provenance)
+with this clock mapping. An owner `Sampled` result reports
+`AR_SAMPLE_INTERPOLATED` at the requested clip time. `SampleClip` restamps a
+`Held` pose with the request, so the adapter reports `AR_SAMPLE_HELD` at the
+held boundary sample's own time, first or last by the side of the request.
+An `Extrapolated` result would report the newest sample's time. An empty clip
+contributes no pose and reports nothing.
 
 Every callback verifies layout ID/version, all mapped runtime joints and exact
 owner/runtime parent relationships. Owner slot order need not equal runtime
@@ -159,7 +171,7 @@ supplied clock mappings do not implement external identity tracking, device
 clock normalization, network synchronization or generic channel normalization.
 
 [`MotionPoseInputBridge`](../../adapters/motion/include/avatarMotion/MotionPoseInputBridge.h)
-maps an already selected owner `MotionPose` into an owned revision-3 input
+maps an already selected owner `MotionPose` into an owned revision-4 input
 frame. It does not sample, poll a connector, retarget or perform format
 arbitration. Supply explicit source/actor identity, positive affine clock
 mapping, native-channel-to-namespaced-runtime-channel bindings and an optional
@@ -184,12 +196,15 @@ timestamp returned by the owner, which may already be restamped by
 `SampleClip`/`ClipSource`. It does not reconstruct original key/arrival times
 from sample status or metadata. When combined with `ClipPoseAdapter`, use the
 same selected clip and clock mapping for host sampling and pose configuration.
+Because the runtime retains these times as source-sample provenance, a host
+holding a restamped owner sample should pass its original sample time if it
+reports that input's age; the bridge does not do this itself.
 
 Present gaze defaults to `AR_OBSERVATION_VALID`; the host may explicitly
 select `AR_OBSERVATION_STALE` to retain a point while suppressing VRM LookAt.
 Held/extrapolated status and lag do not implicitly classify validity. A null
 pose or missing point is absent, not an invented unavailable observation.
-Scalar validity is not representable in revision 3; hosts must explicitly
+Scalar validity is not representable in revision 4; hosts must explicitly
 select/drop scalar inputs according to their source policy.
 
 Configuration rejects duplicate native mappings, scalar/gaze identity
@@ -234,9 +249,10 @@ compare owner results to marshaled state, diagnostics and lifetime behavior.
 [`tests.cpp`](../../adapters/motion/tests.cpp) compares runtime transforms with
 independent owner sampling/retarget calls at `1e-6`, including interpolation,
 clock scale/offset, root translation, undriven rest and reordered runtime slots.
-It covers held/empty clips, binding failures, source diagnostics, same-frame
-retry, downstream failure rollback, reset, instance isolation and retained
-snapshots past runtime destruction. The installed-consumer test repeats the
+It covers held/empty clips, retained interpolated and before/after-range held
+pose samples with their mapped times, binding failures, source diagnostics,
+same-frame retry, downstream failure rollback, reset, instance isolation and
+retained snapshots past runtime destruction. The installed-consumer test repeats the
 checks using exported targets and installed headers/libraries.
 Input assembly tests cover owned/copy lifetime, origin/absence/zero, unclamped
 weights, explicit identity/clock/USD metadata, stale gaze, unmapped-field

@@ -25,7 +25,7 @@ before freeze; owner API work stays in its owning repository.
 | --- | --- | --- | --- |
 | C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
 | D: MMD second provider | register owner MMD evaluator; validate bone/morph/control dependencies and shared pre/post-physics handoff | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; physics boundary order is explicit | A/B |
-| E: publication | finish fast-path and Hydra adapters, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
+| E: publication | finish the Hydra adapter, support the renderer-side fast-path host's resident target matching, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
 | F: ABI stabilization | review C/provider/consumer ABI revisions and capability versions; broaden installed-consumer and OST composition validation | real VRM/MMD and consumer evidence supports freeze; dependency-free core installation/import still passes; actual package composition is reproducible | A with C/E and packaging evidence |
 
 Completion requires a provider/OpenUSD/renderer-independent core, no generic
@@ -96,7 +96,9 @@ Host-side motion input assembly now explicitly maps selected owner scalar
 channels and world gaze points into owned `AvatarInputFrame` arrays. Constructed
 motion -> assembled input -> VRM composition validates clocks, absence/zero,
 LookAt precedence and host-selected stale gaze; real capture/avatar bindings,
-connector intake, multi-source selection and retained provenance remain open.
+connector intake and multi-source selection remain open. Revision 4 retains
+each selected input's and the clip provider's pose sample time with the
+snapshot; mapping/arbitration provenance remains open.
 A USD binding adapter builds instance configuration for avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation targets. Integration diagnostics must
@@ -168,6 +170,11 @@ including reset, rebinding and independent snapshot retention. Actual avatar
 resident mesh/material binding and rendering, consumer cost measurements and
 Hydra/direct parity remain workstream C/E and RT-O9 work. Probe transport does
 not complete milestone B. See [output paths](../architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
+Runtime-to-resident target matching belongs to a renderer-side host rather than
+a runtime bridge ([resident target matching](../architecture/OUTPUT_PATHS.md#resident-target-matching)).
+The installed renderer adapter pins ABI revision 3; it must be rebuilt for
+revision 4, and its two-component texture inputs must move to vec2, before
+`--toon` runs against this tree. That change belongs to the renderer.
 
 These milestones describe end-to-end evidence, not completion of the similarly
 lettered Runtime Phases:
@@ -258,7 +265,9 @@ Remaining implementation/review work before Phase A acceptance:
   mappings, with the optional VRM schema adapter supplying them (RT-O4).
 - Prove rig/material/deformation layout conformance with those adapters;
   negotiate effects outside the current dense snapshot subset, including
-  explicit expression/gaze results and retained provenance (RT-O4).
+  explicit expression/gaze results and mapping/arbitration provenance. Retained
+  source-sample time and vec2 material values are implemented in revision 4;
+  validate them with captured connector input (RT-O4).
 - Add provider checkpoint restore and test discontinuities with real stateful
   evaluators; current reset/commit/abort are implemented (RT-O5).
 - Review/freeze the experimental ABI and semantic capability meanings with
@@ -343,7 +352,9 @@ the renderer. Native support does not establish browser support.
 ## Open decisions
 
 Owning documents now record scoped prototype choices for clocks/channels, dense
-output, lifecycle, plan order and C layout. IDs below stay open until the full
+output, retained source-sample time, two-component material values, lifecycle,
+plan order and C layout. Resident target matching for direct renderers is
+assigned to a renderer-side host. IDs below stay open until the full
 acceptance evidence, including actual provider adapters, is available.
 
 IDs remain stable; resolution updates the owning contract and records the
@@ -355,7 +366,7 @@ bugs or requests already sent to another project.
 | RT-O1 | evaluation seconds, source clock, USD time-code mapping and gaze space descriptors | [input](../contracts/INPUT_FRAME.md) | A |
 | RT-O2 | minimal semantic intent vocabulary, custom/native channel names, mapping precedence and resolved expression identity/arbitration/provenance/availability | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) | A |
 | RT-O3 | phase/substep dependencies across MMD morph/control/IK, gaze and expressions | [evaluator](../contracts/EVALUATOR.md) | A |
-| RT-O4 | final rig pose/spaces, target/layout/version identities, complete/sparse/delta semantics, gaze results and snapshot input revision/capabilities | [state](../contracts/EVALUATED_STATE.md) | A |
+| RT-O4 | final rig pose/spaces, target/layout/version identities, complete/sparse/delta semantics, gaze results, snapshot input revision/capabilities and retained source-sample provenance | [state](../contracts/EVALUATED_STATE.md) | A |
 | RT-O5 | stateful evaluator reset/checkpoint/commit/abort and publication-failure handling | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | A |
 | RT-O6 | shared physics stepping, stage-runner ownership and format feedback boundary | [dependencies](../architecture/DEPENDENCIES.md) | before physics integration |
 | RT-O7 | C layout/calling convention, strings, allocator ownership, handles, provider lifetime and ABI negotiation | [ABI](../contracts/ABI.md) | A |

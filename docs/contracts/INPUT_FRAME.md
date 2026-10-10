@@ -14,7 +14,7 @@ frame identity/generation, evaluation seconds, optional USD time mapping,
 source-attributed scalar channels, typed gaze observations and host input
 revision. This subset is not a second motion model:
 motion pose/clip values are still unimplemented; gaze descriptors have scoped
-revision-3 rules below, awaiting real-provider integration.
+revision-4 rules below, awaiting real-provider integration.
 The full logical contract and RT-O1/RT-O2 remain open.
 
 The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now selects scalar
@@ -23,7 +23,7 @@ owner's `MotionChannelSet`. Both LookAt types accept valid world/joint-local
 points and directions using current working rig transforms and the owner's
 point/direction entry points; scaled ancestry fails visibly, and stale/unavailable
 gaze contributes nothing. This does not establish connector/motion mappings
-or narrow the revision-3 input transport contract.
+or narrow the revision-4 input transport contract.
 
 ## 1. Logical contents
 
@@ -42,7 +42,7 @@ Connector frames/observations consume
 [`motion-connectors`' contract](https://github.com/animu-sphere/motion-connectors/blob/main/docs/design/CONNECTOR_CONTRACT.md).
 This wrapper adds composition context, not another pose or tracker taxonomy.
 
-Revision 2 introduced `input_revision`, preserved in revision 3: a host-assigned
+Revision 2 introduced `input_revision`, preserved in revision 4: a host-assigned
 revision for the selected source observations and mapping configuration.
 Zero means unspecified. It is
 independent of frame ID and evaluation time; evaluating the same selected source
@@ -74,11 +74,12 @@ Real-provider validation of time/space descriptors remains `RT-O1` in the
 Near-term gaze input must distinguish target position, target direction,
 head-relative and eye-relative observations, with explicit source clock and
 validity. Missing/unavailable data is not an identity rotation or a valid zero
-target. Revision 3 implements the scoped gaze descriptors below. Resolved
+target. Revision 3 introduced the scoped gaze descriptors below; revision 4
+preserves them. Resolved
 eye/head/expression contributions and clamped/rejected/unavailable results belong to the
 [evaluated-state contract](EVALUATED_STATE.md), not this input intent.
 
-In revision 3, each scalar and gaze records its source/actor/channel identity, source
+Since revision 3, each scalar and gaze records its source/actor/channel identity, source
 seconds and an explicit positive affine clock mapping:
 `runtime_sample_seconds = source_seconds * clock_scale + clock_offset`.
 The evaluation instant stays separate. When present, the USD mapping is
@@ -86,6 +87,13 @@ The evaluation instant stays separate. When present, the USD mapping is
 Both mapped results must be finite. Missing mappings are not guessed. The
 runtime validates/forwards this metadata; it does not sample, blend or reject
 stale samples on behalf of a connector/motion provider.
+
+Revision 4 also retains this metadata with the published snapshot as
+[source-sample provenance](EVALUATED_STATE.md#source-sample-provenance),
+together with the mapped runtime sample time. Supply each record's own sample
+time: when the host holds a scalar or marks a gaze stale, it keeps the
+observation's original source seconds rather than restamping it, so retained
+age stays honest.
 
 ### Revision-3 gaze observations
 
@@ -147,9 +155,11 @@ immutable owner clip in configuration and samples it using frame evaluation
 seconds with an explicit affine clip/runtime clock mapping. It publishes rig
 pose without adding owner types or a motion array to the C input ABI. Sampled
 face channels/gaze points are diagnosed as unsupported by that pose-only
-callback; host input assembly must map them separately. Actual motion/connector
-observation transport, actor selection and retained source provenance remain
-open. This scoped path does not complete input composition.
+callback; host input assembly must map them separately. It reports the clip
+sample time and owner status it used as retained pose provenance, keeping a
+held boundary sample's own time. Actual motion/connector observation
+transport and actor selection remain open. This scoped path does not complete
+input composition.
 
 The same optional target now supplies host-side `MotionPoseInputBridge`
 (`InputAssembler` remains a source alias): explicit
@@ -213,4 +223,4 @@ triples and non-finite values are rejected. Different sources may report the
 same channel: arbitration belongs in explicit provider binding configuration,
 not array/arrival order. Inputs are already-selected immutable observations;
 there is no separate invalid/stale-observation flag for scalars. Gaze validity
-is explicit under the revision-3 rules above.
+is explicit under the revision-4 rules above.

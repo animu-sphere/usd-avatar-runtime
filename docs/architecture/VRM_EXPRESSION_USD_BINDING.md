@@ -8,7 +8,7 @@ owner: usd-avatar-runtime
 `avatarVrmExpressionUsdBinding` extracts applied owner `VrmExpressionAPI`
 definitions and their canonical output layout into the existing
 [VRM registration adapter](VRM_ADAPTER.md). This advances RT-O4 without
-changing the revision-3 C ABI. `vrmRig` still owns expression arbitration,
+changing the revision-4 C ABI. `vrmRig` still owns expression arbitration,
 binary rounding, morph accumulation and the material colour slot vocabulary.
 
 ## Build and package boundary

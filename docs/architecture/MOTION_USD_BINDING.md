@@ -10,7 +10,7 @@ already composed semantic motion stage to the existing
 [clip pose adapter](MOTION_ADAPTER.md). It calls installed `motionUsd` to read
 the canonical clip, descriptor and source rest as one coherent owner result.
 File parsing, sampling and retarget mathematics remain with their owners. Runtime core and
-its revision-3 C ABI are unchanged.
+its revision-4 C ABI are unchanged.
 
 ## Scoped owner reading split
 

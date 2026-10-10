@@ -7,6 +7,16 @@ if(AVATAR_MOTION_CHECK_TOON)
         include(CheckCXXSourceCompiles)
         set(CMAKE_CXX_STANDARD 20)
         set(CMAKE_REQUIRED_LIBRARIES Toon::AvatarState)
+        set(CMAKE_REQUIRED_INCLUDES ${PROJECT_SOURCE_DIR}/include)
+        # The installed header pins the runtime ABI revision it was built for.
+        unset(AR_TOON_RUNTIME_ABI CACHE)
+        check_cxx_source_compiles([[
+            #include <toon/fast/avatar_state.hpp>
+            int main() { return 0; }
+        ]] AR_TOON_RUNTIME_ABI)
+        if(NOT AR_TOON_RUNTIME_ABI)
+            message(FATAL_ERROR "Motion check Toon parity requires installed Toon AvatarState built for this runtime's ABI revision. Rebuild/install the renderer adapter against these headers.")
+        endif()
         unset(AR_TOON_RGB_BINDING CACHE)
         check_cxx_source_compiles([[
             #include <toon/fast/avatar_state.hpp>

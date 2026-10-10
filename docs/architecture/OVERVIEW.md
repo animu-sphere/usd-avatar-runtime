@@ -46,7 +46,7 @@ The planned USD binding adapter builds instance configuration from avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation target identities. It preserves owner
 semantics and validates layout/version identity and invalidation before frames.
-It is distinct from high-frequency value publication. Revision 3 core accepts
+It is distinct from high-frequency value publication. Revision 4 core accepts
 caller-supplied layouts; optional [USD skeleton](USD_BINDING.md) and
 [VRM USD](VRM_USD_BINDING.md) binders now supply scoped configuration. Generic
 skeleton conversion in the former still needs the owner/runtime split described

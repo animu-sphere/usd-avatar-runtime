@@ -7,7 +7,7 @@ owner: usd-avatar-runtime
 
 The optional `avatarVrmAdapter` target connects the installed
 [`vrmRig` owner library](https://github.com/animu-sphere/usd-vrm-plugins/tree/main/libs/vrmRig)
-to the experimental revision-3 runtime. This document owns the implemented
+to the experimental revision-4 runtime. This document owns the implemented
 adapter boundary. It does not establish real-avatar or milestone acceptance.
 
 ## Build and installation
