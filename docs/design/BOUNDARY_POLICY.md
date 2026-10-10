@@ -141,10 +141,16 @@ diagnostic and registration contracts.
 
 Optional integrations are separate targets. Intended families include
 `avatarMotionAdapter`, `avatarUsdBinding`, `avatarVrmAdapter`,
-`avatarVrmUsdBinding`, `avatarMmdAdapter`, `avatarImaging` and
-`avatarHydraToonBridge`. Linking or finding core alone must not pull in OpenUSD,
-VRM, MMD or Hydra. Current target names and availability are recorded in
+`avatarVrmUsdBinding`, `avatarMmdAdapter` and `avatarImaging`. Linking or
+finding core alone must not pull in OpenUSD, VRM, MMD or Hydra. Current target
+names and availability are recorded in
 [project layout](../architecture/PROJECT_LAYOUT.md).
+
+The supplied plan also listed `avatarHydraToonBridge`. That family was
+withdrawn on 2026-10-10: runtime-to-resident target matching belongs to a host
+on the renderer's side, and the renderer's own adapter consumes retained
+snapshots directly
+([resident target matching](../architecture/OUTPUT_PATHS.md#resident-target-matching)).
 
 ## 10. Shared phase model
 
@@ -253,7 +259,7 @@ Recommended responsibility layout:
 ```text
 include/avatarRuntime/
 libs/runtime/ registry/ diagnostics/
-adapters/motion/ usd/ vrm/ vrm-usd/ mmd/ hydra/ hydra-toon/
+adapters/motion/ usd/ vrm/ vrm-usd/ mmd/ hydra/
 tools/inspect/ replay/ benchmark/
 tests/
 ```

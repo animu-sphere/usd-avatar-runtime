@@ -106,6 +106,14 @@ void parity(const ArStateView& output, const avatarMotion::ClipPoseAdapterConfig
         CHECK(near(local.rotation[3],expected.rotations[i].GetReal()));
     }
 }
+void sourceSample(const ArStateView& v, uint32_t resolution, double source, double runtime) {
+    CHECK(v.sample_count == 1);
+    const auto& s = v.samples[0];
+    CHECK(std::string(s.source_id) == "motion.body" && std::string(s.actor_id) == "rig");
+    CHECK(std::string(s.channel_id) == "motion:pose" && std::string(s.evaluator_id) == "motion.body");
+    CHECK(s.kind == AR_SOURCE_POSE && s.validity == AR_OBSERVATION_VALID && s.resolution == resolution);
+    CHECK(s.source_seconds == source && s.clock_scale == 2 && s.clock_offset == 10 && s.runtime_seconds == runtime);
+}
 void evaluation() {
     Fixture f; auto instance = f.make(); auto other = f.make();
     auto input = frame(1,11); ArSnapshot s = 0; Log log; auto sink = log.sink();
@@ -114,9 +122,15 @@ void evaluation() {
     CHECK(near(output.joints[1].local.translation[0],1));
     CHECK(output.input_revision == 8 && output.layout_version == 4 && output.evaluation_seconds == 11);
     CHECK(output.capability_count == 1 && std::string(output.capabilities[0].id) == "avatar.motion.clipPose");
+    sourceSample(output, AR_SAMPLE_INTERPOLATED, .5, 11);
     auto held = frame(2,14); ArSnapshot s2 = 0;
     CHECK(api.evaluate_frame(f.runtime,instance,&held,&sink,&s2) == AR_OK);
-    CHECK(log.has("MOTION_ADAPTER_HELD")); parity(view(s2),config(),14); CHECK(api.release_snapshot(s2) == AR_OK);
+    CHECK(log.has("MOTION_ADAPTER_HELD")); parity(view(s2),config(),14);
+    sourceSample(view(s2), AR_SAMPLE_HELD, 1, 12); // the last sample's own time, not the request
+    CHECK(api.release_snapshot(s2) == AR_OK);
+    auto early = f.make(); auto before = frame(1,9);
+    CHECK(api.evaluate_frame(f.runtime,early,&before,nullptr,&s2) == AR_OK); parity(view(s2),config(),9);
+    sourceSample(view(s2), AR_SAMPLE_HELD, 0, 10); CHECK(api.release_snapshot(s2) == AR_OK);
     CHECK(near(view(s).joints[1].local.translation[0],1));
     auto first = frame(1,10);
     CHECK(api.evaluate_frame(f.runtime,other,&first,nullptr,&s2) == AR_OK); parity(view(s2),config(),10);
@@ -133,6 +147,8 @@ void invalidBindings() {
         catch (const std::invalid_argument&) { threw = true; } CHECK(threw);
     };
     auto c = config(); c.jointIds[1] = c.jointIds[0]; rejects(c);
+    for (const char* channel : {"", "pose", ":pose", "motion:"}) { c = config(); c.channelId = channel; rejects(c); }
+    c = config(); c.sourceId = std::string("a\0b", 3); rejects(c);
     c = config(); c.clockScale = 0; rejects(c);
     c = config(); c.evaluatorId = std::string("motion\0hidden",13); rejects(c);
     c = config(); c.jointIds[0] = std::string("hips\0hidden",11); rejects(c);

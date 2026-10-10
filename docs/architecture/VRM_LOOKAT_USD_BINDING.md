@@ -8,7 +8,7 @@ owner: usd-avatar-runtime
 `avatarVrmLookAtUsdBinding` connects the installed owner's applied
 `VrmLookAtAPI` and [Humanoid binding](VRM_USD_BINDING.md) to the existing
 [VRM registration adapter](VRM_ADAPTER.md). This advances RT-O4 by extracting
-authored gaze configuration without changing the revision-3 core C ABI or
+authored gaze configuration without changing the revision-4 core C ABI or
 copying format evaluation into the runtime.
 
 ## Build and package boundary

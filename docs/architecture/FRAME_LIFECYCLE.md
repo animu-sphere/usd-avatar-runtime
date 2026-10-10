@@ -46,7 +46,7 @@ This describes a logical transaction. The scoped prototype rules below define
 buffer ownership and calls; final ABI freeze still needs provider conformance.
 Output adapters must not trigger evaluation again.
 
-In revision 3, `evaluate_frame` validates the input and starts a fresh authored
+In revision 4, `evaluate_frame` validates the input and starts a fresh authored
 baseline, then calls `begin_frame`/`evaluate` in plan order. Stateful providers
 stage private changes during these callbacks. `end_frame(commit=0)` runs in
 reverse begin order after any failure, including failure of `begin_frame`

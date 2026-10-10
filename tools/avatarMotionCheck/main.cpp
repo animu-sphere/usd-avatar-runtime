@@ -169,11 +169,24 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
     uint64_t frame = 0;
     double maxError = 0;
     std::set<uint32_t> changed, changedMotion;
-    size_t scalarInputs = 0, gazeInputs = 0, nativeScalars = 0, nativeGazes = 0, changedMorphFrames = 0;
+    size_t scalarInputs = 0, gazeInputs = 0, nativeScalars = 0, nativeGazes = 0, changedMorphFrames = 0, heldSamples = 0;
     std::set<std::string> unmapped;
     auto verifySnapshot = [&](const ArStateView& view, double seconds, bool probes, bool stale, bool absent) {
         const auto sampled = motion::SampleClip(c.clip,seconds);
         require(bool(sampled),"owner sample unavailable");
+        // The retained pose sample names the clip content actually used.
+        const bool held = sampled.status == motion::PoseSampleStatus::Held;
+        const double used = !held ? seconds : seconds < c.clip.samples.front().timestamp ?
+            c.clip.samples.front().timestamp : c.clip.samples.back().timestamp;
+        const ArSourceSample* poseSample = nullptr;
+        for (uint32_t i = 0; i < view.sample_count; ++i)
+            if (view.samples[i].kind == AR_SOURCE_POSE) { require(!poseSample,"duplicate pose sample"); poseSample = &view.samples[i]; }
+        require(poseSample && poseSample->evaluator_id == c.evaluatorId && poseSample->source_id == c.evaluatorId &&
+                poseSample->actor_id == binding.SkeletonId() && std::string(poseSample->channel_id) == "motion:pose" &&
+                poseSample->resolution == (held ? AR_SAMPLE_HELD : AR_SAMPLE_INTERPOLATED) &&
+                poseSample->source_seconds == used && poseSample->runtime_seconds == used*c.clockScale+c.clockOffset,
+                "retained pose sample mismatch");
+        heldSamples += held ? 1 : 0;
         const auto pose = owner.Retarget(*sampled.pose);
         for (size_t i = 0; i < c.skeleton.GetJoints().size(); ++i) {
             const auto& rest = c.skeleton.GetJoints()[i];
@@ -221,6 +234,7 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
         // Own immediately, including if a later verification throws.
         host.retained.push_back(snapshot);
         ArStateView view{AR_HEADER(ArStateView)}; ok(host.api.get_snapshot(snapshot,&view),"get snapshot");
+        require(view.sample_count == input.scalar_count + input.gaze_count + 1,"retained input sample count mismatch");
         verifySnapshot(view,sourceSeconds,probes,stale,absent);
 #ifdef AR_CHECK_TOON
         if (toon) toon->Apply(host.api,snapshot);
@@ -290,7 +304,8 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
     std::cout << std::setprecision(10) << file << ": samples=" << c.clip.samples.size()
         << " duration=" << c.clip.samples.back().timestamp-c.clip.samples.front().timestamp
         << " frames=" << frame << " joints=" << baseline.joint_count << " changed_joints=" << changed.size()
-        << " max_error=" << maxError << " changed_motion_joints=" << changedMotion.size() << " reset/retention=passed\n";
+        << " max_error=" << maxError << " changed_motion_joints=" << changedMotion.size() << " reset/retention=passed"
+        << " held_pose_samples=" << heldSamples << "\n";
 #ifdef AR_CHECK_VRM
     if (vrm) {
         std::cout << "  vrm expressions=" << vrm->config.expressions.GetSize() << " morphs=" << baseline.blend_shape_count

@@ -81,6 +81,27 @@ An initial adapter to `hydra-toon` must be agreed with that repository's
 [scope policy](https://github.com/animu-sphere/hydra-toon/blob/main/docs/design/INTEGRATION_SCOPE_POLICY.md).
 Existing fast-input support is not evidence of this common-state API.
 
+### Resident target matching
+
+Matching runtime target identities to a renderer's resident targets belongs to
+a host on the renderer's side, not to this repository. For `hydra-toon`, that
+host pairs skeleton paths, joint tokens, mesh paths, `skel:blendShapes` tokens,
+material paths and canonical inputs with the resident targets its Hydra
+delegate describes, then builds the bindings that the renderer's installed
+`Toon::AvatarState` adapter consumes. The adapter reads retained snapshots
+directly through the [direct API](#2-direct-consumer-api), so no runtime-side
+bridge is needed for transport.
+
+This follows from ownership: the consumer maps resolved channels to its own
+resources, and the runtime manages no renderer resources
+([boundary policy section 13](../design/BOUNDARY_POLICY.md#13-hydra-and-fast-path-boundary)).
+Resident-target description is also renderer-internal: its delegate API is not
+installed, so only code built with the renderer can call it. The planned
+`avatarHydraToonBridge` target is therefore withdrawn. The runtime still
+publishes stable target identities and layout ID/version, and the
+[scoped transport check](#scoped-toon-transport-check) remains a probe over
+generated resources, not real-avatar matching.
+
 The initial retained-snapshot adapter updates resolved pose, morph/deformation,
 expression effects, appearance and visibility. Gaze arrives as resolved
 pose/expression effects and result metadata under the state contract. Consumers
@@ -94,8 +115,9 @@ Actual avatar geometry/resource binding and rendering remain planned requirement
 
 `AVATAR_MOTION_CHECK_TOON` optionally links only `avatarMotionCheck` and its
 regression host to an installed `Toon` package's `AvatarState` component.
-It requires the VRM mode and the additive `BaseColorRgb` binding; a configure-time
-header probe rejects older same-version renderer installations. Core and
+It requires the VRM mode and the additive `BaseColorRgb` binding; configure-time
+header probes reject older same-version renderer installations and installs
+built for a different runtime ABI revision. Core and
 all reusable runtime/provider targets retain their existing dependencies.
 
 `avatarMotionCheck --vrm --toon <avatar> <motion> [motion ...]` evaluates the

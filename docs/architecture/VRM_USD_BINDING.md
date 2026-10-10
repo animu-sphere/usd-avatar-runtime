@@ -9,7 +9,7 @@ The optional `avatarVrmUsdBinding` target reads the installed VRM owner's
 applied `VrmHumanoidAPI` from a composed stage and supplies explicit mappings
 to the generic [USD skeleton binding](USD_BINDING.md). This implements a scoped
 schema-to-motion binding under RT-O4 without adding format logic to runtime
-core or changing the revision-3 C ABI.
+core or changing the revision-4 C ABI.
 
 ## Dependencies and installation
 

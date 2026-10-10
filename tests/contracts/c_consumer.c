@@ -28,6 +28,7 @@ int main(void) {
     uint32_t count = 0;
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     CHECK(arGetApi(2, sizeof(api), &api) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(3, sizeof(api), &api) == AR_INCOMPATIBLE_ABI);
     CHECK(api.create_runtime(&runtime) == AR_OK);
     CHECK(registerContractProvider(&api, runtime) == AR_OK);
     desc.generation = 1; desc.evaluators = selected; desc.evaluator_count = 1;
@@ -52,12 +53,19 @@ int main(void) {
     CHECK(state.capability_count == 1 && strcmp(state.capabilities[0].id, "test.pose") == 0 && state.capabilities[0].version == 1);
     CHECK(state.joints[0].local.translation[0] == 1.25);
     CHECK(state.joints[0].local.translation[1] == 3);
+    CHECK(state.sample_count == 2);
+    CHECK(state.samples[0].kind == AR_SOURCE_GAZE && strcmp(state.samples[0].channel_id, "test:gaze") == 0);
+    CHECK(state.samples[0].validity == AR_OBSERVATION_VALID && state.samples[0].resolution == AR_SAMPLE_SELECTED);
+    CHECK(state.samples[0].runtime_seconds == 6.5 && strcmp(state.samples[0].evaluator_id, "") == 0);
+    CHECK(state.samples[1].kind == AR_SOURCE_POSE && state.samples[1].resolution == AR_SAMPLE_HELD);
+    CHECK(state.samples[1].runtime_seconds == 2.5 && strcmp(state.samples[1].evaluator_id, "test.counter") == 0);
     input.frame_id = 2; gaze.kind = AR_GAZE_DIRECTION; gaze.value[0] = 2;
     CHECK(api.evaluate_frame(runtime, instance, &input, NULL, &next) == AR_INVALID_ARGUMENT && next == 0);
     gaze.kind = AR_GAZE_POINT; gaze.validity = AR_OBSERVATION_STALE;
     CHECK(api.evaluate_frame(runtime, instance, &input, NULL, &next) == AR_OK);
     CHECK(api.get_snapshot(next, &state) == AR_OK);
     CHECK(state.joints[0].local.translation[0] == 2.25 && state.joints[0].local.translation[1] == 0);
+    CHECK(state.sample_count == 2 && state.samples[0].validity == AR_OBSERVATION_STALE);
     CHECK(api.release_snapshot(next) == AR_OK);
     input.frame_id = 3; gaze.validity = AR_OBSERVATION_UNAVAILABLE;
     gaze.value[0] = gaze.value[2] = 0;
@@ -72,6 +80,8 @@ int main(void) {
     CHECK(state.joints[0].local.translation[1] == 3);
     CHECK(strcmp(state.layout_id, "test.layout") == 0 && state.layout_version == 5 && state.input_revision == 42);
     CHECK(state.capability_count == 1 && strcmp(state.capabilities[0].id, "test.pose") == 0);
+    CHECK(state.sample_count == 2 && strcmp(state.samples[1].source_id, "clip") == 0 &&
+          state.samples[1].source_seconds == 1 && state.samples[1].runtime_seconds == 2.5);
     CHECK(api.release_snapshot(snapshot) == AR_OK);
     CHECK(api.release_snapshot(snapshot) == AR_OK);
     CHECK(api.get_snapshot(snapshot, &state) == AR_INVALID_HANDLE);

@@ -65,6 +65,7 @@ void negotiation() {
     ArRuntimeApi invalid{};
     CHECK(arGetApi(1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(2, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(3, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(AR_ABI_VERSION + 1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(invalid) - 1, &invalid) == AR_INCOMPATIBLE_ABI);
     struct Extended { ArRuntimeApi table; uint64_t tail; } extended{};
@@ -99,6 +100,10 @@ void negotiation() {
     CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
     oldView.abi_version = AR_ABI_VERSION; oldView.struct_size = uint32_t(offsetof(ArStateView, layout_id));
     CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
+    oldView.abi_version = 3; oldView.struct_size = sizeof(ArStateView);
+    CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI);
+    oldView.abi_version = AR_ABI_VERSION; oldView.struct_size = uint32_t(offsetof(ArStateView, samples));
+    CHECK(api.get_snapshot(snapshot, &oldView) == AR_INCOMPATIBLE_ABI); // revision-3 view size
     CHECK(api.release_snapshot(snapshot) == AR_OK);
     CHECK(api.evaluate_frame(other.runtime, instance, &input, nullptr, &snapshot) == AR_INVALID_HANDLE && snapshot == 0);
     CHECK(api.destroy_instance(f.runtime, instance) == AR_OK);
@@ -578,6 +583,106 @@ void snapshotIdentity() {
     for (auto snapshot : {first, second, reset, retry, rebound}) CHECK(api.release_snapshot(snapshot) == AR_OK);
 }
 
+ArStatus AR_CALL badOffset(void*, void*, const ArEvaluationContext*, const ArStateWriter* writer) {
+    const double value[4]{.25, .5, 1, 0};
+    CHECK(writer->set_material(writer->context, 0, 1, value) == AR_INVALID_STATE);
+    return AR_OK; // the rejected write still latches frame failure
+}
+ArStatus AR_CALL goodOffset(void*, void*, const ArEvaluationContext*, const ArStateWriter* writer) {
+    const double value[4]{.25, .5, 0, 0};
+    return writer->set_material(writer->context, 0, 1, value);
+}
+void vec2Materials() {
+    Fixture f; f.material = {"material", "test:baseTextureOffset", AR_VALUE_VEC2, 0, {0, 0, 0, 0}};
+    auto e = evaluator("offset.bad", AR_PHASE_APPEARANCE, AR_DOMAIN_MATERIAL); e.evaluate = badOffset; add(f, e);
+    e = evaluator("offset.good", AR_PHASE_APPEARANCE, AR_DOMAIN_MATERIAL); e.evaluate = goodOffset; add(f, e);
+    auto bad = f.make({"offset.bad"}), good = f.make({"offset.good"});
+    auto input = frame(1); ArSnapshot s = 999;
+    CHECK(api.evaluate_frame(f.runtime, bad, &input, nullptr, &s) == AR_INVALID_STATE && s == 0);
+    CHECK(api.evaluate_frame(f.runtime, good, &input, nullptr, &s) == AR_OK);
+    const auto v = view(s);
+    CHECK(v.materials[0].value_type == AR_VALUE_VEC2 && v.materials[0].overridden == 1);
+    CHECK(v.materials[0].value[0] == .25 && v.materials[0].value[1] == .5 && v.materials[0].value[2] == 0);
+    CHECK(api.release_snapshot(s) == AR_OK);
+}
+
+struct SampleProbe {
+    int mode = 0;
+    bool hasPrior = false;
+    static ArStatus AR_CALL evaluate(void* p, void*, const ArEvaluationContext* ctx, const ArStateWriter* writer) {
+        const auto& probe = *static_cast<SampleProbe*>(p);
+        /* Working views never expose provenance that a report could reallocate. */
+        CHECK(ctx->working->samples == nullptr && ctx->working->sample_count == 0);
+        CHECK((ctx->prior != nullptr) == probe.hasPrior);
+        if (ctx->prior) CHECK(ctx->prior->sample_count == 3 && ctx->prior->samples[2].kind == AR_SOURCE_POSE);
+        ArSourceSample s{"clip", "actor", "motion:pose", "ignored", AR_SOURCE_POSE, AR_OBSERVATION_VALID,
+            AR_SAMPLE_HELD, 4, 2, 1, 99};
+        switch (probe.mode) {
+        case 1: s.source_id = "source"; s.channel_id = "intent:custom"; break; // collides with an input
+        case 2: s.kind = AR_SOURCE_SCALAR; break;
+        case 3: s.resolution = AR_SAMPLE_SELECTED; break;
+        case 4: s.resolution = 5; break;
+        case 5: s.validity = AR_OBSERVATION_STALE; break;
+        case 6: s.clock_scale = 0; break;
+        case 7: s.source_seconds = std::numeric_limits<double>::quiet_NaN(); break;
+        case 8: s.channel_id = "pose"; break;
+        case 9: s.actor_id = ""; break;
+        case 10: CHECK(writer->report_sample(writer->context, nullptr) == AR_INVALID_ARGUMENT); return AR_OK;
+        case 11: CHECK(writer->report_sample(writer->context, &s) == AR_OK); break; // then reported twice
+        default: break;
+        }
+        const ArStatus expected = probe.mode == 0 ? AR_OK :
+            probe.mode == 1 || probe.mode == 11 ? AR_DUPLICATE_ID : AR_INVALID_ARGUMENT;
+        CHECK(writer->report_sample(writer->context, &s) == expected);
+        return AR_OK; // a rejected report still latches frame failure
+    }
+};
+ArStatus AR_CALL reportWithoutPose(void*, void*, const ArEvaluationContext*, const ArStateWriter* writer) {
+    ArSourceSample s{"clip", "actor", "motion:other", "", AR_SOURCE_POSE, AR_OBSERVATION_VALID,
+        AR_SAMPLE_INTERPOLATED, 0, 1, 0, 0};
+    CHECK(writer->report_sample(writer->context, &s) == AR_INVALID_ARGUMENT);
+    return AR_OK;
+}
+void sourceSamples() {
+    Fixture f; SampleProbe probe;
+    auto e = evaluator("pose", AR_PHASE_RETARGET, AR_DOMAIN_POSE); e.user_data = &probe; e.evaluate = SampleProbe::evaluate;
+    add(f, e); auto id = f.make({"pose"});
+    ArScalarInput scalar{"source", "actor", "intent:custom", .5, 10, 1, -10};
+    auto g = gaze(); g.validity = AR_OBSERVATION_STALE; g.value[0] = 1; // a held gaze keeps its source time
+    auto input = frame(1, 5); input.scalars = &scalar; input.scalar_count = 1; input.gazes = &g; input.gaze_count = 1;
+    ArSnapshot first, next;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &first) == AR_OK);
+    const auto v = view(first);
+    CHECK(v.sample_count == 3 && v.evaluation_seconds == 5);
+    const auto& sc = v.samples[0]; const auto& gz = v.samples[1]; const auto& pose = v.samples[2];
+    CHECK(sc.kind == AR_SOURCE_SCALAR && sc.validity == AR_OBSERVATION_VALID && sc.resolution == AR_SAMPLE_SELECTED);
+    CHECK(std::string(sc.channel_id) == "intent:custom" && std::string(sc.evaluator_id).empty());
+    CHECK(sc.source_seconds == 10 && sc.runtime_seconds == 0);
+    CHECK(gz.kind == AR_SOURCE_GAZE && gz.validity == AR_OBSERVATION_STALE && gz.resolution == AR_SAMPLE_SELECTED);
+    CHECK(gz.source_seconds == 2 && gz.clock_scale == 2 && gz.clock_offset == -1 && gz.runtime_seconds == 3);
+    CHECK(pose.kind == AR_SOURCE_POSE && pose.resolution == AR_SAMPLE_HELD && pose.validity == AR_OBSERVATION_VALID);
+    CHECK(std::string(pose.source_id) == "clip" && std::string(pose.evaluator_id) == "pose");
+    CHECK(pose.source_seconds == 4 && pose.runtime_seconds == 9); // supplied stamps are replaced
+    probe.hasPrior = true;
+    for (int mode = 1; mode <= 11; ++mode) {
+        probe.mode = mode; input.frame_id = 2; next = 999; Log log; auto sink = log.sink();
+        const ArStatus expected = mode == 1 || mode == 11 ? AR_DUPLICATE_ID : AR_INVALID_ARGUMENT;
+        CHECK(api.evaluate_frame(f.runtime, id, &input, &sink, &next) == expected && next == 0);
+        CHECK(!log.codes.empty() && log.codes.back() == "runtime.writer.invalid" && log.evaluators.back() == "pose");
+    }
+    probe.mode = 0; input.scalars = nullptr; input.scalar_count = 0; input.gazes = nullptr; input.gaze_count = 0;
+    CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &next) == AR_OK);
+    CHECK(view(next).sample_count == 1 && view(next).samples[0].kind == AR_SOURCE_POSE); // absent inputs leave no record
+    CHECK(api.release_snapshot(next) == AR_OK);
+    auto other = evaluator("material.only", AR_PHASE_APPEARANCE, AR_DOMAIN_MATERIAL); other.evaluate = reportWithoutPose;
+    add(f, other); auto materialOnly = f.make({"material.only"}); input = frame(1);
+    CHECK(api.evaluate_frame(f.runtime, materialOnly, &input, nullptr, &next) == AR_INVALID_ARGUMENT);
+    CHECK(api.destroy_runtime(f.runtime) == AR_OK); f.runtime = 0;
+    /* Provenance strings are copied and outlive the runtime with the snapshot. */
+    CHECK(std::string(v.samples[1].source_id) == "source" && std::string(v.samples[2].evaluator_id) == "pose");
+    CHECK(api.release_snapshot(first) == AR_OK);
+}
+
 void validation() {
     Fixture f; ArInstance id; auto d = f.desc({});
     d.layout_id = nullptr;
@@ -591,7 +696,9 @@ void validation() {
     CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
     f.joints[0].local.rotation[3] = 1; f.joints[1].parent_index = 1;
     CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
-    f.joints[1].parent_index = 0; f.material.value_type = 2;
+    f.joints[1].parent_index = 0; f.material.value_type = AR_VALUE_VEC2; // unused z/w must be zero
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
+    f.material.value_type = 5;
     CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_INVALID_STATE);
     f.material.value_type = AR_VALUE_VEC4;
     CHECK(api.create_instance(f.runtime, &d, nullptr, &id) == AR_OK);
@@ -603,5 +710,6 @@ int main() {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     negotiation(); planning(); capabilities(); transactions(); orderedRollbackAndPoisoning();
     inputsAndSnapshots(); deterministicFrames(); gazeInputs(); gazeValidation(); snapshotIdentity(); validation();
+    vec2Materials(); sourceSamples();
     std::cout << "Runtime contract checks passed\n";
 }

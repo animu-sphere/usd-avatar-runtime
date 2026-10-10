@@ -87,10 +87,12 @@ rollback, instance isolation, retained snapshots and an external build against
 the installed `AvatarRuntime::avatarRuntime` CMake target. See
 [the ABI](docs/contracts/ABI.md) and
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) for exact coverage.
-The headers are experimental revision 3; Runtime Phase A is still open.
-Revision 3 adds typed gaze observations with explicit space, validity and clock
-mapping, preserving revision 2's retained layout/input/capability metadata.
-Revision-1/2 providers and consumers must rebuild.
+The headers are experimental revision 4; Runtime Phase A is still open.
+Revision 4 retains per-sample source time with each snapshot, including the
+pose sample a provider actually used, and adds a two-component material value
+type. It preserves revision 3's typed gaze observations and revision 2's
+retained layout/input/capability metadata. Revision-1–3 providers and
+consumers, including a renderer adapter that pins revision 3, must rebuild.
 An optional [VRM adapter](docs/architecture/VRM_ADAPTER.md) connects installed
 owner expression and both LookAt evaluator types to pose/morph/material
 snapshots, including world/joint-local point/direction input. Direction support
@@ -138,6 +140,7 @@ With the motion-check tool and VRM adapter enabled, `AVATAR_MOTION_CHECK_TOON=ON
 adds an installed `Toon` `AvatarState` dependency only to that host. Use a renderer
 install containing the additive `BaseColorRgb` binding. Run
 `avatarMotionCheck --vrm --toon <avatar> <motion> [motion ...]` to check retained
-state-to-palette/morph/material transport. This constructs probe resources;
+state-to-palette/morph/material transport. The renderer install must be built
+for this runtime's ABI revision; the configure probe refuses other revisions. This constructs probe resources;
 actual avatar rendering and Hydra/direct parity remain open. See
 [output paths](docs/architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).

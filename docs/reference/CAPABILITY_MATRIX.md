@@ -3,7 +3,7 @@
 Checked against this repository on 2026-10-10. This is implementation status,
 not a promise about sibling repositories or a release/support declaration.
 The experimental direct runtime and CMake installation/export are implemented.
-Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
+Runtime Phase A remains open; revision 4 is not a frozen ecosystem ABI.
 
 The [boundary cleanup policy](../design/BOUNDARY_POLICY.md) is accepted intent.
 The motion-boundary slice is implemented: `ClipPoseAdapter` delegates generic
@@ -25,15 +25,15 @@ workstream B validation is recorded below; the
 | --- | --- | --- |
 | implementation direction | adopted documentation; real-provider/fast-path integration prioritized before freeze | [design policy](../design/DESIGN_POLICY.md), [near-term direction](../design/NEAR_TERM_PLAN.md) |
 | runtime architecture and layout | one reusable `avatarRuntime` target; further component split proposed | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
-| input/evaluated-state contracts | experimental revision-3 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version and active capabilities; configured owner clip-to-pose mapping and owned selected-motion scalar/world-gaze assembly implemented; live observation intake, multi-source composition, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
+| input/evaluated-state contracts | experimental revision-4 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version, active capabilities and source-sample provenance (selected inputs plus provider-reported pose samples with mapped runtime seconds); scalar/vec2/vec3/vec4 material values; configured owner clip-to-pose mapping with retained interpolated/held sample time and owned selected-motion scalar/world-gaze assembly implemented; live observation intake, multi-source composition, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
-| versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
+| versioned C ABI | revision-4/size validation, revision-1–3 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion validation boundary | installed owner clip/retarget validators invoked before retargeter construction; selected timestamp/scalar/gaze validation delegated by MotionPoseInputBridge; runtime binding/clock/C-string checks retained; owned MotionValidationError and synchronous C sink forwarding preserve owner report identity/order and package version; old InputAssembler source names retained | [motion adapters](../architecture/MOTION_ADAPTER.md) |
 | selected USD motion inputs | ReadStageClip returns the strict owner's MotionStageRead directly, forwarding MotionStageReadOptions; legacy StageClip delegates to it; tool attribute selection, clip-to-world rigid gaze placement and untouched world probes implemented; generated native VRMA expression/keyed/default gaze fixtures drive an actual avatar with owner parity; automatic native discovery and representative capture evidence pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md) |
 | motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping plus seven real VRMA clips on one private avatar via owned USD clip/source rest, with all-joint parity and reset/retention; full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [USD motion binding](../architecture/MOTION_USD_BINDING.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; scoped expression/output extraction available separately | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
-| Hydra state overlay and direct consumer API | retained direct snapshot API implemented; optional motion-check host consumes installed Toon AvatarState for joint/morph/material probe transport, duplicate/reset/rebind/retention and late draw-value parity; actual resident-avatar binding/rendering, consumer-cost evidence and Hydra/direct parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
+| Hydra state overlay and direct consumer API | retained direct snapshot API implemented; optional motion-check host consumes installed Toon AvatarState for joint/morph/material probe transport, duplicate/reset/rebind/retention and late draw-value parity; actual resident-avatar binding/rendering, consumer-cost evidence and Hydra/direct parity pending; resident target matching assigned to a renderer-side host, no runtime-side bridge target | [output paths](../architecture/OUTPUT_PATHS.md) |
 | USD LookAt binding | separate optional owner schema/raw range-map extraction, head/eye/rest bindings and owned adapter configuration; constructed bone quaternion/expression-weight parity; one private avatar's Expression-type rig with test gaze and actual morph outputs, also composed with seven real clips driving the working head; explicit native keyed/default VRMA fixture gaze intake validated; representative captured gaze pending | [VRM LookAt USD binding](../architecture/VRM_LOOKAT_USD_BINDING.md) |
 | USD Expression binding | optional applied owner expression discovery, explicit mesh blend-shape token mapping, indexed/legacy material binds and owned canonical RGB/alpha baseline; all-slot constructed owner parity and one private avatar's 18 expressions/48 morph slots with test scalar/gaze LookAt composition; shared-mesh targets and real-avatar material evidence pending | [VRM Expression USD binding](../architecture/VRM_EXPRESSION_USD_BINDING.md) |
 | OpenExec orchestration adapter | proposed; not implemented | [overview](../architecture/OVERVIEW.md) |
@@ -54,8 +54,8 @@ linked. `ctest --test-dir build/direct --output-on-failure` runs:
 
 | Test | Evidence |
 | --- | --- |
-| `contracts.c_provider_consumer` | separate runtime DLL, C11 provider DLL and C11 consumer; revision-3 table negotiation, revision-2 rejection, typed gaze transport including stale/unavailable and invalid-direction retry; capability discovery and copied layout/input/capability metadata surviving runtime shutdown |
-| `contracts.runtime` | C++20 headers; revision-1/2 and undersized-view rejection; deterministic plan order; missing/backward/cyclic dependencies; overlapping writers; capability mismatch; stateful failure/retry/reset; ignored/invalid writes; time/input/layout validation; independent instances; absent/zero and complete snapshot behavior; diagnostic provenance and overflow; retained metadata, stable layout across reset, explicit layout version change, prior input revision on failure and domain-independent evaluator metadata; gaze absence/origin, point/direction, world/bound-joint spaces, unchanged stale/unavailable transport, source/actor identity, invalid arrays/references/numerics/clocks/duplicates and failure before provider callbacks with same-frame retry |
+| `contracts.c_provider_consumer` | separate runtime DLL, C11 provider DLL and C11 consumer; revision-4 table negotiation, revision-2/3 rejection, typed gaze transport including stale/unavailable and invalid-direction retry; provider-reported held pose sample and retained gaze sample times; capability discovery and copied layout/input/capability/sample metadata surviving runtime shutdown |
+| `contracts.runtime` | C++20 headers; revision-1–3 and undersized (including revision-3-sized) view rejection; vec2 material layouts, writes and nonzero unused-component rejection; retained source samples in input-then-plan order with mapped runtime seconds, stale gaze keeping its time, runtime-stamped evaluator identity, no working-view exposure, prior-view visibility and every invalid/duplicate/undeclared-domain report failing the frame; deterministic plan order; missing/backward/cyclic dependencies; overlapping writers; capability mismatch; stateful failure/retry/reset; ignored/invalid writes; time/input/layout validation; independent instances; absent/zero and complete snapshot behavior; diagnostic provenance and overflow; retained metadata, stable layout across reset, explicit layout version change, prior input revision on failure and domain-independent evaluator metadata; gaze absence/origin, point/direction, world/bound-joint spaces, unchanged stale/unavailable transport, source/actor identity, invalid arrays/references/numerics/clocks/duplicates and failure before provider callbacks with same-frame retry |
 | `contracts.installed_consumer` | install into a build-local prefix, configure/build C provider and consumer separately with `find_package(AvatarRuntime 0.1.0 EXACT)`, run the C boundary against installed headers/library |
 
 These core tests use synthetic providers. They prove runtime boundary behavior,
@@ -418,3 +418,24 @@ This validates the scoped workstream B host migration while retaining the
 legacy wrapper for source compatibility. Representative native expression/gaze,
 real material binds/resident avatar rendering, milestones and ABI freeze
 remain open.
+
+Experimental ABI revision 4 was checked on 2026-10-10 with Windows x64/MSVC
+19.51/CMake 4.4.3/OpenUSD 26.08 Release and the same published motion 0.5.4
+packages. It adds `AR_VALUE_VEC2`, retained `ArSourceSample` records and
+`ArStateWriter.report_sample`. The three core tests and the full 16-test
+configuration pass without compiler warnings, including installed consumers.
+`ClipPoseAdapter` reports interpolated samples at the requested clip time and
+held samples at the boundary sample's own time.
+
+The installed `Toon::AvatarState` consumer pins revision 3 at compile time, so
+the configure probe now refuses that install with an explicit ABI diagnostic.
+Toon evidence used a scratch export of `hydra-toon` 3bc1d34 with only that pin
+changed to 4. Its 14 tests, including runtime lifetime against this runtime,
+pass; a published renderer change is still required. With that consumer, the
+seven private clips pass both modes: 8,286 frames per mode, maximum component
+error `1.403972313e-7`, Toon maximum relative error `4.851291323e-7`. Every
+snapshot carries one retained pose sample that matches owner `SampleClip`
+status and time, plus one record per selected input; each clip holds five
+boundary samples. Asset hashes, commands and logs remain in ignored local
+evidence. Representative captured input ages, consumer latency evidence and
+ABI freeze remain open.

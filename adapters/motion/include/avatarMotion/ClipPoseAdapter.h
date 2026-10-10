@@ -22,6 +22,9 @@ struct ClipPoseAdapterConfig {
     std::vector<std::string> jointIds;
     // runtime_seconds = clip_seconds * clockScale + clockOffset.
     double clockScale = 1.0, clockOffset = 0.0;
+    // Identity of the reported pose sample; empty source/actor default to the
+    // evaluator/skeleton identity. The channel must be namespaced.
+    std::string sourceId, actorId, channelId = "motion:pose";
     // Rigid skeleton-to-runtime-world placement, applied once to each root
     // after owner retargeting. Source/target rest remain skeleton-local.
     ArTransform rootPlacement{{0, 0, 0}, {0, 0, 0, 1}, {1, 1, 1}};
@@ -31,6 +34,8 @@ struct ClipPoseAdapterConfig {
 // Immutable, stateless clip evaluation: SampleClip -> PoseRetargeter -> pose
 // writer, atomic in RETARGET. Empty clips leave the working pose untouched;
 // out-of-range requests use the owner's boundary hold and emit a diagnostic.
+// Each sampled pose reports its clip sample time and owner status with the
+// snapshot; a held pose keeps the boundary sample's time.
 // Channels, gaze, confidence and contacts are not published by this adapter.
 // Keep alive until runtime destruction. Invalid configuration throws
 // invalid_argument; malformed owner values throw MotionValidationError with

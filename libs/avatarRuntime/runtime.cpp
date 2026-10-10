@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <deque>
 #include <limits>
 #include <map>
 #include <memory>
@@ -132,8 +133,17 @@ bool transformValid(const ArTransform& t) {
     for (double v : t.rotation) { if (!std::isfinite(v)) return false; norm += v * v; }
     return std::isfinite(norm) && std::abs(norm - 1.0) <= 1e-6;
 }
+bool namespaced(const char* channel) {
+    const char* separator = std::strchr(channel, ':');
+    return separator && separator != channel && separator[1];
+}
+bool clockValid(double seconds, double scale, double offset) {
+    return std::isfinite(seconds) && std::isfinite(scale) && scale > 0 && std::isfinite(offset) &&
+        std::isfinite(seconds * scale + offset);
+}
 bool materialValid(const ArMaterialInput& m) {
-    if (m.value_type != AR_VALUE_SCALAR && m.value_type != AR_VALUE_VEC3 && m.value_type != AR_VALUE_VEC4) return false;
+    if (m.value_type != AR_VALUE_SCALAR && m.value_type != AR_VALUE_VEC2 &&
+        m.value_type != AR_VALUE_VEC3 && m.value_type != AR_VALUE_VEC4) return false;
     if (m.overridden > 1) return false;
     for (uint32_t i = 0; i < 4; ++i)
         if (!std::isfinite(m.value[i]) || (i >= m.value_type && m.value[i] != 0)) return false;
@@ -162,6 +172,9 @@ struct State {
     std::vector<ArBlendShape> shapes;
     std::vector<ArMaterialInput> materials;
     std::vector<ArVisibility> visibility;
+    /* Appended during evaluation; deque keeps copied identities stable. */
+    std::deque<std::string> sampleStrings;
+    std::vector<ArSourceSample> samples;
 
     explicit State(const ArStateView& v) : instance(v.instance), frame(v.frame_id),
         generation(v.generation), seconds(v.evaluation_seconds) {
@@ -183,10 +196,26 @@ struct State {
     }
     State(const State& other) : State(other.view()) {
         inputRevision = other.inputRevision; layout = other.layout;
+        for (const auto& s : other.samples) addSample(s, s.evaluator_id);
     }
     State(State&&) = default;
     State& operator=(const State&) = delete;
-    ArStateView view(ArDomain domains = AR_DOMAIN_ALL) const {
+    /* Identities are copied; runtime seconds are stamped from the clock mapping. */
+    void addSample(ArSourceSample s, const char* evaluator) {
+        auto copyId = [&](const char* p) { sampleStrings.emplace_back(p); return sampleStrings.back().c_str(); };
+        s.source_id = copyId(s.source_id); s.actor_id = copyId(s.actor_id); s.channel_id = copyId(s.channel_id);
+        s.evaluator_id = *evaluator ? copyId(evaluator) : "";
+        s.runtime_seconds = s.source_seconds * s.clock_scale + s.clock_offset;
+        samples.push_back(s);
+    }
+    bool hasSample(const char* source, const char* actor, const char* channel) const {
+        for (const auto& s : samples)
+            if (!std::strcmp(s.source_id, source) && !std::strcmp(s.actor_id, actor) && !std::strcmp(s.channel_id, channel))
+                return true;
+        return false;
+    }
+    /* Working views omit samples: provider reports may append during a callback. */
+    ArStateView view(ArDomain domains = AR_DOMAIN_ALL, bool provenance = true) const {
         ArStateView v{AR_HEADER(ArStateView)};
         v.instance = instance; v.frame_id = frame; v.generation = generation; v.evaluation_seconds = seconds;
         v.input_revision = inputRevision;
@@ -198,6 +227,7 @@ struct State {
         if (domains & AR_DOMAIN_DEFORMATION) { v.blend_shapes = shapes.data(); v.blend_shape_count = uint32_t(shapes.size()); }
         if (domains & AR_DOMAIN_MATERIAL) { v.materials = materials.data(); v.material_count = uint32_t(materials.size()); }
         if (domains & AR_DOMAIN_VISIBILITY) { v.visibility = visibility.data(); v.visibility_count = uint32_t(visibility.size()); }
+        if (provenance) { v.samples = samples.data(); v.sample_count = uint32_t(samples.size()); }
         return v;
     }
 };
@@ -400,6 +430,7 @@ void initializeStates(std::vector<BoundEvaluator>& plan, ArInstance id, uint64_t
 struct Writer {
     State& state;
     ArDomain domains;
+    const char* evaluator;
     ArStatus failure = AR_OK;
     ArStatus reject(ArStatus s) { if (failure == AR_OK) failure = s; return s; }
     static ArStatus AR_CALL joint(void* ptr, uint32_t n, const ArTransform* t) {
@@ -428,7 +459,20 @@ struct Writer {
         if (v > 1) return w.reject(AR_INVALID_STATE);
         w.state.visibility[n].visible = v; return AR_OK;
     }
-    ArStateWriter api() { return {this, joint, shape, material, visibility}; }
+    static ArStatus AR_CALL sample(void* ptr, const ArSourceSample* s) {
+        auto& w = *static_cast<Writer*>(ptr);
+        if (!(w.domains & AR_DOMAIN_POSE) || !s || s->kind != AR_SOURCE_POSE ||
+            !identifier(s->source_id) || !identifier(s->actor_id) || !identifier(s->channel_id) ||
+            !namespaced(s->channel_id) || s->validity != AR_OBSERVATION_VALID ||
+            s->resolution < AR_SAMPLE_INTERPOLATED || s->resolution > AR_SAMPLE_EXTRAPOLATED ||
+            !clockValid(s->source_seconds, s->clock_scale, s->clock_offset) || w.state.samples.size() >= 1048576u)
+            return w.reject(AR_INVALID_ARGUMENT);
+        if (w.state.hasSample(s->source_id, s->actor_id, s->channel_id)) return w.reject(AR_DUPLICATE_ID);
+        try { w.state.addSample(*s, w.evaluator); }
+        catch (...) { return w.reject(AR_OUT_OF_MEMORY); }
+        return AR_OK;
+    }
+    ArStateWriter api() { return {this, joint, shape, material, visibility, sample}; }
 };
 
 void validateInput(const ArInputFrame* input, const Instance& inst, Diagnostics& d) {
@@ -447,13 +491,11 @@ void validateInput(const ArInputFrame* input, const Instance& inst, Diagnostics&
     const auto observation = [&](const char* source, const char* actor, const char* channel,
                                  double seconds, double scale, double offset) {
         requireId(source, d); requireId(actor, d); requireId(channel, d);
-        const char* separator = std::strchr(channel, ':');
-        if (!separator || separator == channel || !separator[1])
+        if (!namespaced(channel))
             d.fail(AR_INVALID_ARGUMENT, "runtime.channel.namespace", "Input channel needs an explicit namespace", channel);
         if (!ids.emplace(source, actor, channel).second)
             d.fail(AR_DUPLICATE_ID, "runtime.input.duplicate", "Duplicate source/actor/channel input", channel);
-        if (!std::isfinite(seconds) || !std::isfinite(scale) || scale <= 0 || !std::isfinite(offset) ||
-            !std::isfinite(seconds * scale + offset))
+        if (!clockValid(seconds, scale, offset))
             d.fail(AR_INVALID_ARGUMENT, "runtime.input.numeric", "Invalid source clock mapping", channel);
     };
     for (uint32_t i = 0; i < input->scalar_count; ++i) {
@@ -606,15 +648,26 @@ ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* i
         validateInput(input, inst, d);
         State work(inst.baseline); work.frame = input->frame_id; work.seconds = input->evaluation_seconds;
         work.inputRevision = input->input_revision;
+        work.samples.reserve(size_t(input->scalar_count) + input->gaze_count);
+        for (uint32_t i = 0; i < input->scalar_count; ++i) {
+            const auto& s = input->scalars[i];
+            work.addSample({s.source_id, s.actor_id, s.channel_id, "", AR_SOURCE_SCALAR, AR_OBSERVATION_VALID,
+                AR_SAMPLE_SELECTED, s.source_seconds, s.clock_scale, s.clock_offset, 0}, "");
+        }
+        for (uint32_t i = 0; i < input->gaze_count; ++i) {
+            const auto& g = input->gazes[i];
+            work.addSample({g.source_id, g.actor_id, g.channel_id, "", AR_SOURCE_GAZE, g.validity,
+                AR_SAMPLE_SELECTED, g.source_seconds, g.clock_scale, g.clock_offset, 0}, "");
+        }
         Transaction transaction(inst);
         for (auto& b : inst.plan) {
             auto& e = *b.evaluator; d.evaluator = e.id.c_str(); d.origin = e.provider.c_str(); d.phase = e.callbacks.phase;
             const ArDomain visible = e.callbacks.reads | e.callbacks.writes;
-            auto working = work.view(visible);
+            auto working = work.view(visible, false);
             ArStateView prior{}; if (inst.prior) prior = inst.prior->view(visible);
             ArEvaluationContext context{AR_HEADER(ArEvaluationContext), input, inst.prior ? &prior : nullptr,
                 &working, {&d, Diagnostics::providerEmit}};
-            Writer writer{work, e.callbacks.writes}; auto writerApi = writer.api();
+            Writer writer{work, e.callbacks.writes, e.id.c_str()}; auto writerApi = writer.api();
             try {
                 if (e.callbacks.begin_frame) {
                     transaction.begun.push_back(&b);

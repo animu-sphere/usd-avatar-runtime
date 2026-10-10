@@ -28,6 +28,13 @@ static ArStatus AR_CALL evaluate(void* user, void* state, const ArEvaluationCont
     /* Synthetic transport check only; this is not a LookAt algorithm. */
     if (ctx->input->gaze_count && ctx->input->gazes[0].validity == AR_OBSERVATION_VALID)
         t.translation[1] = ctx->input->gazes[0].value[0];
+    {
+        /* Held boundary sample: the content keeps its original source time. */
+        ArSourceSample sample = {"clip", "actor", "test:pose", "ignored", AR_SOURCE_POSE,
+            AR_OBSERVATION_VALID, AR_SAMPLE_HELD, 1, 2, 0.5, -1};
+        ArStatus status = writer->report_sample(writer->context, &sample);
+        if (status != AR_OK) return status;
+    }
     return writer->set_joint(writer->context, 0, &t);
 }
 static void AR_CALL finish(void* user, void* state, uint32_t commit) {

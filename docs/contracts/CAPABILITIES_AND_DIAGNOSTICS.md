@@ -43,7 +43,7 @@ features. Missing required support prevents the plan/output binding from
 activating. Optional unsupported outputs follow an explicit host policy and
 produce diagnostics. Never rely on compile-time VRM/MMD assumptions alone.
 
-Revision 3 computes active support as the intersection of selected providers'
+Revision 4 computes active support as the intersection of selected providers'
 supplied tokens and the instance's explicitly bound tokens at the **same
 nonzero version**. Required instance/evaluator capabilities must occur in that
 intersection; conflicting versions supplied by selected providers are rejected.
@@ -75,7 +75,7 @@ intent, unsupported outputs, invalid contracts, dependency cycles, conflicting
 writes and non-finite transforms. Deterministic ordering and overflow/drop
 behavior must be specified; logging must not block the frame on external I/O.
 
-Revision 3 delivers synchronous diagnostic callbacks in validation/plan order,
+Revision 4 delivers synchronous diagnostic callbacks in validation/plan order,
 preserves provider `origin`, `code`, `subject`, message and status, and stamps
 the active evaluator/instance/frame/phase. Runtime composition records use
 `runtime.*` codes. Records and strings are borrowed only during the callback;
@@ -95,13 +95,13 @@ capability mismatch, layout mismatch and unsupported output channels. Preserve
 owner codes/provenance and frame identity so consumers receive an explained
 evaluation result rather than guessing avatar-semantic failures. This expands
 integration coverage; it does not claim new implemented diagnostic codes or
-snapshot-retained diagnostic records in revision 3.
+snapshot-retained diagnostic records in revision 4.
 
 ## 3. Observation hooks
 
 The adopted [boundary policy section 15](../design/BOUNDARY_POLICY.md#15-diagnostics)
 requires owner name, version and subject to survive forwarding without
-redefining domain codes. Revision 3 preserves callback origin/code/subject and
+redefining domain codes. Revision 4 preserves callback origin/code/subject and
 provider descriptor version metadata; it has no dedicated diagnostic-record
 owner-version field or retained envelope. Settle their association and capture
 representation before ABI stabilization. Runtime's own diagnostics cover plan,

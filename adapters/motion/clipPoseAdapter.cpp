@@ -25,6 +25,11 @@ void validate(const ClipPoseAdapterConfig& c) {
         require(identity(id), "Motion evaluator dependency IDs must be nonempty C strings");
     require(std::isfinite(c.clockScale) && c.clockScale > 0 && std::isfinite(c.clockOffset),
             "Motion clip clock mapping must be finite with positive scale");
+    const auto separator = c.channelId.find(':');
+    require((c.sourceId.empty() || identity(c.sourceId)) && (c.actorId.empty() || identity(c.actorId)) &&
+            identity(c.channelId) && separator != 0 && separator != std::string::npos &&
+            separator + 1 < c.channelId.size(),
+            "Motion pose sample identity must be C strings with a namespaced channel");
     double norm = 0;
     for (double value : c.rootPlacement.rotation) {
         require(std::isfinite(value), "Root placement rotation must be finite");
@@ -83,7 +88,10 @@ struct ClipPoseAdapter::Impl {
     std::vector<const char*> after;
     ArCapability capability{"avatar.motion.clipPose", 1};
     static ClipPoseAdapterConfig checked(ClipPoseAdapterConfig c, const ArDiagnosticSink& sink) {
-        validate(c); validateOwner(c, sink); return c;
+        validate(c); validateOwner(c, sink);
+        if (c.sourceId.empty()) c.sourceId = c.evaluatorId;
+        if (c.actorId.empty()) c.actorId = c.skeletonId;
+        return c;
     }
     explicit Impl(ClipPoseAdapterConfig c, const ArDiagnosticSink& sink)
         : config(checked(std::move(c), sink)), retargeter(config.skeleton, config.map, config.sourceRest, config.options),
@@ -161,7 +169,18 @@ struct ClipPoseAdapter::Impl {
             const auto status = writer.set_joint(writer.context, indices[i], &local);
             if (status != AR_OK) return status;
         }
-        return AR_OK;
+        // Report the time of the content actually used: SampleClip restamps a
+        // held pose with the request, so take the boundary sample's own time.
+        const auto& samples = config.clip.samples;
+        ArSourceSample used{config.sourceId.c_str(), config.actorId.c_str(), config.channelId.c_str(), "",
+            AR_SOURCE_POSE, AR_OBSERVATION_VALID, AR_SAMPLE_INTERPOLATED, time, config.clockScale, config.clockOffset, 0};
+        if (sample.status == motion::PoseSampleStatus::Held) {
+            used.resolution = AR_SAMPLE_HELD;
+            used.source_seconds = time < samples.front().timestamp ? samples.front().timestamp : samples.back().timestamp;
+        } else if (sample.status == motion::PoseSampleStatus::Extrapolated) {
+            used.resolution = AR_SAMPLE_EXTRAPOLATED; used.source_seconds = samples.back().timestamp;
+        }
+        return writer.report_sample(writer.context, &used);
     }
     static ArStatus AR_CALL callback(void* user, void*, const ArEvaluationContext* c, const ArStateWriter* w) {
         return static_cast<const Impl*>(user)->evaluate(*c, *w);
