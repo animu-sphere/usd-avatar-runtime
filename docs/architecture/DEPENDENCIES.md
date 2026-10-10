@@ -89,9 +89,11 @@ Supplied affine mappings are preserved rather than recomputed by the bridge.
 USD integration follows the same rule. `motionUsd` owns stage motion reading,
 source skeleton interpretation, generic validation and skeleton/rest conversion.
 Runtime binding owns avatar/layout/skeleton identity, joint-ID mapping, baseline
-state and root placement. The existing `StageClip` and `SkeletonBinding` now
-consume typed owner reader results; the owner's WS-O4 dependency/result decision
-is resolved, while final `StageClip` wrapper absorption remains open.
+state and root placement. `SkeletonBinding` consumes typed owner skeleton results;
+the parity host uses the owner `MotionStageRead` value returned by `ReadStageClip`
+directly, and legacy `StageClip` delegates to the same helper. The owner's WS-O4
+dependency/result decision is resolved. See the
+[motion USD binding](MOTION_USD_BINDING.md) for compatibility and host evidence.
 Recording adapters publish resolved motion to
 the owner recorder; runtime does not own resampling, compression or clip construction.
 

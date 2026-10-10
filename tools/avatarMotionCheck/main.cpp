@@ -1,4 +1,4 @@
-#include "avatarMotionUsd/StageClip.h"
+#include "avatarMotionUsd/ReadStageClip.h"
 #include "avatarVrmUsd/HumanoidBinding.h"
 #include "avatarMotion/ClipPoseAdapter.h"
 #include "pxr/usd/usd/primRange.h"
@@ -106,9 +106,9 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
         require(path.IsEmpty(),"Motion must contain exactly one skeleton"); path = prim.GetPath();
     }
     require(!path.IsEmpty(),"Motion contains no skeleton");
-    avatarMotionUsd::StageClip loaded(stage,path,inputs);
+    const auto loaded = avatarMotionUsd::ReadStageClip(stage,path,inputs);
     stage.Reset();
-    for (const auto& warning : loaded.Read().warnings) std::cerr << "motionUsd: " << warning << '\n';
+    for (const auto& warning : loaded.warnings) std::cerr << "motionUsd: " << warning << '\n';
     const auto& baseline =
 #ifdef AR_CHECK_VRM
         vrm ? vrm->baseline :
@@ -118,7 +118,7 @@ void check(const avatarUsd::SkeletonBinding& binding, const char* file,
     c.evaluatorId = "check.motion"; c.layoutId = baseline.layout_id; c.layoutVersion = baseline.layout_version;
     c.skeletonId = binding.SkeletonId(); c.skeleton = binding.Skeleton(); c.map = binding.HumanoidMap();
     c.jointIds = binding.JointIds(); c.rootPlacement = binding.RootPlacement();
-    c.clip = loaded.Read().clip; c.sourceRest = loaded.SourceRest();
+    c.clip = loaded.clip; c.sourceRest = *loaded.sourceRest;
     c.clockScale = 1.25; c.clockOffset = 2.0;
 #ifdef AR_CHECK_VRM
     c.options.requiredBones = vrmRig::GetRequiredBones();

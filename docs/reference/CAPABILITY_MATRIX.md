@@ -1,6 +1,6 @@
 # Capability matrix
 
-Checked against this repository on 2026-10-07. This is implementation status,
+Checked against this repository on 2026-10-10. This is implementation status,
 not a promise about sibling repositories or a release/support declaration.
 The experimental direct runtime and CMake installation/export are implemented.
 Runtime Phase A remains open; revision 3 is not a frozen ecosystem ABI.
@@ -12,12 +12,14 @@ retains `InputAssembler` source aliases. Owned owner reports preserve
 code/subject/detail and package identity and can be emitted to C sinks.
 The scoped USD reader split is also implemented: `SkeletonBinding` delegates
 generic matrix/token/topology/unit/placement checks to installed
-`motionUsd::ReadMotionSkeleton` with the explicit `Generic` role, and `StageClip`
+`motionUsd::ReadMotionSkeleton` with the explicit `Generic` role, and `ReadStageClip`
 retains the coherent clip/descriptor/source-rest result of `ReadCanonicalMotionStage`.
 Neither binding rebuilds the owner descriptor or source rest. Reading refusals
 retain owner code/subject/detail and package identity/version in `MotionUsdReadError`.
-WS-O4 is resolved upstream; final StageClip wrapper absorption remains on the
-[roadmap](../roadmap/current.md#boundary-cleanup-workstreams).
+WS-O4 is resolved upstream. The host consumes the owner result directly;
+`StageClip` delegates to the same helper for source compatibility. Scoped
+workstream B validation is recorded below; the
+[roadmap](../roadmap/current.md#boundary-cleanup-workstreams) tracks remaining work.
 
 | Surface | Current status | Owning documentation |
 | --- | --- | --- |
@@ -28,7 +30,7 @@ WS-O4 is resolved upstream; final StageClip wrapper absorption remains on the
 | versioned C ABI | revision-3/size validation, revision-1/2 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion validation boundary | installed owner clip/retarget validators invoked before retargeter construction; selected timestamp/scalar/gaze validation delegated by MotionPoseInputBridge; runtime binding/clock/C-string checks retained; owned MotionValidationError and synchronous C sink forwarding preserve owner report identity/order and package version; old InputAssembler source names retained | [motion adapters](../architecture/MOTION_ADAPTER.md) |
-| selected USD motion inputs | StageClip forwards owner MotionStageReadOptions through the strict reader; tool attribute selection, clip-to-world rigid gaze placement and untouched world probes implemented; generated native VRMA expression/keyed/default gaze fixtures drive an actual avatar with owner parity; automatic native discovery and representative capture evidence pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md) |
+| selected USD motion inputs | ReadStageClip returns the strict owner's MotionStageRead directly, forwarding MotionStageReadOptions; legacy StageClip delegates to it; tool attribute selection, clip-to-world rigid gaze placement and untouched world probes implemented; generated native VRMA expression/keyed/default gaze fixtures drive an actual avatar with owner parity; automatic native discovery and representative capture evidence pending | [USD motion binding](../architecture/MOTION_USD_BINDING.md) |
 | motion/VRM/MMD/connector integration | optional installed owner clip sampling/retarget-to-pose adapter, host scalar/world-gaze input assembler and `vrmRig` expression + expression/bone LookAt adapter; explicit clock/input/layout/joint/output and eye/rest binding and diagnostics; constructed motion -> assembled input -> VRM and gaze-space numeric parity tested; schema-derived Humanoid mapping plus seven real VRMA clips on one private avatar via owned USD clip/source rest, with all-joint parity and reset/retention; full avatar bindings, connectors, multi-source selection and MMD pending | [motion adapters](../architecture/MOTION_ADAPTER.md), [USD motion binding](../architecture/MOTION_USD_BINDING.md), [VRM adapter](../architecture/VRM_ADAPTER.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md), [dependencies](../architecture/DEPENDENCIES.md) |
 | USD skeleton binding | optional authored skeleton/rest extraction into owned baseline and owner `SkeletonDescriptor`/`RetargetMap`; explicit Humanoid roles, metre conversion, auxiliary joints and rigid root placement; separate optional owner schema Humanoid discovery with custom-role reporting; bounded affine roundoff; constructed USD -> motion -> VRM parity and one local real-avatar skeleton/Humanoid result; scoped expression/output extraction available separately | [USD binding](../architecture/USD_BINDING.md), [VRM USD binding](../architecture/VRM_USD_BINDING.md) |
 | Hydra state overlay and direct consumer API | retained direct snapshot API implemented; optional motion-check host consumes installed Toon AvatarState for joint/morph/material probe transport, duplicate/reset/rebind/retention and late draw-value parity; actual resident-avatar binding/rendering, consumer-cost evidence and Hydra/direct parity pending | [output paths](../architecture/OUTPUT_PATHS.md) |
@@ -348,7 +350,7 @@ ignored local evidence; no asset is copied or authored. Native scalar/gaze
 counters remain zero and real material binds remain absent. This preserves
 the earlier integration evidence, without closing native intake or any
 milestone. Typed owner descriptor/source-rest adoption is described below;
-final `StageClip` wrapper absorption remains workstream B work. No package
+the subsequent direct owner-result host migration is recorded below. No package
 release or ABI freeze is claimed.
 
 Typed owner results were adopted and checked on 2026-10-07 with Windows
@@ -368,8 +370,9 @@ reject an older same-version strict-reader package with an actionable typed-API
 diagnostic. The same seven private clips pass 8,286 frames per mode with and
 without explicit scalar/world-gaze probes, maximum component error
 `1.403972313e-7`, owner pose/morph parity, reset and retained snapshots. Asset
-paths/hashes and logs remain ignored local evidence. Final wrapper absorption,
-representative native capture, renderer evidence and ABI freeze remain open.
+paths/hashes and logs remain ignored local evidence. The subsequent host
+migration is recorded below; representative native capture, renderer evidence
+and ABI freeze remain open.
 
 The owner [v0.5.4 release](https://github.com/animu-sphere/usd-motion-plugins/releases/tag/v0.5.4)
 was published on 2026-10-07 after all three OS release lanes passed. All 70
@@ -387,3 +390,31 @@ core-only lookup isolation. Both seven-clip real-avatar parity modes pass again,
 and retained snapshots. Package digests, build/test logs and private-asset
 evidence remain in ignored local storage. The experimental runtime C ABI and
 remaining milestone gates are unchanged.
+
+The StageClip host migration was checked on 2026-10-10 with Windows
+x64/MSVC 19.51/OpenUSD 26.08 Release and the same published motion 0.5.4
+packages. `ReadStageClip` now returns the strict owner's `MotionStageRead` by
+value; `avatarMotionCheck` uses its clip/source rest directly for registration
+and input assembly. The existing `StageClip` delegates to that entry point
+and preserves immutable shared-copy/source-rest-alias behavior. No owner
+conversion, motion validation or private result type is introduced.
+
+Source and installed source-clip contracts compare the complete owner result,
+including populated producer/provenance metadata and a nonempty future-contract
+warning. They check independent mutable value copies, stage/options lifetime,
+selected scalar/gaze results and preserved refusal code/subject/detail/version.
+The full configuration with Toon transport enabled passes all 16 tests; a fresh
+motion-USD-only Release build passes all seven, including installed consumers
+without importing sampling/VRM and a provider-free core lookup. Compiler
+configuration probes used Release after local MSVC Debug probes failed with
+PDB version mismatch C1902; no repository toolchain setting was changed.
+
+The same real avatar and seven clips pass both native-input and host-probe
+modes through installed Toon transport: 8,286 frames per mode, maximum
+pose/morph component error `1.403972313e-7`, Toon transport maximum relative
+error `4.851291323e-7`, reset and retained snapshots. Asset hashes, commands
+and logs remain in ignored local evidence.
+This validates the scoped workstream B host migration while retaining the
+legacy wrapper for source compatibility. Representative native expression/gaze,
+real material binds/resident avatar rendering, milestones and ABI freeze
+remain open.

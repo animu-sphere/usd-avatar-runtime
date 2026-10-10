@@ -30,7 +30,8 @@ behavior, and `Skeleton()` preserves the owner's descriptor unchanged.
 The owner's resolved WS-O4 dependency makes `motionRetarget` public through
 `motionUsd`. Typed skeleton/source-rest results are now consumed here;
 [cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams)
-retains final `StageClip` wrapper absorption.
+also uses direct owner motion-stage results in the parity host, retaining
+`StageClip` only as a compatibility wrapper.
 
 ## Dependencies and build
 

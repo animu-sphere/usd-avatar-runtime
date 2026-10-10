@@ -15,18 +15,19 @@ its revision-3 C ABI are unchanged.
 ## Scoped owner reading split
 
 The adopted [boundary policy section 7](../design/BOUNDARY_POLICY.md#7-stageclip-cleanup)
-phases out the current `StageClip` form. `StageClip` now calls the installed
+phases out the current `StageClip` form. `ReadStageClip` calls the installed
 `motionUsd::ReadCanonicalMotionStage`, which owns source skeleton reading and
 generic units/axis/rate/placement validation. It no longer creates a runtime
 `SkeletonBinding` for the source. The helper preserves the owner's
 `MotionStageRead`, including its owner-built `descriptor` and `sourceRest`;
 it contains no descriptor/source-rest rebuilding, USD motion conversion or
-private motion result vocabulary. `SourceRest()` references the rest in `Read()`.
+private motion result vocabulary. It returns the owner's value directly.
 
 The owner's WS-O4 dependency decision is resolved and its typed results are
-consumed here. This migration keeps `StageClip` source compatibility while
-final wrapper absorption is settled in
-[cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams).
+consumed here. The parity host now uses `ReadStageClip` and passes the owner clip
+and source rest to motion registration with explicit target bindings. `StageClip`
+remains a source-compatible immutable wrapper over the same function for existing
+callers; its `SourceRest()` references the rest in `Read()`. It owns no reading logic.
 
 ## Build and use
 
@@ -43,24 +44,35 @@ transitively. The generic `usd`/`vrm_usd` bindings now resolve `motionUsd` for
 owner skeleton reading, while importing no source-clip adapter or sampler.
 Core-only lookups still resolve no provider package.
 
-[`StageClip`](../../adapters/motion-usd/include/avatarMotionUsd/StageClip.h)
+[`ReadStageClip`](../../adapters/motion-usd/include/avatarMotionUsd/ReadStageClip.h)
 requires a stage and an explicit skeleton prim path. The strict owner reader
 validates source skeleton and clip-space metadata and reads the bound animation.
 The helper retains the owner-built `SourceRestPose` without runtime avatar/layout
 identities for the source or a second rest copy.
-Copies share immutable storage and survive stage changes/destruction.
+The returned owner value and its copies survive stage changes/destruction;
+caller mutations of a copy do not affect the original. Legacy `StageClip` copies
+continue to share immutable storage.
 Contract tests compare the retained descriptor and every source-rest array with
 the direct strict owner result, verify the `SourceRest()` alias after stage
 destruction, and preserve duplicate-bone refusal code/subject/detail.
-The additive constructor accepts owner `MotionStageReadOptions` for selected
+The optional third argument accepts owner `MotionStageReadOptions` for selected
 scalar name/value paths, prefixes and a gaze path. It forwards these to the
 strict owner reader, preserving its refusals and diagnostics. Attribute
 discovery remains format-owner/host configuration; no VRMA layout is inferred.
-`Read()` preserves the owner's clip, skeleton, animation identity, encoding
-rate, optional metadata, warnings and typed descriptor/source rest. No reader
-warning is suppressed.
+The returned result preserves the owner's clip, skeleton, animation identity,
+encoding rate, optional metadata, warnings and typed descriptor/source rest.
+No reader warning is suppressed.
 
-Supply **both** `Read().clip` and `SourceRest()` to `ClipPoseAdapterConfig`.
+Supply **both** `read.clip` and `*read.sourceRest` to `ClipPoseAdapterConfig`:
+
+```cpp
+const auto read = avatarMotionUsd::ReadStageClip(stage, skeletonPath, inputs);
+config.clip = read.clip;
+config.sourceRest = *read.sourceRest;
+// Supply target layout/skeleton/map/joint IDs, placement and clock mapping.
+avatarMotion::ClipPoseAdapter adapter(config);
+```
+
 Source rest is required to subtract the source hip height before adding root
 movement to target rest, and to apply owner rest-rotation correction. Target
 skeleton/map/joint identities/placement, clock mapping, root policy and
@@ -162,6 +174,14 @@ refusals. This consumes the handoff from
 [usd-motion-plugins issue #37](https://github.com/animu-sphere/usd-motion-plugins/issues/37).
 
 ## Evidence and remaining scope
+
+The 2026-10-10 host migration uses the owner value directly through registration,
+input assembly and retained-state comparisons. Source and installed tests cover
+full result/metadata/warning parity, independent value copies, stage/options
+lifetime, selected scalar/gaze values and preserved owner refusal identity/version.
+The legacy wrapper is checked against the same entry point. This completes the
+scoped StageClip integration cleanup; format discovery, capture and publication
+acceptance remain separate work.
 
 `adapters.motion_usd_clip` checks source height/rotation/ancestry, time-code to
 seconds mapping, missing optional metadata, immutable copies, rejection of
