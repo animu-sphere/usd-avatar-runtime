@@ -110,3 +110,53 @@ serial. Asynchronous connector intake and output consumption require snapshot
 handoff; they cannot expose partially written frame buffers. Shutdown drains
 or cancels outstanding work before releasing instances, providers or retained
 outputs. Parallel scheduling remains later roadmap work.
+
+## 5. Physics clock and discontinuities
+
+The 2026-10-20 physics orchestration direction assigns clock/fixed-step
+coordination, reset/seek and final publication to this runtime. This section
+defines target lifecycle requirements; revision 4 implements the per-instance
+transaction/reset above, not a shared-world clock or physics invalidation API.
+The [evaluator contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration)
+owns the pre/Step/post barrier order.
+
+The host supplies elapsed time, pause/seek requests and avatar state changes.
+Runtime accumulates elapsed simulation time, determines the number of due
+fixed ticks and runs the barrier for each tick. Fixed tick duration, maximum
+catch-up tick count and excess-time policy must be configurable and observable.
+The initial default values and whether excess time is retained or dropped
+remain RT-O6 choices; neither the host nor an individual avatar adapter runs
+a second accumulator for the same world.
+
+Simulation tick time and display evaluation time are separate. A display
+request can require zero, one or several fixed ticks. Interpolation/publication
+reads committed simulation results and produces an immutable display snapshot;
+it must not mutate solver state or advance a world to satisfy a renderer retry.
+Interpolation method and tick/display provenance representation require
+contract review under RT-O4/RT-O6; no new revision-4 fields are implied.
+
+Required discontinuity behavior before physics integration:
+
+| Event | Required lifecycle policy |
+| --- | --- |
+| pause / resume | pause adds no simulation time and performs no Step; resume must not catch up time spent paused; state/input changes still follow validated frame boundaries |
+| reset | invalidate affected simulation history and accumulator; recreate/reinitialize adapter and physics state from declared bindings/pose before resuming ticks; retained snapshots keep their original identity |
+| seek / loop wrap / clock discontinuity | explicitly invalidate affected physics and interpolation history; start from a declared reset state or supported checkpoint; a backward jump is not a negative Step |
+| avatar state or binding change | apply at a safe boundary; determine whether a value update, physics reinitialization or structural rebinding is required; preserve generation/layout rules above |
+| avatar unload | remove it from barrier membership and detach its bodies/coupling resources only after in-flight work drains; invalidate affected interpolation/bindings and preserve unrelated participants |
+| physics disabled | bypass physics adapters/barriers; static and motion-only evaluation still consolidates and publishes the same state contract |
+
+For shared worlds, define the reset/seek scope with the physics owner: an
+avatar-local reset cannot silently restore the entire world or leave coupled
+participants with incompatible history. Adapter references must outlive
+in-flight callbacks, while published snapshots retain values without keeping
+mutable world handles. Exact destruction order and checkpoint/velocity restore
+are RT-O5/RT-O6 decisions to validate. Full replay to an arbitrary seek time
+is outside the physics MVP.
+
+A failure after `Step` cannot be treated as an ordinary per-instance abort
+unless the world supports validated rollback. Specify world-group commit,
+recovery/invalidation and same-tick retry rules before admitting non-idempotent
+steps (RT-O5/RT-O6). Never publish mixed pre/post states or step again merely
+because a consumer failed; the last valid snapshot can remain displayed with
+its original identity.

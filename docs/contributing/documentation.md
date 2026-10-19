@@ -36,6 +36,14 @@ documents' numbering stable. Cleanup workstreams A–F are distinct from Runtime
 Phases A–F and evidence milestones A/B/C. Keep integration priorities and freeze
 gates aligned without treating planned channels or migrations as implemented support.
 
+The 2026-10-20 physics orchestration direction is incorporated into existing
+owners: evaluator for DAG/barriers, lifecycle for clock/reset, evaluated state
+for final snapshots and output paths for consumer links. Keep its local physics
+milestones A–E in the roadmap, distinct from all other phase/workstream labels.
+Do not add another physics plan/status page or predeclare phase enums/ABI from
+the conceptual pipeline. Sibling stage attributes, physics APIs and renderer
+consumer representations stay in their owning contracts.
+
 Design, architecture and contract documents carry front matter with `owner`
 and `status`. Use `proposed` for unresolved target designs, `accepted` for
 adopted direction, and `binding` only for an implemented/validated contract.

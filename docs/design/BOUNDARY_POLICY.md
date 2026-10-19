@@ -13,6 +13,10 @@ API names or target layouts below are implemented. Current facts remain in
 the [capability matrix](../reference/CAPABILITY_MATRIX.md); actionable work and
 acceptance gates remain in the [roadmap](../roadmap/current.md#boundary-cleanup-workstreams).
 
+The 2026-10-20 physics orchestration direction refines section 11's ownership
+and is incorporated into the existing evaluator/lifecycle contracts. Section
+numbers remain unchanged; this adoption does not implement physics adapters.
+
 ## 1. Purpose
 
 `usd-avatar-runtime` is the ecosystem's **format-independent avatar evaluation
@@ -177,11 +181,20 @@ avatar pre-physics evaluation -> shared physics world -> physics result
                              -> EvaluatedAvatarState
 ```
 
-Runtime owns boundary scheduling, input/output handoff, avatar state versioning
-and deterministic phase ordering. It does not own a solver. Backend/world
-lifetime, collisions, solver and fixed-step implementation belong to the
-physics owner. Exact shared-world host integration remains RT-O6 in
-[dependencies](../architecture/DEPENDENCIES.md#4-physics-boundary).
+Runtime is the sole owner of boundary scheduling, evaluation DAGs, shared-world
+barriers, clock/fixed-step coordination, reset/seek, adapter lifetime and final
+state publication. Stage-runner owns its host loop, inputs and time requests;
+other hosts use the same runtime. The physics owner implements worlds, fixed
+Step, collisions and solving; format owners implement MMD bone/body coupling
+and VRM SpringBone semantics.
+
+Scheduling rules live in the
+[evaluator contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration),
+clock/reset rules in the
+[lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities).
+[Dependencies](../architecture/DEPENDENCIES.md#4-physics-boundary) records
+optional adapter boundaries and sibling alignment. Exact world/handle and
+callback APIs remain RT-O6 work; this does not predeclare new phase enums.
 
 ## 12. Recording boundary
 

@@ -9,6 +9,12 @@ This repository defines how motion, avatar-format evaluators and external
 input participate in one runtime: evaluation order, frame lifecycle,
 per-avatar state, capability negotiation and publication of evaluated state.
 
+The adopted physics orchestration direction assigns shared-world barriers,
+clock/fixed-step coordination and reset/seek to this runtime. Hosts supply
+inputs and time requests; physics and format owners supply world stepping and
+bone/body or secondary-motion algorithms through optional adapters. See the
+[evaluator contract](docs/contracts/EVALUATOR.md#5-shared-world-physics-orchestration).
+
 Format repositories own VRM and MMD meaning; `usd-motion-plugins` owns generic
 motion mathematics; `motion-connectors` owns device and protocol intake;
 renderers own realization. See the [dependency boundary](docs/architecture/DEPENDENCIES.md).
@@ -65,6 +71,9 @@ USD skeleton/rest reading and direct owner-result host integration are implement
 publication work remains planned. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
 prioritizes real motion -> VRM -> evaluated state -> `hydra-toon` fast-path,
 then MMD validation of the shared scheduler/state model before ABI freeze.
+The 2026-10-20 [physics milestones](docs/roadmap/current.md#physics-orchestration-milestones)
+develop that MMD track through headless Jolt feedback and shared final-state
+consumers. Physics orchestration remains planned; no new core ABI is frozen.
 Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the
 implementation sequence and acceptance criteria; the
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) records what exists.

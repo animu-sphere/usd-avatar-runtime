@@ -23,6 +23,13 @@ EvaluatedAvatarState +-- Hydra adapter --> render delegates (later)
 Hydra and direct consumers share frame/state identity and evaluated values.
 Hydra publication is transport, not a second evaluation of avatar semantics.
 
+Both renderer paths consume the same final snapshot after the runtime's
+[pre/Step/post orchestration](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration).
+Neither renderer adapter runs Physics Step, IK or owner bone/body feedback.
+Published display state is separate from mutable solver state; renderer retries
+reuse retained CPU buffers without advancing simulation. Copy/packing
+optimizations must preserve that boundary.
+
 Under [boundary policy section 13](../design/BOUNDARY_POLICY.md#13-hydra-and-fast-path-boundary),
 fast-path transport may use zero/minimal-copy views, dirty masks, late
 publication and GPU-friendly packed views with frame/generation identity.
@@ -80,6 +87,13 @@ an unsupported material override is diagnosed rather than silently dropped.
 An initial adapter to `hydra-toon` must be agreed with that repository's
 [scope policy](https://github.com/animu-sphere/hydra-toon/blob/main/docs/design/INTEGRATION_SCOPE_POLICY.md).
 Existing fast-input support is not evidence of this common-state API.
+
+The renderer-owned consumer contract is the public
+[`avatar_state.hpp`](https://github.com/animu-sphere/hydra-toon/blob/main/include/toon/fast/avatar_state.hpp)
+and its [adapter/package boundary](https://github.com/animu-sphere/hydra-toon/blob/main/docs/architecture/PROJECT_LAYOUT.md).
+The canonical state representation remains the runtime's
+[evaluated-state contract](../contracts/EVALUATED_STATE.md); do not create a
+second physics-specific state implementation for the fast path.
 
 ### Resident target matching
 

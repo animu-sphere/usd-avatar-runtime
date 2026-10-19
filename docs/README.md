@@ -9,8 +9,8 @@ reference records the current tree, and roadmap tracks incomplete work.
 | Document | Owns |
 | --- | --- |
 | [Design policy](design/DESIGN_POLICY.md) | adopted implementation direction, original sections 1–22 |
-| [Near-term direction](design/NEAR_TERM_PLAN.md) | adopted 2026-10-05 priorities: VRM first, fast-path consumer, MMD validation before freeze |
-| [Boundary cleanup policy](design/BOUNDARY_POLICY.md) | adopted 2026-10-06 ownership rules, motion/USD cleanup, thin adapters and publication boundary; source sections 1–21 |
+| [Near-term direction](design/NEAR_TERM_PLAN.md) | adopted 2026-10-05 priorities: VRM first, fast-path consumer, MMD validation before freeze; 2026-10-20 physics refinement |
+| [Boundary cleanup policy](design/BOUNDARY_POLICY.md) | adopted 2026-10-06 ownership rules, motion/USD cleanup, thin adapters and publication boundary; source sections 1–21 with refined physics ownership |
 | [Recording and replay](design/RECORDING_AND_REPLAY.md) | capture composition, reproducibility and validation proposals |
 
 ## Architecture
@@ -19,7 +19,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | --- | --- |
 | [Overview](architecture/OVERVIEW.md) | authored/runtime split, instances and execution layering |
 | [Dependencies](architecture/DEPENDENCIES.md) | repository ownership and integration edges |
-| [Frame lifecycle](architecture/FRAME_LIFECYCLE.md) | frame boundaries, configuration changes and stateful execution |
+| [Frame lifecycle](architecture/FRAME_LIFECYCLE.md) | frame boundaries, stateful execution and target physics clock/catch-up/reset/seek/unload rules |
 | [Output paths](architecture/OUTPUT_PATHS.md) | Hydra, direct consumers, bake/export and parity |
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
@@ -41,7 +41,7 @@ is not a frozen wire/ABI representation. Adoption is gated by
 | --- | --- |
 | [Input frame](contracts/INPUT_FRAME.md) | assembled input, clock mapping, provenance and semantic intent |
 | [Evaluated state](contracts/EVALUATED_STATE.md) | central IR: resolved pose, deformation, expression/gaze results, appearance and snapshot identity/provenance |
-| [Evaluator](contracts/EVALUATOR.md) | phase sequence, registration, dependencies and evaluator invocation |
+| [Evaluator](contracts/EVALUATOR.md) | phase sequence, registration, dependencies, invocation and target runtime-owned shared-world physics barrier |
 | [ABI](contracts/ABI.md) | versioning, memory lifetime, handles and cross-package representation |
 | [Capabilities and diagnostics](contracts/CAPABILITIES_AND_DIAGNOSTICS.md) | runtime negotiation and observable evaluation results |
 
@@ -51,7 +51,7 @@ is not a frozen wire/ABI representation. Adoption is gated by
 | --- | --- |
 | [Capability matrix](reference/CAPABILITY_MATRIX.md) | implementation facts in this repository |
 | [Roadmap index](roadmap/README.md) | roadmap navigation and sequence |
-| [Current roadmap](roadmap/current.md) | boundary cleanup workstreams, Runtime Phases A–F, acceptance criteria and unresolved decisions |
+| [Current roadmap](roadmap/current.md) | boundary cleanup workstreams, Runtime Phases A–F, physics milestones/MVP gates and unresolved decisions |
 
 ## Maintenance
 
@@ -65,3 +65,10 @@ refines ownership and migration priorities. Focused
 proposals elaborate it without silently freezing new choices. A conflict
 with a sibling contract is an integration question to resolve with its owner;
 it does not authorize redefining that contract here.
+
+The physics orchestration direction supplied on 2026-10-20 is incorporated
+into these existing owners rather than a parallel plan document: evaluator
+owns the DAG/barrier, lifecycle owns clocks and invalidation, evaluated state
+owns final snapshots, and output paths links to renderer consumer contracts.
+Only the capability matrix records implementation status; the roadmap owns
+the remaining physics milestones and acceptance tests.
