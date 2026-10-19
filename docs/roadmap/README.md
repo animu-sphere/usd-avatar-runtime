@@ -10,6 +10,11 @@ The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) adds
 validation, USD/motion ownership, VRM state validation, MMD, publication and
 ABI stabilization. Their A–F labels are separate from the Runtime Phases below.
 
+The 2026-10-20 [physics orchestration track](current.md#physics-orchestration-milestones)
+adds evaluator DAG validation, runtime-owned world barriers, headless MMD/Jolt,
+final-state consumers and multi-avatar/VRM expansion. Its local A–E milestones
+and MVP gates refine MMD integration without freezing new ABI values.
+
 1. Runtime Phase A — freeze common contracts.
 2. Runtime Phase B — integrate motion, VRM, MMD and connector providers.
 3. Runtime Phase C — `hydra-toon` fast-path first, then Hydra publication and parity.

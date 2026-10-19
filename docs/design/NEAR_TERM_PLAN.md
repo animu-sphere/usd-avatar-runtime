@@ -15,6 +15,13 @@ validation and USD/motion cleanup ahead of further integration. The
 actionable work and acceptance gates. Implementation evidence remains in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
+The physics orchestration direction supplied on 2026-10-20 refines section 10:
+runtime is the sole avatar/physics coordinator. Its scheduling and clock/reset
+rules are incorporated into the existing evaluator and lifecycle contracts;
+the [physics milestones](../roadmap/current.md#physics-orchestration-milestones)
+extend the MMD integration track without making physics a prerequisite for
+the initial VRM direct slice or freezing a new ABI.
+
 ## 1. Objective
 
 Prove the existing runtime contract with real avatar evaluators and renderer
@@ -146,19 +153,28 @@ direct runtime first.
 ## 10. Physics boundary
 
 ```text
-avatar pre-physics evaluation
+host loop / inputs / time request
               |
-shared physics world / usd-stage-runner / physics runtime
+runtime DAG / clock / shared-world barrier
               |
-        physics result
+owner pre-state -> owner world Step -> owner feedback
               |
-avatar post-physics evaluation -> EvaluatedAvatarState
+final EvaluatedAvatarState -> Hydra / fast-path consumer
 ```
 
-The runtime owns avatar ordering, not a physics implementation. Backend/world
-lifetime, fixed timestep and shared-world stepping ownership remain RT-O6.
-Keep MMD/VRM physics meaning with their owners. The MMD slice validates the
-boundary without requiring a complete physics integration.
+Runtime owns avatar ordering, shared-world barriers, clock/fixed-step
+coordination, reset/seek, adapter lifetime and final publication. Stage-runner
+and other hosts supply their loop and time requests without duplicating that
+sequence. Physics owns world/Step implementation and solving; MMD/VRM owners
+retain format-specific coupling and secondary-motion mathematics.
+
+The [evaluator contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration)
+owns the scheduling rules; the
+[lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities)
+owns clock and invalidation. RT-O6 now covers adapter/world interfaces and
+sibling alignment, rather than leaving orchestration ownership undecided.
+The first MMD dependency validation can precede backend integration; the
+headless physics MVP then proves owner MMD coupling through Jolt to final pose.
 
 ## 11. Optional OpenExec
 

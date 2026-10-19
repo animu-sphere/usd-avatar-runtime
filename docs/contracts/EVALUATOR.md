@@ -8,6 +8,13 @@ owner: usd-avatar-runtime
 This proposal develops [design policy sections 7–8 and 16](../design/DESIGN_POLICY.md).
 It owns invocation and order, not the provider's motion/format algorithm.
 
+The physics orchestration direction supplied on 2026-10-20 assigns the runtime
+sole responsibility for the evaluation DAG, shared-world barriers and physics
+tick coordination. The target scheduling rules are in
+[section 5](#5-shared-world-physics-orchestration); clock and invalidation rules
+are owned by the [frame lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities).
+These refine the earlier phase sketches without freezing new ABI values.
+
 [`evaluator.h`](../../include/avatarRuntime/evaluator.h) and the direct runtime
 implement experimental registration, phase barriers and explicit predecessor
 dependencies. This does not freeze RT-O3: actual motion/VRM/MMD adapter plans
@@ -19,8 +26,8 @@ requires real-provider validation during overlapping Runtime Phases A/B:
 ```text
 VRM: motion pose -> humanoid resolution -> LookAt -> expression arbitration
                                                     -> final state
-MMD: base pose -> bone morph -> control / IK -> physics boundary
-                                               -> final pose / morph state
+MMD: motion / retarget -> morph / append / IK -> bone-to-body update
+     -> shared physics barrier -> body-to-bone feedback -> final state
 ```
 
 These dependencies validate or correct the proposed phases below. MMD is a
@@ -153,3 +160,63 @@ to change algorithms or silently author results onto the stage.
 Start with ordered serial execution. Read/write declarations prepare later
 dependency scheduling, but do not authorize implicit parallelism now.
 Multi-avatar parallelism also needs resource lifetime and shared-state checks.
+
+## 5. Shared-world physics orchestration
+
+This is the target orchestration contract. Revision 4's per-instance
+`evaluate_frame` and phase barriers do not implement a multi-instance world
+barrier, fixed-step accumulator or pre/post-physics adapter API. Do not emulate
+a shared barrier by stepping the world once inside each avatar callback.
+
+```text
+host frame request
+    -> motion sample / retarget
+    -> MMD morph / append / IK in owner-defined order
+    -> pre-physics pose ready for ALL participating avatars
+    -> MMD bone-to-body kinematic updates / VRM pre-state
+    -> SHARED PHYSICS BARRIER: one Step per world per physics tick
+    -> MMD body-to-bone feedback / VRM secondary motion
+    -> final pose + morph + visibility + material state
+    -> immutable EvaluatedAvatarState
+    -> Hydra adapter or hydra-toon fast-path consumer
+```
+
+The diagram is the initial MMD integration path with a VRM extension point;
+it does not require every VRM secondary-motion evaluator to use a rigid-body
+world. SpringBone computations remain with the VRM owner.
+
+For every due fixed tick, the runtime must:
+
+1. Complete pre-physics evaluation for every avatar participating in the world,
+   sampling motion at the tick's evaluation time rather than advancing each
+   avatar independently at display cadence.
+2. Submit all required kinematic targets through the format/physics adapters.
+3. Invoke exactly one fixed `Step` for each participating world at that tick.
+4. Collect physics results and complete all participating avatars' post-physics
+   feedback before final consolidation and publication.
+
+The runtime owns the DAG, dependency validation, barrier membership, adapter
+lifetime and final-state handoff. The physics adapter calls the physics owner's
+world/Step/snapshot boundary; the MMD adapter calls owner bone/body coupling.
+Core does not implement PMX modes, body/bone mathematics, UsdPhysics import,
+Jolt solving or VRM SpringBone algorithms. Provider handles stay behind adapters.
+
+First validate whether existing evaluator dependencies can express owner
+pre/post-physics requirements, including model-dependent post-physics IK.
+Keep MMD ordering in the MMD evaluator's dependency graph. Do not encode model
+semantics in new generic phase enum values before that validation (RT-O3).
+The current prohibition on backward phase dependencies still applies; any
+required scheduler extension needs explicit contract review and evidence.
+
+`usd-stage-runner` owns its host loop, input collection and time requests;
+it calls this runtime and must not duplicate its internal evaluation sequence
+or independently step an avatar-managed world. Other hosts, including Mimikuri,
+must be able to use the same runtime without stage-runner. Renderer consumers
+receive only final snapshots and never execute Physics Step or IK.
+
+Before integration, RT-O6 must settle world binding/handle ownership and
+pre/post callback shapes with the physics and format owners, including shared
+non-avatar participants and protection against a second host step. RT-O5 must
+cover failure after an irreversible world step; per-instance rollback alone
+does not establish a world transaction. These are open interfaces and evidence
+gates, not grounds to leave the runtime's orchestration ownership ambiguous.

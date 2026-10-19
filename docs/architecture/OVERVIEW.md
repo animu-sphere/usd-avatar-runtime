@@ -94,8 +94,17 @@ serial execution, using the
 writes are explicit. Later scheduling can exploit independent read/write
 sets, starting with independent avatars where resource ownership permits it.
 
-The host/stage-runner boundary for shared physics stepping needs agreement;
-the runtime owns ordering of avatar contributions, rather than silently
-claiming a physics world or backend. Boundary handoff and avatar state versioning
-belong here; solver, collision and fixed-step implementation stay outside runtime. See
-[dependency questions](DEPENDENCIES.md#3-integration-questions).
+The 2026-10-20 physics direction makes runtime the sole coordinator of the
+evaluation DAG, shared-world barriers, clock/fixed ticks, reset/seek and final
+publication. Stage-runner and other hosts supply their loop, inputs and time
+requests without reproducing the internal avatar sequence. Independent
+instances may participate in the same world; their pre/post work must follow
+the [shared barrier contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration).
+This coordination does not imply parallel execution.
+
+Solver/world implementation, UsdPhysics import and MMD/VRM coupling mathematics
+stay with the external owners behind optional adapters. This runtime owns
+adapter lifetime and scheduling; renderer adapters consume immutable final
+state. Clock/invalidation requirements are in the
+[lifecycle](FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), ownership
+and sibling alignment in [dependencies](DEPENDENCIES.md#4-physics-boundary).

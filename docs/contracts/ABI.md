@@ -17,6 +17,12 @@ the revision, phase model, state representation, capability meanings and
 lifecycle. Separately compiled synthetic providers alone do not establish
 a freeze candidate.
 
+The 2026-10-20 physics orchestration direction first validates existing
+evaluator DAGs and lifecycle contracts. Shared-world handles, pre/post callbacks,
+tick/display metadata and recovery semantics remain design work under
+RT-O3/RT-O5/RT-O6. Conceptual milestones do not add exported APIs, new
+`AR_PHASE_*` constants or a frozen physics ABI to revision 4.
+
 ## 1. Representation
 
 Implemented revision-4 rules:

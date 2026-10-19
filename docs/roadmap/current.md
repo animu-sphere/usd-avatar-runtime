@@ -13,6 +13,11 @@ adds ownership cleanup ahead of further integration. Current APIs and existing
 evidence remain in place until owner replacements and runtime conformance are
 validated; this roadmap does not claim the migrations are complete.
 
+The physics orchestration direction supplied on 2026-10-20 assigns runtime
+the evaluation DAG, shared-world barrier and clock/reset coordination. The
+[physics milestones](#physics-orchestration-milestones) extend the MMD track;
+their acceptance gates do not replace Runtime Phases or imply a frozen ABI.
+
 ## Boundary cleanup workstreams
 
 These preserve the supplied cleanup sequence A–F, separately from the original
@@ -24,7 +29,7 @@ before freeze; owner API work stays in its owning repository.
 | Workstream | Remaining work | Acceptance gate | Original Runtime Phase |
 | --- | --- | --- | --- |
 | C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
-| D: MMD second provider | register owner MMD evaluator; validate bone/morph/control dependencies and shared pre/post-physics handoff | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; physics boundary order is explicit | A/B |
+| D: MMD second provider | register owner MMD evaluator; validate bone/morph/control DAG and runtime-managed pre/Step/post handoff through the physics milestones below | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; shared-world Step count and feedback order pass | A/B |
 | E: publication | finish the Hydra adapter, support the renderer-side fast-path host's resident target matching, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
 | F: ABI stabilization | review C/provider/consumer ABI revisions and capability versions; broaden installed-consumer and OST composition validation | real VRM/MMD and consumer evidence supports freeze; dependency-free core installation/import still passes; actual package composition is reproducible | A with C/E and packaging evidence |
 
@@ -72,7 +77,7 @@ tooling and a stable frozen ABI are not prerequisites.
 | 2 | VRM adapter | callable owner evaluators, Humanoid binding, LookAt and Expression work with a real VRM avatar; test input may bring up the adapter | A/B |
 | 3 | motion integration | map owner motion values without a competing vocabulary; connect connector input, actor/time mappings and motion evaluation to VRM | A/B |
 | 4 | `hydra-toon` fast-path | consume retained snapshots for pose/morph/expression/appearance/visibility; distinguish layout change from value update; measure latency, copies and allocations | early C feeding A/B |
-| 5 | MMD adapter | real bone morph/control/IK evidence under the same model; validate atomic owner ordering and the physics boundary without requiring full physics | A/B |
+| 5 | MMD adapter | real bone morph/control/IK evidence under the same model; validate owner dependency order first, then the headless coupling/Jolt/final-state path through the physics milestones | A/B |
 | 6 | Phase A freeze candidate | review C ABI revision, phases, state, capabilities and lifecycle using separately versioned VRM/MMD provider evidence and all Phase A gates | A |
 | 7 | Hydra publication | Scene Index/overlay adapter over fast-path-validated semantics and shared frame/state identity; resolved output parity | C |
 
@@ -349,6 +354,49 @@ selection, host-memory/lifetime checks and preserved contract semantics.
 Device adapters stay with `motion-connectors`; WebGPU realization stays with
 the renderer. Native support does not establish browser support.
 
+## Physics orchestration milestones
+
+This is the 2026-10-20 MMD-first physics integration track. Its A–E labels are
+local to this track, separate from Runtime Phases A–F, cleanup workstreams A–F
+and evidence milestones A/B/C. Implementation status stays in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md); this table tracks
+remaining work. Scheduling rules belong to the
+[evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration),
+clock/invalidation to the
+[lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities).
+
+| Milestone | Work and acceptance gate | Runtime Phase |
+| --- | --- | --- |
+| A: evaluator dependency validation | validate existing evaluator DAGs against MMD pre/post control, morph/append/IK and model-specific post-physics IK; document any required extension before adding generic phase enum values | A/B |
+| B: world integration and barrier | agree world binding/handle ownership and pre/post callbacks with owners; all participants complete pre-state before exactly one Step per world/tick; define configurable catch-up policy, membership/lifetime and post-Step failure handling | A/B |
+| C: MMD coupling + Jolt headless smoke | one PMX + VMD evaluates through pre-pose, owner bone/body coupling, Jolt and feedback to final pose without a renderer; preserve owner diagnostics and authored stage semantics | B |
+| D: final snapshot + fast-path consumer | publish retained CPU snapshots using the existing evaluated-state contract and renderer-owned consumer; verify joint/morph contract agreement with the Hydra path; no Physics Step or IK in rendering | A/B and C |
+| E: multiple avatars, seek and VRM extension | exercise shared-world membership and reset/seek scope, extend discontinuity coverage and integrate owner VRM secondary motion under the same orchestration; arbitrary-time complete replay is outside MVP | B/E |
+
+The physics MVP must demonstrate:
+
+- One PMX + VMD -> pre-pose -> Jolt -> final-pose headless smoke.
+- Two avatars in one shared world with exactly one Step per physics tick;
+  zero/one/multiple ticks per display request must not change that invariant.
+- Coherent pause, reset, loop-wrap and unload behavior, including generation,
+  retained snapshots and safe world membership/resource changes.
+- Physics-disabled static and motion-only paths still producing valid state.
+- Hydra and `hydra-toon` fast-path consuming the same final joint/morph values
+  and layout/space conventions; exact pixel equality is not required. The
+  existing triangle-probe transport check alone does not establish this parity.
+
+Seek handling must declare invalidation/reinitialization or a supported
+checkpoint, rather than promise complete replay to any requested time. Exact
+shared-world recovery and tick/display metadata remain RT-O5/RT-O6/RT-O4
+acceptance decisions. Milestone E extends the MVP's two-avatar and discontinuity
+coverage; it does not defer those basic MVP gates.
+
+Keep core independent of mandatory MMD, Jolt and renderer packages. Add optional
+adapters/build options only with owner boundaries and installed-consumer checks.
+Normal CI targets core units and headless smoke for enabled integrations;
+heavy real-asset/backend/render end-to-end validation stays opt-in. No new
+physics build option or test is claimed by this documentation update.
+
 ## Open decisions
 
 Owning documents now record scoped prototype choices for clocks/channels, dense
@@ -356,6 +404,11 @@ output, retained source-sample time, two-component material values, lifecycle,
 plan order and C layout. Resident target matching for direct renderers is
 assigned to a renderer-side host. IDs below stay open until the full
 acceptance evidence, including actual provider adapters, is available.
+
+Physics orchestration ownership is adopted: runtime coordinates the DAG,
+shared-world barrier, fixed ticks and reset/seek; hosts submit time requests.
+RT-O6 remains open for concrete interfaces, sibling wording alignment and
+integration evidence, not for choosing a second scheduling owner.
 
 IDs remain stable; resolution updates the owning contract and records the
 decision/evidence. These are runtime design questions, not claims of upstream
@@ -365,10 +418,10 @@ bugs or requests already sent to another project.
 | --- | --- | --- | --- |
 | RT-O1 | evaluation seconds, source clock, USD time-code mapping and gaze space descriptors | [input](../contracts/INPUT_FRAME.md) | A |
 | RT-O2 | minimal semantic intent vocabulary, custom/native channel names, mapping precedence and resolved expression identity/arbitration/provenance/availability | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) | A |
-| RT-O3 | phase/substep dependencies across MMD morph/control/IK, gaze and expressions | [evaluator](../contracts/EVALUATOR.md) | A |
+| RT-O3 | existing DAG fit for MMD morph/append/control/IK, model-specific pre/post-physics dependencies, gaze and expressions before any phase extension | [evaluator](../contracts/EVALUATOR.md) | A |
 | RT-O4 | final rig pose/spaces, target/layout/version identities, complete/sparse/delta semantics, gaze results, snapshot input revision/capabilities and retained source-sample provenance | [state](../contracts/EVALUATED_STATE.md) | A |
-| RT-O5 | stateful evaluator reset/checkpoint/commit/abort and publication-failure handling | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | A |
-| RT-O6 | shared physics stepping, stage-runner ownership and format feedback boundary | [dependencies](../architecture/DEPENDENCIES.md) | before physics integration |
+| RT-O5 | stateful evaluator reset/checkpoint/commit/abort, shared-world discontinuity scope, post-Step recovery and publication-failure handling | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | A; world recovery before physics integration |
+| RT-O6 | world binding/handles and pre/post callbacks, fixed-tick/catch-up policy, tick/display separation, shared participants/lifetime and sibling alignment under adopted runtime orchestration | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), [dependencies](../architecture/DEPENDENCIES.md#3-integration-questions) | before physics integration |
 | RT-O7 | C layout/calling convention, strings, allocator ownership, handles, provider lifetime and ABI negotiation | [ABI](../contracts/ABI.md) | A |
 | RT-O8 | capture envelope/checkpoint encoding and motion-recording reuse | [recording/replay](../design/RECORDING_AND_REPLAY.md) | E; lifetime prerequisites in A |
 | RT-O9 | direct-consumer binding/update costs, later Hydra locators/dirtiness and output parity tolerances | [output paths](../architecture/OUTPUT_PATHS.md) | early C feedback in A/B; full parity in C |

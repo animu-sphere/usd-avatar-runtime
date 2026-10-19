@@ -67,6 +67,13 @@ most `1e-6`. Each transform is parent-local; roots are runtime-world. Avatar
 placement must be included by the binding adapter in the root transform. The
 runtime does not retarget or convert basis/quaternion ordering itself.
 
+These conventions also apply to post-physics pose. World/root placement is
+already included in root transforms; the format adapter must explicitly marshal
+owner feedback into the bound joint space and quaternion order, rather
+than publish body transforms or add placement a second time. A separate avatar
+world-transform field is not present in revision 4; any additional representation
+must follow existing API naming and be reviewed under RT-O4.
+
 The optional [motion adapter](../architecture/MOTION_ADAPTER.md) marshals owner
 retarget translations/rotations and float rest scale into this dense layout.
 Explicit owner-slot/runtime-joint and parent matching is tested with constructed
@@ -143,6 +150,16 @@ opaque backend-specific payloads.
 Publication exposes an immutable, internally consistent frame snapshot.
 Pose, deformation and appearance share the same frame and binding generation.
 Do not hand a consumer a working state halfway through the phase plan.
+
+For the [physics orchestration target](EVALUATOR.md#5-shared-world-physics-orchestration),
+the snapshot contains the final consolidated joint pose, morph weights,
+material overrides and visibility after all required feedback. Display-time
+interpolation uses committed solver results without exposing mutable world
+handles or changing simulation state. Tick/display identity and interpolation
+metadata remain RT-O4/RT-O6 review work; existing `evaluation_seconds`,
+generation and layout/version retain their revision-4 meanings. Initial
+fast-path integration passes CPU snapshot buffers to the consumer; packing,
+copy reduction and GPU transport follow validated semantics.
 
 Absence, unchanged values, explicit zero and removal of an override need
 distinct documented behavior. An initial implementation must choose whether
