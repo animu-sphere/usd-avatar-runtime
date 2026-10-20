@@ -19,7 +19,7 @@ The same directory adds separate `avatarVrmLookAtUsdBinding` and
 configuration, enabled with the VRM evaluator adapter.
 Registry/diagnostics library separation remains prospective. The opt-in
 `tools/avatarMotionCheck` host is implemented; inspect/replay/benchmark hosts,
-MMD and reusable publication adapters remain prospective. The motion-check host
+reusable publication adapters remain prospective. The motion-check host
 optionally consumes installed `Toon::AvatarState` for probe transport parity;
 it is not a renderer dependency of core or a resident-avatar binding. Do not create empty targets
 or rename working directories merely to match a responsibility sketch.
@@ -33,6 +33,7 @@ or rename working directories merely to match a responsibility sketch.
 | `avatarUsdBinding` | `adapters/usd`: typed owner skeleton/placement read to runtime identity/baseline/placement binding |
 | `avatarMotionUsdBinding` | `adapters/motion-usd`: throwing owner-result read used directly by the host; compatible immutable StageClip wrapper delegates to it |
 | `avatarVrmAdapter` | `adapters/vrm`: owner LookAt/expression registration and common-state mapping |
+| `avatarMmdAdapter` | `adapters/mmd`: owner MMD pre/post control/coupling registration and host world bridge; [boundary](MMD_ADAPTER.md) |
 | `avatarVrmUsdBinding`, `avatarVrmLookAtUsdBinding`, `avatarVrmExpressionUsdBinding` | `adapters/vrm-usd`: separately optional owner schema/configuration bindings |
 | `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host, optionally with installed Toon probe transport checks |
 

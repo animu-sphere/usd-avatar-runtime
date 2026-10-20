@@ -1,0 +1,51 @@
+set(prefix "${ROOT_BINARY}/installed-mmd/prefix")
+set(source "${ROOT_BINARY}/installed-mmd/source")
+set(binary "${ROOT_BINARY}/installed-mmd/consumer")
+if(NOT CONFIG)
+    set(CONFIG Release)
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" --install "${ROOT_BINARY}" --config "${CONFIG}" --prefix "${prefix}"
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "MMD adapter installation failed: ${output}\n${error}")
+endif()
+file(MAKE_DIRECTORY "${source}")
+file(COPY "${SOURCE}/contracts.cpp" DESTINATION "${source}")
+file(WRITE "${source}/CMakeLists.txt" [=[
+cmake_minimum_required(VERSION 3.22)
+project(InstalledMmdAdapter LANGUAGES CXX)
+find_package(AvatarRuntime CONFIG REQUIRED COMPONENTS mmd)
+if(TARGET physicsCore::physicsCore OR TARGET physicsJolt::physicsJolt)
+    message(FATAL_ERROR "MMD registration component unexpectedly imported physics/backend")
+endif()
+add_executable(consumer contracts.cpp)
+target_link_libraries(consumer PRIVATE AvatarRuntime::avatarMmdAdapter)
+enable_testing()
+add_test(NAME installed.mmd COMMAND consumer)
+if(WIN32)
+    add_custom_command(TARGET consumer POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:AvatarRuntime::avatarRuntime> $<TARGET_FILE_DIR:consumer>)
+endif()
+]=])
+set(generator_args -G "${GENERATOR}")
+if(PLATFORM)
+    list(APPEND generator_args -A "${PLATFORM}")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" -S "${source}" -B "${binary}" ${generator_args}
+    "-DCMAKE_PREFIX_PATH=${prefix};${DEPENDENCY_PREFIX}"
+    "-DCMAKE_CXX_COMPILER=${CXX_COMPILER}" "-DCMAKE_MAKE_PROGRAM=${MAKE_PROGRAM}"
+    "-DCMAKE_BUILD_TYPE=${CONFIG}"
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Installed MMD configuration failed: ${output}\n${error}")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" --build "${binary}" --config "${CONFIG}"
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Installed MMD build failed: ${output}\n${error}")
+endif()
+execute_process(COMMAND "${CMAKE_CTEST_COMMAND}" --test-dir "${binary}" -C "${CONFIG}" --output-on-failure
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Installed MMD execution failed: ${output}\n${error}")
+endif()

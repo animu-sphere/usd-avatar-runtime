@@ -23,6 +23,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Output paths](architecture/OUTPUT_PATHS.md) | Hydra, direct consumers, bake/export and parity |
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
+| [Scoped MMD adapter](architecture/MMD_ADAPTER.md) | optional owner control/coupling registration, host world bridge and final-state mapping |
 | [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | clip sampling/retarget registration, MotionPoseInputBridge, installed-owner validation delegation and owned diagnostic reports |
 | [Scoped USD motion clip binding](architecture/MOTION_USD_BINDING.md) | direct typed owner clip/source-rest integration, compatible StageClip wrapper and parity tool |
 | [Scoped USD skeleton binding](architecture/USD_BINDING.md) | current baseline/Humanoid/placement binding; planned split of motion conversion from runtime identity/layout |

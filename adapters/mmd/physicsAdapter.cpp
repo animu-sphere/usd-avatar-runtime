@@ -1,0 +1,230 @@
+#include <avatarMmd/PhysicsAdapter.h>
+#include <pxr/base/gf/quatd.h>
+#include <cmath>
+#include <map>
+#include <optional>
+#include <set>
+#include <stdexcept>
+
+namespace avatarMmd {
+namespace {
+ArStatus emit(const ArEvaluationContext& c, const char* code, const char* origin,
+              const std::string& subject, const std::string& message,
+              ArStatus status = AR_PROVIDER_ERROR, uint32_t severity = AR_SEVERITY_ERROR) {
+    if (c.diagnostics.emit) {
+        ArDiagnostic d{AR_HEADER(ArDiagnostic)};
+        d.code = code; d.origin = origin; d.subject = subject.c_str();
+        d.message = message.c_str(); d.status = status; d.severity = severity;
+        c.diagnostics.emit(c.diagnostics.user_data, &d);
+    }
+    return status;
+}
+ArStatus failure(const ArEvaluationContext& c, const char* code, const std::string& message) {
+    return emit(c, code, "usd-avatar-runtime.avatarMmd", c.working->layout_id ? c.working->layout_id : "", message);
+}
+template<class T> bool forward(const ArEvaluationContext& c, const mmd::Result<T>& result) {
+    auto send = [&](const mmd::Diagnostic& d, ArStatus status) {
+        emit(c, d.code.c_str(), "usd-mmd-plugins", mmd::ToString(d.location), d.message, status,
+            d.severity == mmd::Severity::Info ? AR_SEVERITY_INFO :
+            d.severity == mmd::Severity::Warning ? AR_SEVERITY_WARNING : AR_SEVERITY_ERROR);
+    };
+    for (const auto& d : result.diagnostics()) send(d, AR_OK);
+    if (result.fatal()) send(*result.fatal(), AR_PROVIDER_ERROR);
+    return bool(result);
+}
+}
+struct PhysicsAdapter::Impl {
+    struct State {
+        ArInstance instance;
+        uint64_t generation;
+        std::optional<mmd::control::Evaluator::Continuation> continuation;
+        uint64_t frame = 0;
+        double time = 0;
+    };
+    PhysicsAdapterConfig config;
+    std::vector<const char*> after;
+    const char* postAfter;
+    std::map<std::pair<ArInstance, uint64_t>, State*> states;
+
+    explicit Impl(PhysicsAdapterConfig c) : config(std::move(c)) {
+        if (config.preId.empty() || config.postId.empty() || config.preId == config.postId ||
+            config.layoutId.empty() || !config.layoutVersion || !config.submit || !config.snapshot ||
+            !std::isfinite(config.framesPerSecond) || config.framesPerSecond <= 0 ||
+            !std::isfinite(config.frameOffset) || config.joints.size() != config.evaluator.JointCount())
+            throw std::invalid_argument("Incomplete MMD control/coupling configuration");
+        double norm = 0;
+        for (double x : config.placement.translation)
+            if (!std::isfinite(x)) throw std::invalid_argument("Nonfinite MMD placement");
+        for (double x : config.placement.rotation) {
+            if (!std::isfinite(x)) throw std::invalid_argument("Nonfinite MMD placement");
+            norm += x * x;
+        }
+        if (std::abs(norm - 1) > 1e-6) throw std::invalid_argument("MMD placement must be rigid");
+        std::set<std::pair<std::string, std::string>> joints, morphs;
+        std::set<int32_t> morphIndices;
+        for (size_t i = 0; i < config.joints.size(); ++i) {
+            const auto& j = config.joints[i];
+            if (j.skeleton.empty() || j.joint.empty() || !joints.emplace(j.skeleton, j.joint).second ||
+                j.parent < -1 || j.parent >= int64_t(i) ||
+                (j.parent >= 0 && config.joints[j.parent].skeleton != j.skeleton))
+                throw std::invalid_argument("MMD canonical joint binding is incomplete or ambiguous");
+        }
+        for (const auto& m : config.morphs)
+            if (m.morph < 0 || m.mesh.empty() || m.target.empty() ||
+                !morphIndices.insert(m.morph).second || !morphs.emplace(m.mesh, m.target).second)
+                throw std::invalid_argument("MMD morph binding is incomplete or ambiguous");
+        std::set<std::string> visibility;
+        for (const auto& id : config.visibilityTargets)
+            if (id.empty() || !visibility.insert(id).second)
+                throw std::invalid_argument("MMD visibility binding is incomplete or ambiguous");
+        for (const auto& id : config.after) after.push_back(id.c_str());
+        postAfter = config.preId.c_str();
+    }
+
+    ArStatus indices(const ArEvaluationContext& c, std::vector<uint32_t>& out) const {
+        const auto& v = *c.working;
+        if (!v.layout_id || config.layoutId != v.layout_id || config.layoutVersion != v.layout_version)
+            return failure(c, "MMD_ADAPTER_LAYOUT", "Bound layout identity/version mismatch");
+        for (const auto& b : config.joints) {
+            uint32_t i = 0;
+            for (; i < v.joint_count; ++i)
+                if (b.skeleton == v.joints[i].skeleton_id && b.joint == v.joints[i].joint_id) break;
+            if (i == v.joint_count)
+                return failure(c, "MMD_ADAPTER_JOINT", "Canonical joint binding is absent");
+            const auto parent = b.parent < 0 ? -1 : int32_t(out[b.parent]);
+            if (v.joints[i].parent_index != parent)
+                return failure(c, "MMD_ADAPTER_PARENT", "Canonical parent binding mismatch");
+            for (double scale : v.joints[i].local.scale)
+                if (std::abs(scale - 1) > 1e-6)
+                    return failure(c, "MMD_ADAPTER_SCALE", "MMD coupling requires unit-scale local poses");
+            out.push_back(i);
+        }
+        return AR_OK;
+    }
+    ArStatus write(const ArEvaluationContext& c, const ArStateWriter& w,
+                   const mmd::control::Pose& pose, bool final) const {
+        std::vector<uint32_t> jointIndices;
+        auto status = indices(c, jointIndices);
+        if (status != AR_OK) return status;
+        const auto& v = *c.working;
+        // Validate every output before calling any writer/host operation.
+        std::vector<uint32_t> morphIndices, visibilityIndices;
+        if (final) {
+            for (const auto& channel : pose.channels) {
+                bool mapped = false;
+                for (const auto& m : config.morphs) mapped |= m.morph == channel.morph;
+                if (!mapped) return failure(c, "MMD_ADAPTER_MORPH", "Owner non-bone morph has no output binding");
+            }
+            for (const auto& m : config.morphs) {
+                uint32_t i = 0;
+                for (; i < v.blend_shape_count; ++i)
+                    if (m.mesh == v.blend_shapes[i].mesh_id && m.target == v.blend_shapes[i].target_id) break;
+                if (i == v.blend_shape_count)
+                    return failure(c, "MMD_ADAPTER_MORPH", "Bound morph output is absent");
+                morphIndices.push_back(i);
+            }
+            if (!pose.visible && config.visibilityTargets.empty())
+                return failure(c, "MMD_ADAPTER_VISIBILITY", "Owner hidden state has no visibility binding");
+            for (const auto& target : config.visibilityTargets) {
+                uint32_t i = 0;
+                for (; i < v.visibility_count; ++i) if (target == v.visibility[i].target_id) break;
+                if (i == v.visibility_count)
+                    return failure(c, "MMD_ADAPTER_VISIBILITY", "Bound visibility output is absent");
+                visibilityIndices.push_back(i);
+            }
+        }
+        for (size_t i = 0; i < jointIndices.size(); ++i) {
+            ArTransform t{};
+            for (int a = 0; a < 3; ++a) { t.translation[a] = pose.joints[i].translation[a]; t.scale[a] = 1; }
+            for (int a = 0; a < 4; ++a) t.rotation[a] = pose.joints[i].rotation[a];
+            if (config.joints[i].parent < 0) {
+                const auto& p = config.placement;
+                const pxr::GfQuatd q(p.rotation[3], p.rotation[0], p.rotation[1], p.rotation[2]);
+                auto position = q.Transform(pxr::GfVec3d(t.translation[0], t.translation[1], t.translation[2]));
+                const auto rotation = q * pxr::GfQuatd(t.rotation[3], t.rotation[0], t.rotation[1], t.rotation[2]);
+                for (int a = 0; a < 3; ++a) {
+                    t.translation[a] = position[a] + p.translation[a];
+                    t.rotation[a] = rotation.GetImaginary()[a];
+                }
+                t.rotation[3] = rotation.GetReal();
+            }
+            if ((status = w.set_joint(w.context, jointIndices[i], &t)) != AR_OK) return status;
+        }
+        for (size_t i = 0; i < morphIndices.size(); ++i) {
+            double weight = 0;
+            for (const auto& ch : pose.channels) if (ch.morph == config.morphs[i].morph) weight = ch.weight;
+            if ((status = w.set_blend_shape(w.context, morphIndices[i], weight)) != AR_OK) return status;
+        }
+        for (auto i : visibilityIndices)
+            if ((status = w.set_visibility(w.context, i, pose.visible)) != AR_OK) return status;
+        return AR_OK;
+    }
+    static ArStatus AR_CALL create(void* p, ArInstance instance, uint64_t generation, void** out) {
+        auto& self = *static_cast<Impl*>(p);
+        auto state = std::make_unique<State>(); state->instance = instance; state->generation = generation;
+        if (!self.states.emplace(std::make_pair(instance, generation), state.get()).second) return AR_INVALID_STATE;
+        *out = state.release(); return AR_OK;
+    }
+    static void AR_CALL destroy(void* p, void* s) {
+        auto& self = *static_cast<Impl*>(p); auto* state = static_cast<State*>(s);
+        if (state) { self.states.erase({state->instance, state->generation}); delete state; }
+    }
+    static ArStatus AR_CALL begin(void*, void* s, const ArEvaluationContext*) {
+        static_cast<State*>(s)->continuation.reset(); return AR_OK;
+    }
+    static void AR_CALL end(void*, void* s, uint32_t) {
+        static_cast<State*>(s)->continuation.reset();
+    }
+    static ArStatus AR_CALL pre(void* p, void* s, const ArEvaluationContext* c, const ArStateWriter* w) {
+        auto& self = *static_cast<Impl*>(p); auto& state = *static_cast<State*>(s);
+        const double frame = c->input->evaluation_seconds * self.config.framesPerSecond + self.config.frameOffset;
+        if (!std::isfinite(frame)) return failure(*c, "MMD_ADAPTER_TIME", "Mapped MMD frame is not finite");
+        auto continuation = self.config.evaluator.BeginPhysics(self.config.motion, frame);
+        auto targets = self.config.coupling.UpdateKinematicBodies(continuation.BeforePhysics());
+        if (!forward(*c, targets)) return AR_PROVIDER_ERROR;
+        auto status = self.write(*c, *w, continuation.BeforePhysics(), false);
+        if (status != AR_OK) return status;
+        status = self.config.submit(*c, targets.value());
+        if (status != AR_OK) return status;
+        state.frame = c->input->frame_id; state.time = c->input->evaluation_seconds;
+        state.continuation = std::move(continuation); return AR_OK;
+    }
+    static ArStatus AR_CALL post(void* p, void*, const ArEvaluationContext* c, const ArStateWriter* w) {
+        auto& self = *static_cast<Impl*>(p);
+        const auto found = self.states.find({c->working->instance, c->input->generation});
+        if (found == self.states.end() || !found->second->continuation ||
+            found->second->frame != c->input->frame_id || found->second->time != c->input->evaluation_seconds)
+            return failure(*c, "MMD_ADAPTER_CONTINUATION", "Post callback requires the matching pre-physics tick");
+        const auto& continuation = *found->second->continuation;
+        std::vector<mmd::physics::BodyTransform> bodies;
+        auto status = self.config.snapshot(*c, bodies);
+        if (status != AR_OK) return status;
+        auto feedback = self.config.coupling.ApplyPhysicsToPose(bodies, continuation.BeforePhysics());
+        if (!forward(*c, feedback)) return AR_PROVIDER_ERROR;
+        auto final = self.config.evaluator.ResumePhysics(continuation, feedback.value());
+        if (!forward(*c, final)) return AR_PROVIDER_ERROR;
+        return self.write(*c, *w, final.value(), true);
+    }
+};
+PhysicsAdapter::PhysicsAdapter(PhysicsAdapterConfig c) : impl_(std::make_unique<Impl>(std::move(c))) {}
+PhysicsAdapter::~PhysicsAdapter() = default;
+ArEvaluatorDesc PhysicsAdapter::PreDescriptor() const {
+    ArEvaluatorDesc d{AR_HEADER(ArEvaluatorDesc)};
+    d.id = impl_->config.preId.c_str(); d.provider_id = "usd-mmd-plugins.mmdControl";
+    d.provider_version = AR_MMD_PROVIDER_VERSION; d.phase = AR_PHASE_CONSTRAINTS;
+    d.reads = d.writes = AR_DOMAIN_POSE; d.flags = AR_EVALUATOR_STATEFUL;
+    d.user_data = impl_.get(); d.after = impl_->after.data(); d.after_count = uint32_t(impl_->after.size());
+    d.create_state = Impl::create; d.destroy_state = Impl::destroy; d.begin_frame = Impl::begin;
+    d.end_frame = Impl::end; d.evaluate = Impl::pre; return d;
+}
+ArEvaluatorDesc PhysicsAdapter::PostDescriptor() const {
+    ArEvaluatorDesc d{AR_HEADER(ArEvaluatorDesc)};
+    d.id = impl_->config.postId.c_str(); d.provider_id = "usd-mmd-plugins.mmdControl";
+    d.provider_version = AR_MMD_PROVIDER_VERSION; d.phase = AR_PHASE_CONSTRAINTS;
+    d.reads = d.writes = AR_DOMAIN_POSE;
+    if (!impl_->config.morphs.empty()) d.writes |= AR_DOMAIN_DEFORMATION;
+    if (!impl_->config.visibilityTargets.empty()) d.writes |= AR_DOMAIN_VISIBILITY;
+    d.user_data = impl_.get(); d.after = &impl_->postAfter; d.after_count = 1;
+    d.evaluate = Impl::post; return d;
+}
+} // namespace avatarMmd

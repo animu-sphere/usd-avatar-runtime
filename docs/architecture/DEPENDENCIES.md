@@ -37,8 +37,11 @@ above the generic USD binder. The opt-in `avatarMotionCheck` host composes that
 binding, VRM schema Humanoid discovery and clip pose evaluation.
 The host's optional `AVATAR_MOTION_CHECK_TOON` mode consumes installed
 `Toon::AvatarState` for resolved-state probe transport only; no reusable runtime
-or provider target links the renderer. MMD/connector adapters and OST composition
-remain unconfigured.
+or provider target links the renderer. The optional
+[MMD adapter](MMD_ADAPTER.md) consumes installed `mmdPhysicsAdapter`/`mmdControl`
+through a C++ registration boundary; its host supplies path/handle mapping and
+world snapshots. Only the opt-in test host links `physicsUsd`/`physicsJolt`.
+Connector adapters and OST composition remain unconfigured.
 
 The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) refines
 these placement rules. The descriptions above record current integrations;
@@ -125,10 +128,9 @@ independent of provider-private types. See the
 - The 2026-10-20 direction assigns avatar scheduling, shared-world barriers
   and fixed-step coordination to this runtime. The MMD owner's
   [physics integration sections 2 and 6](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/design/PHYSICS_INTEGRATION.md)
-  still assign per-frame order to stage-runner. Reconcile that older wording
-  with its owner before adapter integration (RT-O6); this documentation update
-  does not change a sibling contract. World binding/handles, pre/post callbacks,
-  shared non-avatar participation and post-Step failure recovery remain open.
+  now assign the shared-world barrier to runtime and ticks to the host.
+  The scoped MMD adapter consumes that aligned boundary. Broader host binding,
+  shared non-avatar participation and checkpoint recovery remain RT-O6 work.
 - Package versions, optional dependency selection and runtime discovery need
   reproducible OST composition evidence. No package pins are selected by
   these documents.
@@ -151,7 +153,8 @@ format pre-state -> physics adapter -> owner world Step / snapshot
 final EvaluatedAvatarState -> renderer consumer
 ```
 
-This is the adopted target ownership, not an implemented physics adapter.
+This is the adopted ownership; the [MMD adapter](MMD_ADAPTER.md) supplies a
+scoped registration/world-bridge boundary and a generated backend test host.
 The [evaluator contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration)
 is the sole owner of the barrier/order rules; the
 [frame lifecycle](FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) owns
@@ -161,8 +164,9 @@ stays with physics, while runtime owns adapter lifetime and coordinates safe
 attachment/detachment. Format-specific coupling stays with MMD/VRM owners.
 
 Core must have no mandatory `usd-mmd-plugins`, Jolt or `hydra-toon` dependency.
-Integrate through optional MMD, physics, VRM and renderer adapters; exact new
-targets/options are not yet defined. Normal CI should cover core units and
+Integrate through optional MMD, physics, VRM and renderer adapters. The MMD
+target/option is defined above; a reusable physics host remains open.
+Normal CI should cover core units and
 headless smoke in the applicable configuration, with heavy asset/backend/render
 end-to-end checks opt-in. Optional integration dependencies must not leak into
 core-only build/install/import. Planned work and acceptance gates live in the
