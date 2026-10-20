@@ -4,7 +4,7 @@ find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED)
 foreach(owner_target IN ITEMS AvatarRuntime::avatarUsdBinding AvatarRuntime::avatarVrmUsdBinding
     AvatarRuntime::avatarMotionAdapter AvatarRuntime::avatarVrmAdapter AvatarRuntime::avatarMotionUsdBinding
     AvatarRuntime::avatarMmdAdapter mmdPhysicsAdapter::mmdPhysicsAdapter mmdControl::mmdControl
-    physicsCore::physicsCore physicsJolt::physicsJolt
+    physicsCore::physicsCore physicsJolt::physicsJolt Toon::AvatarState Toon::RenderWorld
     motionUsd::motionUsd
     motionRetarget::motionRetarget motionSampling::motionSampling vrmRig::vrmRig vrmSchema::vrmSchema usd)
     if(TARGET ${owner_target})

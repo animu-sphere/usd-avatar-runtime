@@ -22,6 +22,9 @@
 #include <iostream>
 #include <map>
 #include <set>
+#ifdef AVATAR_MMD_TOON_SMOKE
+#include "ToonCheck.h"
+#endif
 
 #define CHECK(x) do { if (!(x)) { std::cerr << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while(0)
 using namespace pxr;
@@ -332,32 +335,108 @@ void bindingsAndOutputs() {
     }
 }
 
-int main(int argc, char** argv) {
-    if (argc == 1) { constructed(); bindingsAndOutputs(); }
-#ifdef AVATAR_MMD_JOLT_SMOKE
-    else {
-        CHECK(argc == 3); Assets assets(argv[1], argv[2]); Fixture f(assets, true);
-        std::vector<Pose> first;
-        for (uint64_t replay = 0; replay < 3; ++replay) {
-            if (replay) CHECK(f.physics.reset_world(f.runtime, f.world, replay + 1, nullptr) == AR_OK);
-            for (int tick = 0; tick < 24; ++tick) {
-                CHECK(f.advance(1.0/120) == AR_OK && f.steps == tick + 1);
-                auto pose = f.pose(f.snapshots[1]);
-                auto config = assets.config();
-                ArStateView view{AR_HEADER(ArStateView)}; CHECK(f.api.get_snapshot(f.snapshots[1], &view) == AR_OK);
-                auto continuation = config.evaluator.BeginPhysics(assets.motion, view.evaluation_seconds * 30);
-                auto feedback = config.coupling.ApplyPhysicsToPose(f.results.at(f.avatars[0]), continuation.BeforePhysics()); CHECK(feedback);
-                auto expected = config.evaluator.ResumePhysics(continuation, feedback.value()); CHECK(expected);
-                CHECK(pose == expected.value());
-                CHECK(std::abs(pose.joints[1].rotation[2]) > .1);
-                CHECK(std::abs(pose.joints[2].rotation[2]) > .1);
-                if (!replay) first.push_back(pose); else CHECK(pose == first[tick]);
-                // Free body falls, but its associated root's translation remains animation-owned.
-                CHECK(pose.joints[0].translation == continuation.BeforePhysics().joints[0].translation);
-            }
-        }
-        CHECK(f.steps == 24 && f.resets == 2);
-    }
+#ifdef AVATAR_MMD_TOON_SMOKE
+void publish(Fixture &f, std::unique_ptr<MmdToonCheck> (&consumers)[2]) {
+  for (int i = 0; i < 2; ++i) {
+    ArStateView state{AR_HEADER(ArStateView)};
+    CHECK(f.api.get_snapshot(f.snapshots[i], &state) == AR_OK);
+    if (!consumers[i])
+      consumers[i] = std::make_unique<MmdToonCheck>(state);
+    consumers[i]->Apply(f.api, f.snapshots[i]);
+  }
+}
+void toonConstructed() {
+  std::unique_ptr<MmdToonCheck> consumers[2];
+  Assets assets;
+  assets.model.morphs.resize(1);
+  assets.model.morphs[0].type = mmd::MorphType::Vertex;
+  assets.motion.morphs = {{0, {{0, .25f}}}};
+  assets.motion.visibility = {{0, false}, {1, true}};
+  {
+    Fixture f(assets, false, [](auto &c) {
+      c.morphs = {{0, "mesh", "vertex"}};
+      c.visibilityTargets = {"avatar"};
+    });
+    CHECK(f.advance(1.0 / 120) == AR_OK);
+    publish(f, consumers);
+    CHECK(f.pose(f.snapshots[0]) != f.pose(f.snapshots[1]));
+    CHECK(f.advance(.1, true) == AR_OK);
+    publish(f, consumers);
+    CHECK(f.advance(4.0 / 120) == AR_OK);
+    publish(f, consumers);
+    f.badSnapshot = true;
+    CHECK(f.advance(1.0 / 120) == AR_PROVIDER_ERROR);
+    CHECK(!f.snapshots[0] && !f.snapshots[1]);
+    f.badSnapshot = false;
+    CHECK(f.physics.reset_world(f.runtime, f.world, 2, nullptr) == AR_OK);
+    CHECK(f.advance(1.0 / 120) == AR_OK);
+    publish(f, consumers);
+  }
+  for (auto &consumer : consumers)
+    consumer->AfterProducerDestruction();
+}
 #endif
-    std::cout << "MMD pre/Step/post, final pose, instance isolation and reset/replay passed\n";
+
+int main(int argc, char **argv) {
+  if (argc == 1) {
+    constructed();
+    bindingsAndOutputs();
+#ifdef AVATAR_MMD_TOON_SMOKE
+    toonConstructed();
+#endif
+  }
+#ifdef AVATAR_MMD_JOLT_SMOKE
+  else {
+    CHECK(argc == 3);
+    Assets assets(argv[1], argv[2]);
+#ifdef AVATAR_MMD_TOON_SMOKE
+    std::unique_ptr<MmdToonCheck> consumers[2];
+#endif
+    {
+      Fixture f(assets, true);
+      std::vector<Pose> first;
+      for (uint64_t replay = 0; replay < 3; ++replay) {
+        if (replay)
+          CHECK(f.physics.reset_world(f.runtime, f.world, replay + 1,
+                                      nullptr) == AR_OK);
+        for (int tick = 0; tick < 24; ++tick) {
+          CHECK(f.advance(1.0 / 120) == AR_OK && f.steps == tick + 1);
+          auto pose = f.pose(f.snapshots[1]);
+          auto config = assets.config();
+          ArStateView view{AR_HEADER(ArStateView)};
+          CHECK(f.api.get_snapshot(f.snapshots[1], &view) == AR_OK);
+          auto continuation = config.evaluator.BeginPhysics(
+              assets.motion, view.evaluation_seconds * 30);
+          auto feedback = config.coupling.ApplyPhysicsToPose(
+              f.results.at(f.avatars[0]), continuation.BeforePhysics());
+          CHECK(feedback);
+          auto expected =
+              config.evaluator.ResumePhysics(continuation, feedback.value());
+          CHECK(expected);
+          CHECK(pose == expected.value());
+#ifdef AVATAR_MMD_TOON_SMOKE
+          publish(f, consumers);
+#endif
+          CHECK(std::abs(pose.joints[1].rotation[2]) > .1);
+          CHECK(std::abs(pose.joints[2].rotation[2]) > .1);
+          if (!replay)
+            first.push_back(pose);
+          else
+            CHECK(pose == first[tick]);
+          // Free body falls, but its associated root's translation remains
+          // animation-owned.
+          CHECK(pose.joints[0].translation ==
+                continuation.BeforePhysics().joints[0].translation);
+        }
+      }
+      CHECK(f.steps == 24 && f.resets == 2);
+    }
+#ifdef AVATAR_MMD_TOON_SMOKE
+    for (auto &consumer : consumers)
+      consumer->AfterProducerDestruction();
+#endif
+  }
+#endif
+  std::cout << "MMD pre/Step/post, final pose, instance isolation and "
+               "reset/replay passed\n";
 }

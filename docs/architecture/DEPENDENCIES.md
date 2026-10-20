@@ -41,6 +41,9 @@ or provider target links the renderer. The optional
 [MMD adapter](MMD_ADAPTER.md) consumes installed `mmdPhysicsAdapter`/`mmdControl`
 through a C++ registration boundary; its host supplies path/handle mapping and
 world snapshots. Only the opt-in test host links `physicsUsd`/`physicsJolt`.
+Its separately opt-in `AVATAR_MMD_TOON_SMOKE` executable also consumes installed
+`Toon::AvatarState`; that renderer dependency is absent from the reusable MMD
+adapter and its installed component.
 Connector adapters and OST composition remain unconfigured.
 
 The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) refines

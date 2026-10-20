@@ -465,3 +465,29 @@ not physical settling, contacts, spring/limit fidelity or L3 acceptance. The
 consumer reads the final retained CPU snapshot; renderer/Hydra parity, resident
 avatar resources, stage-runner host integration and real assets remain open.
 No MMD control algorithm or generic solver logic moved into runtime core.
+
+## Scoped MMD/Toon evidence (2026-10-21)
+
+Runtime base `4d7279c` plus the transport tests; the same installed MMD/physics
+inputs as the scoped MMD/Jolt evidence above. Windows x64, MSVC 19.51, Release,
+OpenUSD 26.08 and a local installed `Toon::AvatarState` built for runtime ABI 4.
+The fresh `build/mmd-toon` configuration passes nine tests: the seven existing
+core/MMD/Jolt tests and the two additional consumer tests below. Installed MMD
+component lookup also rejects renderer target imports. An older installed Toon
+header pinning ABI 3 is refused at configure time by `AR_MMD_TOON_ABI`.
+
+| Test | Evidence |
+| --- | --- |
+| `adapters.mmd_toon` | Two distinct constructed final poses, rotated/translated placement, unrelated leading runtime joint, reversed renderer palette, nonzero scalar morph and hidden/visible output; pause, multiple ticks, failed post-Step publication and reset; frame/layout identity, duplicate array reuse and retained first/current outputs after runtime destruction; deliberately corrupt palette rejected by the oracle |
+| `adapters.mmd_jolt_toon` | Both instances' final generated PMX/VMD/Jolt snapshots reach the installed renderer adapter and extracted draws over 24 ticks at 120 Hz, three solver reset/replays; owner feedback/ResumePhysics parity remains asserted before transport; first/current snapshots remain usable after runtime destruction and obsolete generations are refused atomically |
+
+Palette comparisons use an independent double-precision USD matrix oracle and
+`abs(actual-expected) <= 2e-6 * max(1, abs(expected))`, with translation compared
+in metres. Morph values equal the expected float conversion. The test uses
+centimetre scene units, explicit identity inverse binds and generated triangle
+resources; scalar morph/visibility changes have constructed evidence, while the
+Jolt run validates final pose transport. Material/UV/impulse morph realization,
+resident-avatar resources, stage-runner composition, rendering, Hydra parity and
+representative L3 acceptance remain open. These are local tests, not published
+package or hosted CI evidence. See the
+[output boundary](../architecture/OUTPUT_PATHS.md#scoped-mmd-transport-check).
