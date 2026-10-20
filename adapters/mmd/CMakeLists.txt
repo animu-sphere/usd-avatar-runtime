@@ -1,0 +1,20 @@
+find_package(mmdPhysicsAdapter 0.2 CONFIG REQUIRED)
+add_library(avatarMmdAdapter STATIC physicsAdapter.cpp)
+add_library(AvatarRuntime::avatarMmdAdapter ALIAS avatarMmdAdapter)
+target_compile_features(avatarMmdAdapter PUBLIC cxx_std_20)
+set_target_properties(avatarMmdAdapter PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(avatarMmdAdapter PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+target_link_libraries(avatarMmdAdapter PUBLIC AvatarRuntime::avatarRuntime mmdPhysicsAdapter::mmdPhysicsAdapter)
+target_compile_definitions(avatarMmdAdapter PRIVATE AR_MMD_PROVIDER_VERSION="${mmdPhysicsAdapter_VERSION}")
+if(MSVC)
+    target_compile_options(avatarMmdAdapter PRIVATE /W4 /permissive- /utf-8)
+endif()
+install(TARGETS avatarMmdAdapter EXPORT AvatarMmdAdapterTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(EXPORT AvatarMmdAdapterTargets NAMESPACE AvatarRuntime::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
+
+if(AVATAR_BUILD_TESTS)
+    add_subdirectory(tests)
+endif()

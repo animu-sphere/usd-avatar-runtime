@@ -50,9 +50,10 @@ and USD integrations are separately optional targets:
 | `avatarMotionAdapter` | owner sampling/retarget calls and selected-motion input bridge |
 | `avatarUsdBinding` / `avatarMotionUsdBinding` | runtime skeleton/baseline binding and direct owner motion-stage results; legacy StageClip compatibility |
 | `avatarVrmAdapter` / VRM USD binding targets | owner LookAt/expression evaluation and authored configuration |
+| `avatarMmdAdapter` | owner MMD pre/post control and coupling registration with a caller-owned world bridge |
 | `avatarMotionCheck` | opt-in real-asset adapter parity host |
 
-MMD, Hydra, reusable `hydra-toon` publication, recording publication, OpenExec and
+Hydra, reusable `hydra-toon` publication, recording publication, OpenExec and
 inspect/replay/benchmark components remain planned. The optional motion-check
 host can validate resolved values through installed `Toon::AvatarState` probe
 resources. See
@@ -75,8 +76,10 @@ The 2026-10-20 [physics milestones](docs/roadmap/current.md#physics-orchestratio
 develop that MMD track through headless Jolt feedback and shared final-state
 consumers. The optional experimental physics table now supplies fixed ticks and a
 shared-world barrier over existing evaluator plans, with group reset and
-post-Step failure invalidation. Concrete MMD/physics-owner integration remains
-planned; no core or physics ABI is frozen.
+post-Step failure invalidation. The optional
+[MMD adapter](docs/architecture/MMD_ADAPTER.md) connects owner continuation and
+coupling to that barrier; generated headless Jolt evidence is recorded in the
+capability matrix. Broader host/render integration remains open; no ABI is frozen.
 Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the
 implementation sequence and acceptance criteria; the
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) records what exists.

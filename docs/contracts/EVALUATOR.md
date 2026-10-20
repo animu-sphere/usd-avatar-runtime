@@ -165,8 +165,10 @@ Multi-avatar parallelism also needs resource lifetime and shared-state checks.
 
 The optional experimental [`physics.h`](../../include/avatarRuntime/physics.h)
 table implements the serial shared-world barrier and fixed clock without
-changing the revision-4 core table or adding phase constants. Concrete
-MMD/physics-owner adapters and real-provider ordering remain integration gates.
+changing the revision-4 core table or adding phase constants. The optional
+[MMD adapter](../architecture/MMD_ADAPTER.md) supplies owner continuation/coupling
+callbacks with generated Jolt host evidence. Broader provider ordering and
+host/renderer composition remain integration gates.
 Do not step a managed world inside an individual avatar evaluator.
 
 ```text

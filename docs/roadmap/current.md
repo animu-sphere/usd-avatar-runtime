@@ -29,7 +29,7 @@ before freeze; owner API work stays in its owning repository.
 | Workstream | Remaining work | Acceptance gate | Original Runtime Phase |
 | --- | --- | --- | --- |
 | C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
-| D: MMD second provider | register owner MMD evaluator; validate bone/morph/control DAG and runtime-managed pre/Step/post handoff through the physics milestones below | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; shared-world Step count and feedback order pass | A/B |
+| D: MMD second provider | extend the scoped MMD owner registration to representative control/IK, retarget input and host/renderer composition through the remaining physics milestones | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; representative final output satisfies the common contract | A/B |
 | E: publication | finish the Hydra adapter, support the renderer-side fast-path host's resident target matching, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
 | F: ABI stabilization | review C/provider/consumer ABI revisions and capability versions; broaden installed-consumer and OST composition validation | real VRM/MMD and consumer evidence supports freeze; dependency-free core installation/import still passes; actual package composition is reproducible | A with C/E and packaging evidence |
 
@@ -368,8 +368,7 @@ clock/invalidation to the
 | Milestone | Work and acceptance gate | Runtime Phase |
 | --- | --- | --- |
 | A: evaluator dependency validation | validate existing evaluator DAGs against MMD pre/post control, morph/append/IK and model-specific post-physics IK; document any required extension before adding generic phase enum values | A/B |
-| B: world integration and barrier | integrate concrete owner adapters with the experimental world table and existing-plan pre/post boundary; validate solver ownership, held-input policy, group reset and post-Step recovery with the first actual MMD/physics consumer | A/B |
-| C: MMD coupling + Jolt headless smoke | one PMX + VMD evaluates through pre-pose, owner bone/body coupling, Jolt and feedback to final pose without a renderer; preserve owner diagnostics and authored stage semantics | B |
+| B: world integration and barrier | extend the generated owner/Jolt test host to reusable host binding, held-input policy and shared non-avatar objects; retain group reset and post-Step recovery guarantees | A/B |
 | D: final snapshot + fast-path consumer | publish retained CPU snapshots using the existing evaluated-state contract and renderer-owned consumer; verify joint/morph contract agreement with the Hydra path; no Physics Step or IK in rendering | A/B and C |
 | E: multiple avatars, seek and VRM extension | exercise shared-world membership and reset/seek scope, extend discontinuity coverage and integrate owner VRM secondary motion under the same orchestration; arbitrary-time complete replay is outside MVP | B/E |
 
@@ -396,8 +395,11 @@ adapters/build options only with owner boundaries and installed-consumer checks.
 Normal CI targets core units and headless smoke for enabled integrations;
 heavy real-asset/backend/render end-to-end validation stays opt-in. No new
 mandatory physics package is introduced. The experimental core barrier/clock
-slice has `contracts.physics` coverage; concrete owner integration remains
-milestones A–C, and this evidence does not complete the physics MVP.
+slice has `contracts.physics` coverage. The scoped C headless gate now has
+generated MMD/Jolt and installed-adapter evidence in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-mmdjolt-evidence-2026-10-21).
+Representative post-physics IK, reusable host/renderer integration and the
+other gates above remain open; this does not complete the physics MVP.
 
 ## Open decisions
 
@@ -409,8 +411,8 @@ acceptance evidence, including actual provider adapters, is available.
 
 Physics orchestration ownership is adopted: runtime coordinates the DAG,
 shared-world barrier, fixed ticks and reset/seek; hosts submit time requests.
-RT-O6 remains open for concrete interfaces, sibling wording alignment and
-integration evidence, not for choosing a second scheduling owner.
+RT-O6 remains open for broader host interfaces, non-avatar participation and
+integration evidence under the aligned sibling ownership.
 
 IDs remain stable; resolution updates the owning contract and records the
 decision/evidence. These are runtime design questions, not claims of upstream

@@ -116,8 +116,9 @@ outputs. Parallel scheduling remains later roadmap work.
 The 2026-10-20 physics orchestration direction assigns clock/fixed-step
 coordination, reset/seek and final publication to this runtime. This section
 defines lifecycle requirements. The optional experimental physics table now
-implements the bounded clock/group recovery described below; display
-interpolation and concrete owner integration remain open.
+implements the bounded clock/group recovery described below. The optional
+[MMD adapter](MMD_ADAPTER.md) composes owner continuations with group reset;
+display interpolation and broader host integration remain open.
 The [evaluator contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration)
 owns the pre/Step/post barrier order.
 
