@@ -409,6 +409,13 @@ renderer adapter with explicit probe resources. Milestone D still requires
 resident-avatar host integration and Hydra agreement; probe transport does not
 close that gate or MMD's composed-consumer acceptance.
 
+The [Stage Runner clock smoke](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-clock-evidence-2026-10-21)
+validates installed host clock -> runtime-owned ticks -> MMD/Jolt -> Toon probe
+transport, including held inputs, a shared non-avatar body and group recovery.
+Milestone B still requires reusable application/session binding; D still
+requires resident-avatar resources and Hydra agreement. No physics MVP or
+composed-consumer completion is implied by the clock smoke.
+
 ## Open decisions
 
 Owning documents now record scoped prototype choices for clocks/channels, dense

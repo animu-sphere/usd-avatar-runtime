@@ -491,3 +491,39 @@ resident-avatar resources, stage-runner composition, rendering, Hydra parity and
 representative L3 acceptance remain open. These are local tests, not published
 package or hosted CI evidence. See the
 [output boundary](../architecture/OUTPUT_PATHS.md#scoped-mmd-transport-check).
+
+## Scoped Stage Runner clock evidence (2026-10-21)
+
+Runtime base `3d772a5` plus the test-host change; installed Stage Runner
+`runtimeCore` from `a81bb28`; installed MMD, physics and Toon inputs match the
+MMD/Toon evidence above. Windows x64, MSVC 19.51, Release, OpenUSD 26.08.
+The opt-in `build/mmd-stage-runner` configuration passes all ten tests, including
+`adapters.mmd_stage_runner`; the clock owner's three standalone tests pass.
+These are local installed-package results, without a production API/ABI change.
+
+The injected installed `FrameClock` drives display requests with zero, one and
+multiple runtime ticks at 120 Hz. Two avatars and one separate falling body
+share one Jolt world. Both prefixes precede exactly one Step and both suffixes
+follow it for every committed tick. A 100 ms request runs four of twelve due
+ticks, retains eight and drains them with zero-elapsed requests. Ten paused
+wall seconds neither step nor drain backlog; resume adds none of that time.
+Every prefix receives the held input identity/value/source clock and revision,
+including explicit zero and a later revised value; the host template's tick
+identity/time fields remain unchanged. Each delivered final pose matches direct
+owner feedback/ResumePhysics, then the installed Toon consumer's existing
+palette/morph/visibility oracle.
+
+Three 24-tick reset/replays reproduce final avatar poses and the separate body's
+position/velocity exactly on this build. Reset clears a partial tick and
+reconstructs all resources together. A failed suffix returns no snapshots and
+blocks further advancement until group reset; a failed prefix retries accepted
+time with zero additional elapsed. Retained snapshots survive reset and the
+renderer retains first/current outputs after runtime destruction. Installed MMD
+lookup also checks that no Stage Runner target is imported.
+
+Only a test host composes the clock. `StageSession`, interactive applications,
+reusable production world binding, resident avatar mesh/material resources,
+contacts/joints, Hydra agreement and representative L3 acceptance remain open.
+No renderer dependency enters the MMD adapter or runtime core, and the host
+uses no second fixed-step accumulator. Build switches and the dependency
+boundary belong to the [MMD adapter](../architecture/MMD_ADAPTER.md).
