@@ -73,7 +73,10 @@ prioritizes real motion -> VRM -> evaluated state -> `hydra-toon` fast-path,
 then MMD validation of the shared scheduler/state model before ABI freeze.
 The 2026-10-20 [physics milestones](docs/roadmap/current.md#physics-orchestration-milestones)
 develop that MMD track through headless Jolt feedback and shared final-state
-consumers. Physics orchestration remains planned; no new core ABI is frozen.
+consumers. The optional experimental physics table now supplies fixed ticks and a
+shared-world barrier over existing evaluator plans, with group reset and
+post-Step failure invalidation. Concrete MMD/physics-owner integration remains
+planned; no core or physics ABI is frozen.
 Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the
 implementation sequence and acceptance criteria; the
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) records what exists.

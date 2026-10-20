@@ -163,10 +163,11 @@ Multi-avatar parallelism also needs resource lifetime and shared-state checks.
 
 ## 5. Shared-world physics orchestration
 
-This is the target orchestration contract. Revision 4's per-instance
-`evaluate_frame` and phase barriers do not implement a multi-instance world
-barrier, fixed-step accumulator or pre/post-physics adapter API. Do not emulate
-a shared barrier by stepping the world once inside each avatar callback.
+The optional experimental [`physics.h`](../../include/avatarRuntime/physics.h)
+table implements the serial shared-world barrier and fixed clock without
+changing the revision-4 core table or adding phase constants. Concrete
+MMD/physics-owner adapters and real-provider ordering remain integration gates.
+Do not step a managed world inside an individual avatar evaluator.
 
 ```text
 host frame request
@@ -214,9 +215,44 @@ or independently step an avatar-managed world. Other hosts, including Mimikuri,
 must be able to use the same runtime without stage-runner. Renderer consumers
 receive only final snapshots and never execute Physics Step or IK.
 
-Before integration, RT-O6 must settle world binding/handle ownership and
-pre/post callback shapes with the physics and format owners, including shared
-non-avatar participants and protection against a second host step. RT-O5 must
-cover failure after an irreversible world step; per-instance rollback alone
-does not establish a world transaction. These are open interfaces and evidence
-gates, not grounds to leave the runtime's orchestration ownership ambiguous.
+### Experimental world binding
+
+`arGetPhysicsApi(AR_PHYSICS_API_VERSION, ...)` supplies `create_world`,
+`advance_world`, `reset_world` and `destroy_world`. Each descriptor uses the
+core `AR_HEADER` convention. The runtime copies the world ID and participant
+plan boundaries; callback code and `user_data` remain borrowed until unbinding
+or runtime destruction. The caller supplies an already initialized solver and
+gives this binding exclusive stepping/reset authority. The Step callback may
+also manage non-avatar objects; runtime never creates solver resources.
+
+Each participant selects the first post-physics evaluator by ID in its existing
+validated plan. The prefix runs before Step and the entire suffix after Step;
+the suffix may begin in the same phase as the prefix when explicit dependencies
+order those evaluators. No backward phase edge is admitted. MMD owners must
+split actual control calls at a valid owner boundary; this scheduler does not
+split `mmdControl::Evaluator::Evaluate` or reinterpret after-physics flags.
+
+Membership is immutable for a world binding and exclusive per instance.
+Instances must be freshly created or reset before binding. Runtime orders
+participants by instance handle, independently of descriptor/input array order.
+All prefixes complete before one Step, then all suffixes complete before any
+participant's provider state or prior snapshot commits. Each participant keeps
+its existing transactional callbacks; abort reverses its own begin order.
+Only complete ticks commit, and snapshots contain the existing dense final
+state with tick identity/time. Step callbacks receive the fixed duration and
+evaluation time; provider diagnostics keep their owner identity through the
+runtime forwarding sink.
+
+Managed instances reject direct `evaluate_frame`, `reset_instance` and
+`destroy_instance`. All calls remain serialized and callback reentry returns
+`AR_BUSY`. Hosts and external world users must not independently step the same
+solver; the runtime cannot detect an out-of-band backend call.
+
+For membership changes, stop requests, destroy the world binding, detach the
+relevant external bodies/adapters, reset the remaining instances and bind the
+new group to an initialized world. Unbinding requires instance reset before
+direct evaluation resumes; retained snapshots survive. Dynamic per-avatar
+unload without group reinitialization remains open. The
+[lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities)
+owns clock acceptance and post-Step recovery. RT-O3/RT-O5/RT-O6 remain open for
+real owner adapters, checkpoint recovery and broader lifecycle evidence.

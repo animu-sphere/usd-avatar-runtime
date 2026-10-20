@@ -115,8 +115,9 @@ outputs. Parallel scheduling remains later roadmap work.
 
 The 2026-10-20 physics orchestration direction assigns clock/fixed-step
 coordination, reset/seek and final publication to this runtime. This section
-defines target lifecycle requirements; revision 4 implements the per-instance
-transaction/reset above, not a shared-world clock or physics invalidation API.
+defines lifecycle requirements. The optional experimental physics table now
+implements the bounded clock/group recovery described below; display
+interpolation and concrete owner integration remain open.
 The [evaluator contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration)
 owns the pre/Step/post barrier order.
 
@@ -124,9 +125,10 @@ The host supplies elapsed time, pause/seek requests and avatar state changes.
 Runtime accumulates elapsed simulation time, determines the number of due
 fixed ticks and runs the barrier for each tick. Fixed tick duration, maximum
 catch-up tick count and excess-time policy must be configurable and observable.
-The initial default values and whether excess time is retained or dropped
-remain RT-O6 choices; neither the host nor an individual avatar adapter runs
-a second accumulator for the same world.
+The experimental binding requires explicit positive `fixed_step_seconds` and
+`max_catch_up_ticks`; it supplies no hidden timestep default. Excess time is
+retained and returned as `pending_seconds`. Neither the host nor an individual
+avatar adapter runs a second accumulator for the same world.
 
 Simulation tick time and display evaluation time are separate. A display
 request can require zero, one or several fixed ticks. Interpolation/publication
@@ -160,3 +162,52 @@ recovery/invalidation and same-tick retry rules before admitting non-idempotent
 steps (RT-O5/RT-O6). Never publish mixed pre/post states or step again merely
 because a consumer failed; the last valid snapshot can remain displayed with
 its original identity.
+
+### Experimental fixed-tick requests
+
+`advance_world` accepts nonnegative finite elapsed time, pause state and exactly
+one input template per participant. Runtime preserves observations and input
+revision, and assigns the participant generation, tick ID and evaluation seconds
+for each due tick. Motion evaluators therefore sample at the fixed tick time;
+the supplied observations are held across catch-up ticks with their original
+source clocks/provenance. Hosts must explicitly assemble other per-tick input
+policies; no resampling or freshness policy is invented here.
+
+Tick IDs start at one. Simulation time is `start_seconds + tick_id * fixed_step_seconds`.
+A request runs zero through the configured maximum ticks, returning the last
+tick/time and backlog. Pause discards that request's elapsed time and does not
+process existing backlog. Resume adds only the elapsed time explicitly supplied
+after pause. Every accepted request needs a strictly increasing nonzero
+`request_id`, preventing duplicate elapsed-time submission with the same ID.
+Input validation precedes acceptance. Once accepted, even a failed pre-Step
+attempt retains elapsed time; retry with a new request ID and zero elapsed.
+Completed earlier ticks in a multi-tick request remain committed.
+
+Successful requests return retained snapshots in input-array order. A zero-tick
+request returns the last committed snapshots, or zero before the first tick.
+Repeated paused requests with zero elapsed can retrieve retained state without
+simulation. These are tick snapshots; display interpolation and separate
+display-frame provenance remain unimplemented. Consumers retry delivery using
+retained handles, never by resubmitting elapsed time.
+
+Failure after the world Step callback starts, including Step refusal, post
+evaluation, allocation or commit failure, invalidates the entire group and
+returns no snapshots. Prior committed snapshots remain valid. Further advances
+are rejected until `reset_world`; runtime never assumes backend rollback.
+An infallible provider lifecycle violation likewise requires group reset.
+
+`reset_world` first creates all replacement provider states with a generation
+greater than every participant's. Creation failure leaves the old group intact.
+It then invokes the external reset callback for the entire solver, including
+non-avatar participants. A failed callback leaves the group invalid. Success
+installs the new provider states and clears tick/request history, backlog and
+prior states, returning simulation time to the declared start. Retained
+snapshots keep their original generation and values. Seek/loop wrap may use
+this explicit restart; arbitrary-time replay and checkpoint restore are open.
+
+Evidence: `contracts.physics` covers two participants, a same-phase pre/post
+dependency, zero/one/multiple ticks, catch-up backlog, pause, retained snapshots,
+reentry, direct-call exclusion, pre-Step retry, Step/post failure and group reset.
+The existing core C provider/consumer, transaction and installed-consumer tests
+remain required. This validates runtime scheduling with constructed callbacks;
+it does not establish MMD coupling, Jolt or real-avatar conformance.

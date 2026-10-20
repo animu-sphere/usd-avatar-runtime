@@ -368,7 +368,7 @@ clock/invalidation to the
 | Milestone | Work and acceptance gate | Runtime Phase |
 | --- | --- | --- |
 | A: evaluator dependency validation | validate existing evaluator DAGs against MMD pre/post control, morph/append/IK and model-specific post-physics IK; document any required extension before adding generic phase enum values | A/B |
-| B: world integration and barrier | agree world binding/handle ownership and pre/post callbacks with owners; all participants complete pre-state before exactly one Step per world/tick; define configurable catch-up policy, membership/lifetime and post-Step failure handling | A/B |
+| B: world integration and barrier | integrate concrete owner adapters with the experimental world table and existing-plan pre/post boundary; validate solver ownership, held-input policy, group reset and post-Step recovery with the first actual MMD/physics consumer | A/B |
 | C: MMD coupling + Jolt headless smoke | one PMX + VMD evaluates through pre-pose, owner bone/body coupling, Jolt and feedback to final pose without a renderer; preserve owner diagnostics and authored stage semantics | B |
 | D: final snapshot + fast-path consumer | publish retained CPU snapshots using the existing evaluated-state contract and renderer-owned consumer; verify joint/morph contract agreement with the Hydra path; no Physics Step or IK in rendering | A/B and C |
 | E: multiple avatars, seek and VRM extension | exercise shared-world membership and reset/seek scope, extend discontinuity coverage and integrate owner VRM secondary motion under the same orchestration; arbitrary-time complete replay is outside MVP | B/E |
@@ -395,7 +395,9 @@ Keep core independent of mandatory MMD, Jolt and renderer packages. Add optional
 adapters/build options only with owner boundaries and installed-consumer checks.
 Normal CI targets core units and headless smoke for enabled integrations;
 heavy real-asset/backend/render end-to-end validation stays opt-in. No new
-physics build option or test is claimed by this documentation update.
+mandatory physics package is introduced. The experimental core barrier/clock
+slice has `contracts.physics` coverage; concrete owner integration remains
+milestones A–C, and this evidence does not complete the physics MVP.
 
 ## Open decisions
 
