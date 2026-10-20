@@ -164,6 +164,26 @@ weights and materials. No GPU, per-frame USD authoring or consumer-cost claim
 is implied. Validation evidence and its asset limits belong in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
+### Scoped MMD transport check
+
+`AVATAR_MMD_TOON_SMOKE` adds a separate test host above the optional MMD/Jolt
+smoke. It passes the final retained post-physics snapshots directly to the
+installed renderer's `AvatarStateAdapter`; no renderer call evaluates MMD,
+steps the world or writes USD. Bindings explicitly map a generated triangle's
+reversed joint palette, one scalar morph and one visibility target. Unknown
+material output or a different channel layout is refused by the probe.
+
+An independent USD matrix oracle composes parent-local snapshot transforms,
+converts metre translations into centimetre scene units and checks the renderer
+palette. The host also compares resolved morph weight, visibility, frame/layout
+identity and extracted draw values, then exercises duplicate publication and
+retained consumer lifetime after reset and producer destruction. Visibility
+membership changes use ordinary draw extraction, consistent with the renderer's
+fast-update boundary. This is explicit resource transport, not resident-avatar
+discovery, GPU rendering, Hydra parity or the complete physics MVP. Current
+measurements belong to the
+[capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-mmdtoon-evidence-2026-10-21).
+
 ## 3. Recording, baking and export
 
 Recording is a publication adapter to the motion-owner recorder. The runtime

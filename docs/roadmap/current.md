@@ -177,9 +177,10 @@ Hydra/direct parity remain workstream C/E and RT-O9 work. Probe transport does
 not complete milestone B. See [output paths](../architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
 Runtime-to-resident target matching belongs to a renderer-side host rather than
 a runtime bridge ([resident target matching](../architecture/OUTPUT_PATHS.md#resident-target-matching)).
-The installed renderer adapter pins ABI revision 3; it must be rebuilt for
-revision 4, and its two-component texture inputs must move to vec2, before
-`--toon` runs against this tree. That change belongs to the renderer.
+Renderer installations pinning ABI revision 3 must be rebuilt for revision 4,
+including two-component texture inputs, before `--toon` runs against this tree.
+The optional host's header probe checks ABI compatibility; installed-consumer
+evidence belongs to the capability matrix.
 
 These milestones describe end-to-end evidence, not completion of the similarly
 lettered Runtime Phases:
@@ -400,6 +401,13 @@ generated MMD/Jolt and installed-adapter evidence in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-mmdjolt-evidence-2026-10-21).
 Representative post-physics IK, reusable host/renderer integration and the
 other gates above remain open; this does not complete the physics MVP.
+
+The separately opt-in
+[MMD/Toon transport check](../reference/CAPABILITY_MATRIX.md#scoped-mmdtoon-evidence-2026-10-21)
+now exercises the final generated MMD/Jolt snapshots through the installed
+renderer adapter with explicit probe resources. Milestone D still requires
+resident-avatar host integration and Hydra agreement; probe transport does not
+close that gate or MMD's composed-consumer acceptance.
 
 ## Open decisions
 

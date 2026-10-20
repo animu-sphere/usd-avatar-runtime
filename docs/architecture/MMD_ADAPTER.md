@@ -34,6 +34,14 @@ requires installed `physicsUsd`/available `physicsJolt`, generated
 and the installed MMD importer/schema on `PXR_PLUGINPATH_NAME`.
 The backend is linked only into the test host, never the registration adapter.
 
+`AVATAR_MMD_TOON_SMOKE=ON` additionally requires that Jolt smoke and an installed
+`Toon` package with the `AvatarState` component built for the current runtime
+ABI. A configure-time header probe refuses incompatible installations. Only
+the separate `mmdToonContracts` test host links the renderer; ordinary MMD and
+installed adapter consumers retain their existing dependencies. Explicit
+generated resources exercise final snapshot transport under the
+[output boundary](OUTPUT_PATHS.md#scoped-mmd-transport-check).
+
 ```cmake
 find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS mmd)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarMmdAdapter)
