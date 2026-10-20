@@ -1,4 +1,4 @@
-#include "avatarRuntime/api.h"
+#include "avatarRuntime/physics.h"
 
 #include <algorithm>
 #include <cmath>
@@ -312,15 +312,29 @@ struct Instance {
     std::vector<BoundEvaluator> plan;
     std::shared_ptr<const State> prior;
     bool poisoned = false;
+    ArPhysicsWorld world = 0;
     Instance(uint64_t g, const ArStateView& v) : generation(g), baseline(v) {
         for (const auto& j : baseline.joints) jointIds.emplace(j.skeleton_id, j.joint_id);
     }
     ~Instance() { cleanupStates(plan); }
 };
+struct PhysicsWorld {
+    struct Member { ArInstance id; size_t split; };
+    std::string id;
+    std::vector<Member> members;
+    double start = 0, seconds = 0, dt = 0, pending = 0;
+    uint32_t maxTicks = 0;
+    uint64_t tick = 0, lastRequest = 0;
+    bool poisoned = false;
+    void* user = nullptr;
+    ArStatus (AR_CALL *step)(void*, const ArPhysicsTick*, const ArDiagnosticSink*) = nullptr;
+    ArStatus (AR_CALL *reset)(void*, const ArDiagnosticSink*) = nullptr;
+};
 struct Runtime {
     /* Instances must be destroyed before descriptor code/metadata. */
     std::map<std::string, Evaluator> evaluators;
     std::map<ArInstance, std::unique_ptr<Instance>> instances;
+    std::map<ArPhysicsWorld, PhysicsWorld> worlds;
 };
 struct Snapshot { std::shared_ptr<const State> state; uint64_t references = 1; };
 /* The table tracks handle lifetime only, not a global active avatar. This
@@ -621,12 +635,13 @@ ArStatus AR_CALL createInstance(ArRuntime h, const ArInstanceDesc* desc, const A
 }
 ArStatus AR_CALL destroyInstance(ArRuntime h, ArInstance id) {
     return boundary([&]() -> ArStatus {
-        std::lock_guard<std::mutex> lock(apiMutex); auto& r = runtime(h); instance(r, id); r.instances.erase(id); return AR_OK;
+        std::lock_guard<std::mutex> lock(apiMutex); auto& r = runtime(h); if (instance(r, id).world) return AR_INVALID_STATE; r.instances.erase(id); return AR_OK;
     });
 }
 ArStatus AR_CALL resetInstance(ArRuntime h, ArInstance id, uint64_t generation) {
     return boundary([&]() -> ArStatus {
         std::lock_guard<std::mutex> lock(apiMutex); auto& inst = instance(runtime(h), id);
+        if (inst.world) return AR_INVALID_STATE;
         if (generation <= inst.generation) return AR_INVALID_ARGUMENT;
         std::vector<BoundEvaluator> fresh; fresh.reserve(inst.plan.size());
         for (const auto& b : inst.plan) fresh.push_back({b.evaluator, nullptr});
@@ -637,6 +652,54 @@ ArStatus AR_CALL resetInstance(ArRuntime h, ArInstance id, uint64_t generation) 
         inst.prior.reset(); inst.poisoned = false; return AR_OK;
     });
 }
+void prepareWork(State& work, const ArInputFrame& input) {
+    work.frame = input.frame_id; work.seconds = input.evaluation_seconds;
+    work.inputRevision = input.input_revision;
+    work.samples.reserve(size_t(input.scalar_count) + input.gaze_count);
+    for (uint32_t i = 0; i < input.scalar_count; ++i) {
+        const auto& s = input.scalars[i];
+        work.addSample({s.source_id, s.actor_id, s.channel_id, "", AR_SOURCE_SCALAR, AR_OBSERVATION_VALID,
+            AR_SAMPLE_SELECTED, s.source_seconds, s.clock_scale, s.clock_offset, 0}, "");
+    }
+    for (uint32_t i = 0; i < input.gaze_count; ++i) {
+        const auto& g = input.gazes[i];
+        work.addSample({g.source_id, g.actor_id, g.channel_id, "", AR_SOURCE_GAZE, g.validity,
+            AR_SAMPLE_SELECTED, g.source_seconds, g.clock_scale, g.clock_offset, 0}, "");
+    }
+}
+
+void runEvaluators(Instance& inst, const ArInputFrame& input, State& work,
+    Transaction& transaction, size_t first, size_t last, Diagnostics& d) {
+    d.instance = work.instance; d.frame = work.frame;
+    for (size_t n = first; n < last; ++n) {
+        auto& b = inst.plan[n];
+        auto& e = *b.evaluator; d.evaluator = e.id.c_str(); d.origin = e.provider.c_str(); d.phase = e.callbacks.phase;
+        const ArDomain visible = e.callbacks.reads | e.callbacks.writes;
+        auto working = work.view(visible, false);
+        ArStateView prior{}; if (inst.prior) prior = inst.prior->view(visible);
+        ArEvaluationContext context{AR_HEADER(ArEvaluationContext), &input, inst.prior ? &prior : nullptr,
+            &working, {&d, Diagnostics::providerEmit}};
+        Writer writer{work, e.callbacks.writes, e.id.c_str()}; auto writerApi = writer.api();
+        try {
+            if (e.callbacks.begin_frame) {
+                transaction.begun.push_back(&b);
+                CallbackScope scope;
+                if (e.callbacks.begin_frame(e.callbacks.user_data, b.state, &context) != AR_OK)
+                    d.fail(AR_PROVIDER_ERROR, "runtime.evaluator.begin", "Provider refused frame preparation");
+            }
+            ArStatus s;
+            { CallbackScope scope; s = e.callbacks.evaluate(e.callbacks.user_data, b.state, &context, &writerApi); }
+            if (writer.failure != AR_OK)
+                d.fail(writer.failure, "runtime.writer.invalid", "Invalid value, index or undeclared write domain");
+            if (d.callbackFailure != AR_OK)
+                d.fail(d.callbackFailure, "runtime.diagnostic.failed", "Diagnostic callback failed or supplied an invalid record");
+            if (s != AR_OK) d.fail(AR_PROVIDER_ERROR, "runtime.evaluator.failed", "Evaluator returned failure");
+        } catch (const Failure&) { throw; }
+        catch (const std::bad_alloc&) { throw; }
+        catch (...) { d.fail(AR_PROVIDER_ERROR, "runtime.evaluator.exception", "Provider threw an exception"); }
+    }
+}
+
 ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* input,
                               const ArDiagnosticSink* sink, ArSnapshot* out) {
     if (out) *out = 0;
@@ -644,48 +707,12 @@ ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* i
         std::lock_guard<std::mutex> lock(apiMutex); auto& inst = instance(runtime(h), id); Diagnostics d(sink);
         d.instance = id; if (header(input)) d.frame = input->frame_id;
         if (!out) return AR_INVALID_ARGUMENT;
+        if (inst.world) d.fail(AR_INVALID_STATE, "runtime.physics.managed", "World participants must use advance_world");
         if (inst.poisoned) d.fail(AR_INVALID_STATE, "runtime.lifecycle.poisoned", "Provider violated infallible lifecycle; reset required");
         validateInput(input, inst, d);
-        State work(inst.baseline); work.frame = input->frame_id; work.seconds = input->evaluation_seconds;
-        work.inputRevision = input->input_revision;
-        work.samples.reserve(size_t(input->scalar_count) + input->gaze_count);
-        for (uint32_t i = 0; i < input->scalar_count; ++i) {
-            const auto& s = input->scalars[i];
-            work.addSample({s.source_id, s.actor_id, s.channel_id, "", AR_SOURCE_SCALAR, AR_OBSERVATION_VALID,
-                AR_SAMPLE_SELECTED, s.source_seconds, s.clock_scale, s.clock_offset, 0}, "");
-        }
-        for (uint32_t i = 0; i < input->gaze_count; ++i) {
-            const auto& g = input->gazes[i];
-            work.addSample({g.source_id, g.actor_id, g.channel_id, "", AR_SOURCE_GAZE, g.validity,
-                AR_SAMPLE_SELECTED, g.source_seconds, g.clock_scale, g.clock_offset, 0}, "");
-        }
+        State work(inst.baseline); prepareWork(work, *input);
         Transaction transaction(inst);
-        for (auto& b : inst.plan) {
-            auto& e = *b.evaluator; d.evaluator = e.id.c_str(); d.origin = e.provider.c_str(); d.phase = e.callbacks.phase;
-            const ArDomain visible = e.callbacks.reads | e.callbacks.writes;
-            auto working = work.view(visible, false);
-            ArStateView prior{}; if (inst.prior) prior = inst.prior->view(visible);
-            ArEvaluationContext context{AR_HEADER(ArEvaluationContext), input, inst.prior ? &prior : nullptr,
-                &working, {&d, Diagnostics::providerEmit}};
-            Writer writer{work, e.callbacks.writes, e.id.c_str()}; auto writerApi = writer.api();
-            try {
-                if (e.callbacks.begin_frame) {
-                    transaction.begun.push_back(&b);
-                    CallbackScope scope;
-                    if (e.callbacks.begin_frame(e.callbacks.user_data, b.state, &context) != AR_OK)
-                        d.fail(AR_PROVIDER_ERROR, "runtime.evaluator.begin", "Provider refused frame preparation");
-                }
-                ArStatus s;
-                { CallbackScope scope; s = e.callbacks.evaluate(e.callbacks.user_data, b.state, &context, &writerApi); }
-                if (writer.failure != AR_OK)
-                    d.fail(writer.failure, "runtime.writer.invalid", "Invalid value, index or undeclared write domain");
-                if (d.callbackFailure != AR_OK)
-                    d.fail(d.callbackFailure, "runtime.diagnostic.failed", "Diagnostic callback failed or supplied an invalid record");
-                if (s != AR_OK) d.fail(AR_PROVIDER_ERROR, "runtime.evaluator.failed", "Evaluator returned failure");
-            } catch (const Failure&) { throw; }
-            catch (const std::bad_alloc&) { throw; }
-            catch (...) { d.fail(AR_PROVIDER_ERROR, "runtime.evaluator.exception", "Provider threw an exception"); }
-        }
+        runEvaluators(inst, *input, work, transaction, 0, inst.plan.size(), d);
         d.evaluator = ""; d.origin = "usd-avatar-runtime"; d.phase = 0;
         validateState(work.view(), d);
         auto published = std::make_shared<State>(std::move(work));
@@ -696,6 +723,225 @@ ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* i
         inst.prior = std::move(published); *out = snapshotId; return AR_OK;
     });
 }
+/* Shared-world scheduling reuses the same private plans, transactions and
+   snapshot storage, without a provider/backend dependency. */
+PhysicsWorld& physicsWorld(Runtime& r, ArPhysicsWorld id) {
+    auto found = r.worlds.find(id);
+    if (found == r.worlds.end()) throw Failure{AR_INVALID_HANDLE};
+    return found->second;
+}
+
+struct PendingFrame {
+    Instance& inst;
+    ArInputFrame input;
+    State work;
+    Transaction transaction;
+    PendingFrame(Instance& i, ArInputFrame f, Diagnostics& d)
+        : inst(i), input(f), work(i.baseline), transaction(i) {
+        validateInput(&input, inst, d);
+        prepareWork(work, input);
+    }
+};
+
+ArStatus AR_CALL createPhysicsWorld(ArRuntime h, const ArPhysicsWorldDesc* desc,
+    const ArDiagnosticSink* sink, ArPhysicsWorld* out) {
+    if (out) *out = 0;
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex);
+        auto& r = runtime(h); Diagnostics d(sink);
+        if (!out) return AR_INVALID_ARGUMENT;
+        requireHeader(desc, d); requireId(desc->id, d);
+        requireSpan(desc->participants, desc->participant_count, d);
+        if (!std::isfinite(desc->start_seconds) || !std::isfinite(desc->fixed_step_seconds) ||
+            desc->fixed_step_seconds <= 0 || !desc->max_catch_up_ticks ||
+            desc->max_catch_up_ticks > 1048576u || !desc->step || !desc->reset)
+            d.fail(AR_INVALID_ARGUMENT, "runtime.physics.config", "Invalid fixed clock or world callbacks");
+        for (const auto& w : r.worlds) if (w.second.id == desc->id)
+            d.fail(AR_DUPLICATE_ID, "runtime.physics.duplicate", "World identity already bound", desc->id);
+        PhysicsWorld world;
+        world.id = desc->id; world.start = world.seconds = desc->start_seconds;
+        world.dt = desc->fixed_step_seconds; world.maxTicks = desc->max_catch_up_ticks;
+        world.user = desc->user_data; world.step = desc->step; world.reset = desc->reset;
+        std::set<ArInstance> unique;
+        for (uint32_t n = 0; n < desc->participant_count; ++n) {
+            const auto& member = desc->participants[n]; auto& inst = instance(r, member.instance);
+            if (inst.world || inst.prior || inst.poisoned)
+                d.fail(AR_INVALID_STATE, "runtime.physics.membership", "Participant requires an unbound, reset instance");
+            if (!unique.emplace(member.instance).second)
+                d.fail(AR_DUPLICATE_ID, "runtime.physics.participant", "Duplicate world participant");
+            requireId(member.post_physics_evaluator, d);
+            size_t split = 0;
+            while (split < inst.plan.size() && inst.plan[split].evaluator->id != member.post_physics_evaluator) ++split;
+            if (split == inst.plan.size())
+                d.fail(AR_MISSING_DEPENDENCY, "runtime.physics.boundary", "Post-physics evaluator is absent from participant plan", member.post_physics_evaluator);
+            world.members.push_back({member.instance, split});
+        }
+        std::sort(world.members.begin(), world.members.end(), [](const auto& a, const auto& b) { return a.id < b.id; });
+        const auto id = newHandle(); r.worlds.emplace(id, std::move(world));
+        for (const auto& member : r.worlds.at(id).members) instance(r, member.id).world = id;
+        *out = id; return AR_OK;
+    });
+}
+
+ArStatus AR_CALL destroyPhysicsWorld(ArRuntime h, ArPhysicsWorld id) {
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex); auto& r = runtime(h); auto& world = physicsWorld(r, id);
+        /* Unbinding is a discontinuity. Direct evaluation requires explicit
+           instance reset; retained snapshots remain independent values. */
+        for (const auto& member : world.members) {
+            auto& inst = instance(r, member.id); inst.world = 0; inst.poisoned = true;
+        }
+        r.worlds.erase(id); return AR_OK;
+    });
+}
+
+void worldCallback(PhysicsWorld& world, const ArPhysicsTick* tick, Diagnostics& d) {
+    d.instance = 0; d.frame = tick ? tick->tick_id : 0;
+    d.evaluator = world.id.c_str(); d.origin = "usd-avatar-runtime"; d.phase = 0;
+    const ArDiagnosticSink forwarding{&d, Diagnostics::providerEmit};
+    ArStatus status = AR_PROVIDER_ERROR;
+    try {
+        CallbackScope scope;
+        status = tick ? world.step(world.user, tick, &forwarding) : world.reset(world.user, &forwarding);
+    } catch (...) {
+        d.fail(AR_PROVIDER_ERROR, "runtime.physics.exception", "World callback threw; reset required", world.id.c_str());
+    }
+    if (status != AR_OK || d.callbackFailure != AR_OK)
+        d.fail(AR_PROVIDER_ERROR, "runtime.physics.callback", "World callback failed; reset required", world.id.c_str());
+}
+
+void poisonWorld(Runtime& r, PhysicsWorld& world) {
+    world.poisoned = true;
+    for (const auto& member : world.members) instance(r, member.id).poisoned = true;
+}
+
+ArStatus AR_CALL resetPhysicsWorld(ArRuntime h, ArPhysicsWorld id, uint64_t generation,
+    const ArDiagnosticSink* sink) {
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex); auto& r = runtime(h); auto& world = physicsWorld(r, id);
+        Diagnostics d(sink);
+        for (const auto& member : world.members) if (generation <= instance(r, member.id).generation)
+            d.fail(AR_INVALID_ARGUMENT, "runtime.physics.generation", "World reset must increase every participant generation");
+        std::vector<std::unique_ptr<Instance>> fresh;
+        for (const auto& member : world.members) {
+            const auto& old = instance(r, member.id);
+            auto next = std::make_unique<Instance>(generation, old.baseline.view());
+            next->world = id; next->baseline.layout = old.baseline.layout;
+            next->baseline.instance = member.id; next->baseline.generation = generation;
+            for (const auto& b : old.plan) next->plan.push_back({b.evaluator, nullptr});
+            initializeStates(next->plan, member.id, generation);
+            fresh.push_back(std::move(next));
+        }
+        try { worldCallback(world, nullptr, d); }
+        catch (...) { poisonWorld(r, world); throw; }
+        for (size_t n = 0; n < world.members.size(); ++n)
+            r.instances.at(world.members[n].id).swap(fresh[n]);
+        world.tick = world.lastRequest = 0; world.seconds = world.start;
+        world.pending = 0; world.poisoned = false;
+        return AR_OK;
+    });
+}
+
+ArStatus AR_CALL advancePhysicsWorld(ArRuntime h, ArPhysicsWorld id,
+    const ArPhysicsAdvanceDesc* desc, const ArDiagnosticSink* sink,
+    ArPhysicsAdvanceResult* out, ArSnapshot* output) {
+    /* Only touch count/slots after descriptor header/span validation. */
+    if (header(desc) && span(desc->inputs, desc->input_count) && output)
+        std::fill(output, output + desc->input_count, ArSnapshot{0});
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex); auto& r = runtime(h); auto& world = physicsWorld(r, id);
+        Diagnostics d(sink); requireHeader(desc, d); requireHeader(out, d);
+        requireSpan(desc->inputs, desc->input_count, d);
+        if (desc->input_count != world.members.size() || (desc->input_count && !output) ||
+            !desc->request_id || desc->request_id <= world.lastRequest || desc->paused > 1 ||
+            !std::isfinite(desc->elapsed_seconds) || desc->elapsed_seconds < 0)
+            d.fail(AR_INVALID_ARGUMENT, "runtime.physics.request", "Invalid request identity, elapsed time or participant count");
+        if (world.poisoned)
+            d.fail(AR_INVALID_STATE, "runtime.physics.poisoned", "Shared world requires reset");
+        std::map<ArInstance, const ArInputFrame*> inputs;
+        for (uint32_t n = 0; n < desc->input_count; ++n) {
+            const auto& item = desc->inputs[n];
+            auto& inst = instance(r, item.instance);
+            if (inst.world != id || !inputs.emplace(item.instance, item.input).second)
+                d.fail(AR_INVALID_ARGUMENT, "runtime.physics.inputs", "Inputs must cover world membership exactly once");
+            if (inst.poisoned) {
+                poisonWorld(r, world);
+                d.fail(AR_INVALID_STATE, "runtime.physics.poisoned", "Participant lifecycle requires shared-world reset");
+            }
+            requireHeader(item.input, d);
+        }
+        const auto nextInput = [&](ArInstance member, uint64_t tick, double seconds) {
+            ArInputFrame input = *inputs.at(member);
+            input.frame_id = tick; input.generation = instance(r, member).generation; input.evaluation_seconds = seconds;
+            return input;
+        };
+        // Validate observations before accepting any elapsed time or callbacks.
+        for (const auto& member : world.members) {
+            auto input = nextInput(member.id, world.tick + 1, world.seconds);
+            d.instance = member.id; d.frame = input.frame_id; validateInput(&input, instance(r, member.id), d);
+        }
+        const double pending = world.pending + (desc->paused ? 0 : desc->elapsed_seconds);
+        if (!std::isfinite(pending))
+            d.fail(AR_INVALID_ARGUMENT, "runtime.physics.clock", "Elapsed time overflow");
+        world.pending = pending; world.lastRequest = desc->request_id;
+        uint32_t completed = 0;
+        // Allow only timestep-relative floating-point subtraction roundoff.
+        const double clockTolerance = world.dt * (8 * std::numeric_limits<double>::epsilon());
+        while (!desc->paused && completed < world.maxTicks &&
+            (world.pending >= world.dt || world.dt - world.pending <= clockTolerance)) {
+            const auto tick = world.tick + 1;
+            const double seconds = world.start + double(tick) * world.dt;
+            if (!tick || !std::isfinite(seconds) || seconds <= world.seconds)
+                d.fail(AR_INVALID_STATE, "runtime.physics.clock", "Fixed clock exhausted; reset required");
+            std::vector<std::unique_ptr<PendingFrame>> frames;
+            for (const auto& member : world.members) {
+                d.instance = member.id; d.frame = tick;
+                frames.push_back(std::make_unique<PendingFrame>(instance(r, member.id), nextInput(member.id, tick, seconds), d));
+            }
+            bool stepped = false;
+            try {
+                for (size_t n = 0; n < frames.size(); ++n) {
+                    auto& f = *frames[n];
+                    runEvaluators(f.inst, f.input, f.work, f.transaction, 0, world.members[n].split, d);
+                }
+                stepped = true; // Even a failed Step may already have mutated the solver.
+                const ArPhysicsTick context{tick, seconds, world.dt}; worldCallback(world, &context, d);
+                std::vector<std::shared_ptr<const State>> published;
+                for (size_t n = 0; n < frames.size(); ++n) {
+                    auto& f = *frames[n];
+                    runEvaluators(f.inst, f.input, f.work, f.transaction, world.members[n].split, f.inst.plan.size(), d);
+                    d.evaluator = ""; d.origin = "usd-avatar-runtime"; d.phase = 0;
+                    validateState(f.work.view(), d);
+                    published.push_back(std::make_shared<State>(std::move(f.work)));
+                }
+                for (auto& f : frames) f->transaction.commit();
+                for (size_t n = 0; n < frames.size(); ++n) frames[n]->inst.prior = std::move(published[n]);
+            } catch (...) {
+                if (stepped) {
+                    poisonWorld(r, world);
+                    d.emit(AR_INVALID_STATE, "runtime.physics.invalidated", "Failure after Step began; reset the entire shared world");
+                }
+                throw;
+            }
+            world.tick = tick; world.seconds = seconds;
+            world.pending = std::max(0.0, world.pending - world.dt); ++completed;
+        }
+        std::vector<ArSnapshot> retained;
+        retained.reserve(desc->input_count);
+        try {
+            for (uint32_t n = 0; n < desc->input_count; ++n) {
+                const auto& prior = instance(r, desc->inputs[n].instance).prior;
+                ArSnapshot handle = 0;
+                if (prior) { handle = newHandle(); snapshots.emplace(handle, Snapshot{prior, 1}); }
+                retained.push_back(handle);
+            }
+        } catch (...) { for (auto handle : retained) snapshots.erase(handle); throw; }
+        for (size_t n = 0; n < retained.size(); ++n) output[n] = retained[n];
+        *out = {AR_HEADER(ArPhysicsAdvanceResult), completed, world.tick, world.seconds, world.pending};
+        return AR_OK;
+    });
+}
+
 ArStatus AR_CALL getSnapshot(ArSnapshot h, ArStateView* out) {
     return boundary([&]() -> ArStatus {
         if (!header(out)) return out ? AR_INCOMPATIBLE_ABI : AR_INVALID_ARGUMENT;
@@ -739,4 +985,11 @@ extern "C" AR_EXPORT ArStatus AR_CALL arGetApi(uint32_t version, uint32_t size, 
         createInstance, destroyInstance, resetInstance, evaluateFrame, getSnapshot,
         retainSnapshot, releaseSnapshot, getCapabilities};
     *out = api; return AR_OK;
+}
+
+extern "C" AR_EXPORT ArStatus AR_CALL arGetPhysicsApi(uint32_t version, uint32_t size, ArPhysicsApi* out) {
+    if (!out) return AR_INVALID_ARGUMENT;
+    if (version != AR_PHYSICS_API_VERSION || size < sizeof(ArPhysicsApi)) return AR_INCOMPATIBLE_ABI;
+    *out = {AR_HEADER(ArPhysicsApi), createPhysicsWorld, destroyPhysicsWorld, resetPhysicsWorld, advancePhysicsWorld};
+    return AR_OK;
 }

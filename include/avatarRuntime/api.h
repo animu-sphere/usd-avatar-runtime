@@ -37,7 +37,7 @@ typedef struct ArRuntimeApi {
     ArStatus (AR_CALL *get_capabilities)(ArRuntime, ArInstance, const ArCapability**, uint32_t*);
 } ArRuntimeApi;
 
-/* Only this symbol crosses the shared-library boundary. Caller owns out_api;
+/* Core table entry point (optional tables have their own query symbol). Caller owns out_api;
    size must cover the complete revision-4 table. Larger tails are untouched.
    Revisions 1-3 are rejected; providers/consumers must rebuild. */
 AR_EXPORT ArStatus AR_CALL arGetApi(uint32_t version, uint32_t size, ArRuntimeApi* out_api);

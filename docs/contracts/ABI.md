@@ -7,8 +7,10 @@ owner: usd-avatar-runtime
 
 This document develops [design policy section 9](../design/DESIGN_POLICY.md).
 The direct implementation exposes experimental revision 4 through
-[`api.h`](../../include/avatarRuntime/api.h). `arGetApi` is the only exported
-runtime entry point; it fills the caller's `ArRuntimeApi` function table.
+[`api.h`](../../include/avatarRuntime/api.h). `arGetApi` fills the caller's
+`ArRuntimeApi` core table. The additive `arGetPhysicsApi` entry point supplies
+the separate experimental [`physics.h`](../../include/avatarRuntime/physics.h)
+table; the revision-4 core table and provider layouts are unchanged.
 This is a tested prototype, not an ecosystem ABI freeze. Owner motion/gaze mapping,
 checkpoint restore and real-provider conformance remain Runtime Phase A gates.
 Under the [near-term direction](../design/NEAR_TERM_PLAN.md#2-contract-validation-before-freeze),
@@ -17,11 +19,14 @@ the revision, phase model, state representation, capability meanings and
 lifecycle. Separately compiled synthetic providers alone do not establish
 a freeze candidate.
 
-The 2026-10-20 physics orchestration direction first validates existing
-evaluator DAGs and lifecycle contracts. Shared-world handles, pre/post callbacks,
-tick/display metadata and recovery semantics remain design work under
-RT-O3/RT-O5/RT-O6. Conceptual milestones do not add exported APIs, new
-`AR_PHASE_*` constants or a frozen physics ABI to revision 4.
+The optional physics table has its own query version, currently
+`AR_PHYSICS_API_VERSION == 1`; its descriptors/results use core revision-4
+headers. `ArPhysicsWorld` is a scoped non-recycled handle. No provider, USD or
+backend types cross this table. The existing installed C consumer also checks
+the installed physics header and query symbol. Pre/post boundaries select
+existing evaluator IDs; no new `AR_PHASE_*` constants are introduced.
+Real-provider phase ordering, display provenance and checkpoint recovery remain
+RT-O3/RT-O4/RT-O5/RT-O6 work, and neither table is frozen.
 
 ## 1. Representation
 

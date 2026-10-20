@@ -32,3 +32,12 @@ if(WIN32)
     add_custom_command(TARGET runtimeContracts POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:runtimeContracts>)
 endif()
+
+add_executable(physicsContracts physics_contracts.cpp)
+target_link_libraries(physicsContracts PRIVATE avatarRuntime)
+target_compile_features(physicsContracts PRIVATE cxx_std_17)
+add_test(NAME contracts.physics COMMAND physicsContracts)
+if(WIN32)
+    add_custom_command(TARGET physicsContracts POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:physicsContracts>)
+endif()

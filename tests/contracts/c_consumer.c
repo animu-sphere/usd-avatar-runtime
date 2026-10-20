@@ -1,4 +1,4 @@
-#include "avatarRuntime/api.h"
+#include "avatarRuntime/physics.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -11,6 +11,7 @@ ArStatus AR_CALL registerContractProvider(const ArRuntimeApi*, ArRuntime);
 
 int main(void) {
     ArRuntimeApi api = {0};
+    ArPhysicsApi physics = {0};
     ArRuntime runtime = 0;
     ArInstance instance = 0;
     ArSnapshot snapshot = 0;
@@ -29,6 +30,8 @@ int main(void) {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     CHECK(arGetApi(2, sizeof(api), &api) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(3, sizeof(api), &api) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetPhysicsApi(AR_PHYSICS_API_VERSION, sizeof(physics), &physics) == AR_OK);
+    CHECK(physics.create_world && physics.advance_world && physics.reset_world && physics.destroy_world);
     CHECK(api.create_runtime(&runtime) == AR_OK);
     CHECK(registerContractProvider(&api, runtime) == AR_OK);
     desc.generation = 1; desc.evaluators = selected; desc.evaluator_count = 1;
