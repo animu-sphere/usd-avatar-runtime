@@ -168,7 +168,9 @@ attachment/detachment. Format-specific coupling stays with MMD/VRM owners.
 
 Core must have no mandatory `usd-mmd-plugins`, Jolt or `hydra-toon` dependency.
 Integrate through optional MMD, physics, VRM and renderer adapters. The MMD
-target/option is defined above; a reusable physics host remains open.
+target/option is defined above. The separate optional
+[Stage Runner session](STAGE_RUNNER_SESSION.md) consumes installed `runtimeCore`
+over a caller-created world; automatic application/world binding remains open.
 Normal CI should cover core units and
 headless smoke in the applicable configuration, with heavy asset/backend/render
 end-to-end checks opt-in. Optional integration dependencies must not leak into

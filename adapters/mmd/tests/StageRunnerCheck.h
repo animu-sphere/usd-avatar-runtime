@@ -1,6 +1,6 @@
 #pragma once
 #include <array>
-#include <usd_stage_runner/runtime/frame_clock.h>
+#include <avatarStageRunner/PhysicsSession.h>
 
 // Test host composition only. FrameClock measures display time; avatar-runtime
 // alone owns the world's accumulator, barrier, tick IDs and input holding.
@@ -8,29 +8,48 @@ class StageRunnerCheck {
   using FrameClock = usd_stage_runner::runtime::FrameClock;
   Fixture &fixture_;
   FrameClock::Clock::time_point now_{};
-  FrameClock clock_{[this] { return now_; }};
-  bool paused_ = true;
+  avatarStageRunner::PhysicsSession session_;
+
+  ArStatus Deliver(ArStatus status) {
+    fixture_.release();
+    fixture_.lastAdvance = session_.LastAdvance();
+    if (status == AR_OK) {
+      CHECK(session_.Snapshots().size() == 2);
+      for (size_t i = 0; i < 2; ++i) {
+        fixture_.snapshots[i] = session_.Snapshots()[i];
+        if (fixture_.snapshots[i])
+          CHECK(fixture_.api.retain_snapshot(fixture_.snapshots[i]) == AR_OK);
+      }
+    }
+    return status;
+  }
 
 public:
-  explicit StageRunnerCheck(Fixture &fixture) : fixture_(fixture) {
-    (void)clock_.tick();
-  }
+  explicit StageRunnerCheck(Fixture &fixture)
+      : fixture_(fixture),
+        session_(fixture.runtime, fixture.world, [this] { return now_; }) {}
   void Pause(bool paused) {
-    // Anchor both transitions, so neither paused wall time nor time before a
-    // pause can leak into the first resumed display request.
-    (void)clock_.tick();
-    paused_ = paused;
+    if (paused)
+      session_.Pause();
+    else
+      session_.Play();
   }
   ArStatus Display(std::chrono::milliseconds elapsed) {
     now_ += elapsed;
-    return fixture_.advance(clock_.tick().count(), paused_);
+    ArDiagnosticSink sink{&fixture_, Fixture::diagnostic};
+    return Deliver(session_.Display(fixture_.inputs, 2, &sink));
+  }
+  ArStatus Retry() {
+    ArDiagnosticSink sink{&fixture_, Fixture::diagnostic};
+    return Deliver(session_.RetryAdvance(fixture_.inputs, 2, &sink));
+  }
+  ArSnapshot LastSnapshot() const {
+    return session_.Snapshots().empty() ? 0 : session_.Snapshots()[0];
   }
   void Reset(uint64_t generation) {
-    CHECK(fixture_.physics.reset_world(fixture_.runtime, fixture_.world,
-                                       generation, nullptr) == AR_OK);
-    clock_.reset();
-    (void)clock_.tick();
-    paused_ = true;
+    CHECK(session_.Reset(generation) == AR_OK);
+    fixture_.release();
+    CHECK(session_.IsPaused() && session_.Snapshots().empty());
   }
 };
 
@@ -154,9 +173,13 @@ void stageRunner(Assets &assets) {
 
     // A failed suffix invalidates the group. The display consumer retains its
     // last valid output; a renderer retry never submits more elapsed time.
+    const auto lastDisplay = host.LastSnapshot();
+    const auto lastDisplayPose = f.pose(lastDisplay);
     f.badSnapshot = true;
     CHECK(host.Display(std::chrono::milliseconds(25)) == AR_PROVIDER_ERROR);
     CHECK(!f.snapshots[0] && !f.snapshots[1] && f.steps == 25);
+    CHECK(host.LastSnapshot() == lastDisplay &&
+          f.pose(lastDisplay) == lastDisplayPose);
     f.badSnapshot = false;
     CHECK(host.Display(std::chrono::milliseconds(0)) == AR_INVALID_STATE);
     CHECK(f.steps == 25 && f.pose(retained) == retainedPose);
@@ -176,7 +199,9 @@ void stageRunner(Assets &assets) {
     CHECK(!f.snapshots[0] && !f.snapshots[1] && f.steps == 0);
     f.failSubmit = false;
     f.calls.clear();
-    display(0, 3);
+    CHECK(host.Retry() == AR_OK);
+    CHECK(f.lastAdvance.tick_count == 3 && f.steps == 3);
+    checkFinal();
     CHECK(f.input.frame_id == 0 && f.input.generation == 0 &&
           f.input.evaluation_seconds == 0);
     CHECK(f.pose(retained) == retainedPose);

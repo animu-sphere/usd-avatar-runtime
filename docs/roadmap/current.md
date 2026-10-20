@@ -369,7 +369,7 @@ clock/invalidation to the
 | Milestone | Work and acceptance gate | Runtime Phase |
 | --- | --- | --- |
 | A: evaluator dependency validation | validate existing evaluator DAGs against MMD pre/post control, morph/append/IK and model-specific post-physics IK; document any required extension before adding generic phase enum values | A/B |
-| B: world integration and barrier | extend the generated owner/Jolt test host to reusable host binding, held-input policy and shared non-avatar objects; retain group reset and post-Step recovery guarantees | A/B |
+| B: world integration and barrier | connect the scoped reusable session to application/stage lifecycle and automatic world binding; retain explicit held-input policy, shared non-avatar objects, group reset and post-Step recovery guarantees | A/B |
 | D: final snapshot + fast-path consumer | publish retained CPU snapshots using the existing evaluated-state contract and renderer-owned consumer; verify joint/morph contract agreement with the Hydra path; no Physics Step or IK in rendering | A/B and C |
 | E: multiple avatars, seek and VRM extension | exercise shared-world membership and reset/seek scope, extend discontinuity coverage and integrate owner VRM secondary motion under the same orchestration; arbitrary-time complete replay is outside MVP | B/E |
 
@@ -412,9 +412,11 @@ close that gate or MMD's composed-consumer acceptance.
 The [Stage Runner clock smoke](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-clock-evidence-2026-10-21)
 validates installed host clock -> runtime-owned ticks -> MMD/Jolt -> Toon probe
 transport, including held inputs, a shared non-avatar body and group recovery.
-Milestone B still requires reusable application/session binding; D still
-requires resident-avatar resources and Hydra agreement. No physics MVP or
-composed-consumer completion is implied by the clock smoke.
+The optional [host session](../architecture/STAGE_RUNNER_SESSION.md) now replaces
+test-private clock/playback handling with an installed reusable target over
+explicit world bindings. Milestone B still requires application/stage lifecycle
+and automatic world construction; D still requires resident-avatar resources
+and Hydra agreement. No physics MVP or composed-consumer completion is implied.
 
 ## Open decisions
 
