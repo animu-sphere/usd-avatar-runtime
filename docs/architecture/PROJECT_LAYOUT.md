@@ -34,6 +34,7 @@ or rename working directories merely to match a responsibility sketch.
 | `avatarMotionUsdBinding` | `adapters/motion-usd`: throwing owner-result read used directly by the host; compatible immutable StageClip wrapper delegates to it |
 | `avatarVrmAdapter` | `adapters/vrm`: owner LookAt/expression registration and common-state mapping |
 | `avatarMmdAdapter` | `adapters/mmd`: owner MMD pre/post control/coupling registration and host world bridge; [boundary](MMD_ADAPTER.md) |
+| `avatarStageRunnerSession` | `adapters/stage-runner`: optional installed clock/playback binding over an existing runtime world; [boundary](STAGE_RUNNER_SESSION.md) |
 | `avatarVrmUsdBinding`, `avatarVrmLookAtUsdBinding`, `avatarVrmExpressionUsdBinding` | `adapters/vrm-usd`: separately optional owner schema/configuration bindings |
 | `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host, optionally with installed Toon probe transport checks |
 | `mmdToonContracts` | `adapters/mmd/tests`: separately opt-in final MMD/Jolt snapshot transport host using installed Toon and explicit generated resources |

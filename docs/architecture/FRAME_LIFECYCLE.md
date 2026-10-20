@@ -166,6 +166,10 @@ its original identity.
 
 ### Experimental fixed-tick requests
 
+The optional [Stage Runner session](STAGE_RUNNER_SESSION.md) wraps this table
+with a measured host clock, playback transitions and retained display output.
+It introduces no accumulator or physics/backend dependency into core.
+
 `advance_world` accepts nonnegative finite elapsed time, pause state and exactly
 one input template per participant. Runtime preserves observations and input
 revision, and assigns the participant generation, tick ID and evaluation seconds

@@ -42,16 +42,15 @@ installed adapter consumers retain their existing dependencies. Explicit
 generated resources exercise final snapshot transport under the
 [output boundary](OUTPUT_PATHS.md#scoped-mmd-transport-check).
 
-`AVATAR_MMD_STAGE_RUNNER_SMOKE=ON` additionally requires the Toon smoke and an
-installed Stage Runner `runtimeCore` package. Only the separate
-`mmdStageRunnerContracts` test host links `runtimeCore::runtimeCore`. Its
-injected `FrameClock` measures display elapsed time and forwards one request
-to `advance_world`; it introduces no host fixed-step accumulator. Pause/resume
-anchors the clock, and reset composes the runtime world-group reset with clock
-reinitialization. The host explicitly holds selected input templates across
-catch-up ticks. This is generated headless clock composition, with explicit
-renderer probe resources; no `StageSession`, application or resident-resource
-binding API is supplied. Ordinary installed consumers import no host target.
+`AVATAR_MMD_STAGE_RUNNER_SMOKE=ON` additionally requires the Toon smoke and
+`AVATAR_BUILD_STAGE_RUNNER_SESSION=ON` with installed Stage Runner `runtimeCore`.
+The separate `mmdStageRunnerContracts` host uses the reusable
+[physics host session](STAGE_RUNNER_SESSION.md) for display time, play/pause,
+group reset, explicit zero-elapsed retry and retained display output. It
+explicitly holds selected input templates across catch-up ticks. The generated
+scene still uses explicit renderer probe resources and caller-built world
+resources; application and resident-resource integration remain open.
+Ordinary installed MMD consumers import no host target.
 
 ```cmake
 find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS mmd)

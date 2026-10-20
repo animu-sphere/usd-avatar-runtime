@@ -4,6 +4,7 @@ project(UsdAvatarRuntime VERSION 0.1.0 LANGUAGES C CXX)
 option(AVATAR_BUILD_TESTS "Build contract and direct execution tests" ${PROJECT_IS_TOP_LEVEL})
 option(AVATAR_BUILD_VRM_ADAPTER "Build the optional vrmRig registration adapter" OFF)
 option(AVATAR_BUILD_MMD_ADAPTER "Build the optional MMD control/coupling registration adapter" OFF)
+option(AVATAR_BUILD_STAGE_RUNNER_SESSION "Build the optional Stage Runner physics host session" OFF)
 option(AVATAR_BUILD_MOTION_ADAPTER "Build the optional motion sampling/retarget adapter" OFF)
 option(AVATAR_BUILD_USD_BINDING "Build the optional USD skeleton binding adapter" OFF)
 option(AVATAR_BUILD_VRM_USD_BINDING "Build the optional VRM schema Humanoid binding adapter" OFF)
@@ -64,6 +65,10 @@ endif()
 
 if(AVATAR_BUILD_VRM_ADAPTER)
     add_subdirectory(adapters/vrm)
+endif()
+
+if(AVATAR_BUILD_STAGE_RUNNER_SESSION)
+    add_subdirectory(adapters/stage-runner)
 endif()
 
 if(AVATAR_BUILD_MMD_ADAPTER)
