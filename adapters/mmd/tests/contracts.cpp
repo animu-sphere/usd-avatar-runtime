@@ -99,9 +99,13 @@ struct Fixture {
     std::vector<std::string> calls, diagnostics;
     int steps = 0, resets = 0; uint64_t request = 0;
     bool badSnapshot = false, failSubmit = false;
+    ArPhysicsAdvanceResult lastAdvance{AR_HEADER(ArPhysicsAdvanceResult)};
 #ifdef AVATAR_MMD_JOLT_SMOKE
     std::unique_ptr<usd_physics::core::PhysicsWorld> solver;
     std::map<ArInstance, std::map<SdfPath, usd_physics::core::BodyHandle>> handles;
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+    usd_physics::core::BodyHandle sharedBody;
+#endif
     void initializeSolver() {
         namespace core = usd_physics::core;
         // Reset rebuilds ALL resources and path/handle maps, never reuses stale handles.
@@ -123,6 +127,17 @@ struct Fixture {
             if (body.motionType == core::MotionType::dynamicBody)
                 CHECK(solver->setLinearVelocity(handles[avatar].at(SdfPath(body.path)), {.1,0,0}));
         }
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+        // A world-owned object outside both avatars must share Step and reset.
+        core::BodyDescriptor shared;
+        shared.shape = solver->createShape({});
+        shared.motionType = core::MotionType::dynamicBody;
+        shared.initialTransform.translation = {20,10,0};
+        shared.collisionFilter = {1,0};
+        shared.damping = {0,0};
+        sharedBody = solver->createBody(shared);
+        CHECK(solver->setLinearVelocity(sharedBody, {.25,0,0}));
+#endif
     }
 #endif
     static void AR_CALL diagnostic(void* p, const ArDiagnostic* d) {
@@ -142,6 +157,18 @@ struct Fixture {
         config.submit = [this](const ArEvaluationContext& c, std::span<const Body> bodies) {
             calls.push_back("pre." + std::to_string(c.working->instance));
             CHECK(bodies.size() == 1);
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+            CHECK(c.input->input_revision == input.input_revision);
+            CHECK(c.input->scalar_count == input.scalar_count);
+            for (uint32_t i = 0; i < input.scalar_count; ++i) {
+                const auto &actual = c.input->scalars[i], &expected = input.scalars[i];
+                CHECK(std::string(actual.source_id) == expected.source_id);
+                CHECK(std::string(actual.actor_id) == expected.actor_id);
+                CHECK(std::string(actual.channel_id) == expected.channel_id);
+                CHECK(actual.value == expected.value && actual.source_seconds == expected.source_seconds);
+                CHECK(actual.clock_scale == expected.clock_scale && actual.clock_offset == expected.clock_offset);
+            }
+#endif
             if (failSubmit) return AR_PROVIDER_ERROR;
             pending[c.working->instance] = {bodies.begin(), bodies.end()}; return AR_OK;
         };
@@ -245,9 +272,9 @@ struct Fixture {
     ArStatus advance(double seconds, bool pause = false) {
         release(); ArPhysicsAdvanceDesc d{AR_HEADER(ArPhysicsAdvanceDesc)};
         d.request_id = ++request; d.elapsed_seconds = seconds; d.paused = pause; d.inputs = inputs; d.input_count = 2;
-        ArPhysicsAdvanceResult result{AR_HEADER(ArPhysicsAdvanceResult)};
+        lastAdvance = {AR_HEADER(ArPhysicsAdvanceResult)};
         ArDiagnosticSink sink{this, diagnostic};
-        return physics.advance_world(runtime, world, &d, &sink, &result, snapshots);
+        return physics.advance_world(runtime, world, &d, &sink, &lastAdvance, snapshots);
     }
     Pose pose(ArSnapshot s) {
         ArStateView v{AR_HEADER(ArStateView)}; CHECK(api.get_snapshot(s, &v) == AR_OK);
@@ -377,6 +404,10 @@ void toonConstructed() {
 }
 #endif
 
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+#include "StageRunnerCheck.h"
+#endif
+
 int main(int argc, char **argv) {
   if (argc == 1) {
     constructed();
@@ -389,6 +420,9 @@ int main(int argc, char **argv) {
   else {
     CHECK(argc == 3);
     Assets assets(argv[1], argv[2]);
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+    stageRunner(assets);
+#else
 #ifdef AVATAR_MMD_TOON_SMOKE
     std::unique_ptr<MmdToonCheck> consumers[2];
 #endif
@@ -434,6 +468,7 @@ int main(int argc, char **argv) {
 #ifdef AVATAR_MMD_TOON_SMOKE
     for (auto &consumer : consumers)
       consumer->AfterProducerDestruction();
+#endif
 #endif
   }
 #endif

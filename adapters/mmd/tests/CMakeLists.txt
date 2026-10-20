@@ -1,5 +1,9 @@
 option(AVATAR_MMD_JOLT_SMOKE "Test MMD callbacks with installed Jolt and generated PMX/VMD" OFF)
 option(AVATAR_MMD_TOON_SMOKE "Test final MMD/Jolt snapshots through installed Toon AvatarState" OFF)
+option(AVATAR_MMD_STAGE_RUNNER_SMOKE "Test installed Stage Runner clock driving MMD/Jolt/Toon" OFF)
+if(AVATAR_MMD_STAGE_RUNNER_SMOKE AND NOT AVATAR_MMD_TOON_SMOKE)
+    message(FATAL_ERROR "AVATAR_MMD_STAGE_RUNNER_SMOKE requires AVATAR_MMD_TOON_SMOKE")
+endif()
 if(AVATAR_MMD_TOON_SMOKE AND NOT AVATAR_MMD_JOLT_SMOKE)
     message(FATAL_ERROR "AVATAR_MMD_TOON_SMOKE requires AVATAR_MMD_JOLT_SMOKE")
 endif()
@@ -54,5 +58,18 @@ if(AVATAR_MMD_TOON_SMOKE)
     if(WIN32)
         add_custom_command(TARGET mmdToonContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:mmdToonContracts>)
+    endif()
+endif()
+if(AVATAR_MMD_STAGE_RUNNER_SMOKE)
+    find_package(runtimeCore 0.1 CONFIG REQUIRED)
+    add_executable(mmdStageRunnerContracts contracts.cpp)
+    target_compile_definitions(mmdStageRunnerContracts PRIVATE
+        AVATAR_MMD_JOLT_SMOKE AVATAR_MMD_TOON_SMOKE AVATAR_MMD_STAGE_RUNNER_SMOKE)
+    target_link_libraries(mmdStageRunnerContracts PRIVATE avatarMmdAdapter
+        physicsJolt::physicsJolt physicsUsd::physicsUsd Toon::AvatarState runtimeCore::runtimeCore)
+    add_test(NAME adapters.mmd_stage_runner COMMAND mmdStageRunnerContracts "${AVATAR_MMD_PMX}" "${AVATAR_MMD_VMD}")
+    if(WIN32)
+        add_custom_command(TARGET mmdStageRunnerContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:mmdStageRunnerContracts>)
     endif()
 endif()
