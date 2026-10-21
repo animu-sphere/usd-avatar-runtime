@@ -114,8 +114,11 @@ the [session evidence](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-ses
 and [world-lifetime evidence](../reference/CAPABILITY_MATRIX.md#scoped-session-world-lifetime-evidence-2026-10-21).
 The [selective-unload evidence](../reference/CAPABILITY_MATRIX.md#scoped-selective-unload-evidence-2026-10-21)
 adds member removal with explicit host-owned body teardown.
+The optional [USD scene resource adapter](PHYSICS_USD_RESOURCES.md) supplies
+ordered constraint/body/shape construction and teardown over owner snapshots;
+it remains separate from this physics-free clock/session target.
 Automatic stage/world construction, `StageSession`/usdview/standalone application
-wiring, stop/single-step UI semantics, automatic body/constraint teardown,
+wiring, stop/single-step UI semantics, automatic application-driven resource teardown,
 resident renderer resource matching and Hydra/direct agreement remain
 open. Stop/reset policy must be selected by the application rather than silently
 translating stop into seek or

@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.22)
+project(PhysicsUsdInstalledConsumer LANGUAGES CXX)
+find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS physics_usd)
+foreach(unexpected IN ITEMS mmdControl::mmdControl physicsJolt::physicsJolt
+    Toon::AvatarState runtimeCore::runtimeCore AvatarRuntime::avatarMmdAdapter)
+    if(TARGET ${unexpected})
+        message(FATAL_ERROR "Physics-resource lookup imported ${unexpected}")
+    endif()
+endforeach()
+add_executable(resourcesConsumer ../tests.cpp)
+target_link_libraries(resourcesConsumer PRIVATE AvatarRuntime::avatarPhysicsUsdResources)
+enable_testing()
+add_test(NAME installed.physics_usd_resources COMMAND resourcesConsumer)

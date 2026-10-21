@@ -35,6 +35,7 @@ or rename working directories merely to match a responsibility sketch.
 | `avatarVrmAdapter` | `adapters/vrm`: owner LookAt/expression registration and common-state mapping |
 | `avatarMmdAdapter` | `adapters/mmd`: owner MMD pre/post control/coupling registration and host world bridge; [boundary](MMD_ADAPTER.md) |
 | `avatarStageRunnerSession` | `adapters/stage-runner`: optional installed clock/playback session with borrowed or owned runtime world registration; [boundary](STAGE_RUNNER_SESSION.md) |
+| `avatarPhysicsUsdResources` | `adapters/physics-usd`: optional installed host resource sets over physics-owner snapshots and a borrowed neutral world; [boundary](PHYSICS_USD_RESOURCES.md) |
 | `avatarVrmUsdBinding`, `avatarVrmLookAtUsdBinding`, `avatarVrmExpressionUsdBinding` | `adapters/vrm-usd`: separately optional owner schema/configuration bindings |
 | `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host, optionally with installed Toon probe transport checks |
 | `mmdToonContracts` | `adapters/mmd/tests`: separately opt-in final MMD/Jolt snapshot transport host using installed Toon and explicit generated resources |

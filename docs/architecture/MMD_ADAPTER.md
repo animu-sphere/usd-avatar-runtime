@@ -43,13 +43,16 @@ generated resources exercise final snapshot transport under the
 [output boundary](OUTPUT_PATHS.md#scoped-mmd-transport-check).
 
 `AVATAR_MMD_STAGE_RUNNER_SMOKE=ON` additionally requires the Toon smoke and
-`AVATAR_BUILD_STAGE_RUNNER_SESSION=ON` with installed Stage Runner `runtimeCore`.
+`AVATAR_BUILD_STAGE_RUNNER_SESSION=ON` with installed Stage Runner `runtimeCore`,
+and `AVATAR_BUILD_PHYSICS_USD_RESOURCES=ON` for the reusable
+[scene resource sets](PHYSICS_USD_RESOURCES.md).
 The separate `mmdStageRunnerContracts` host uses the reusable
 [physics host session](STAGE_RUNNER_SESSION.md) for display time, play/pause,
 group reset, explicit zero-elapsed retry and retained display output. It
 explicitly holds selected input templates across catch-up ticks. The generated
-scene still uses explicit renderer probe resources and caller-built world
-resources; application and resident-resource integration remain open.
+scene uses owner-read body/joint snapshots and caller-selected world/body
+policy. Renderer probe resources remain explicit; application and resident-resource
+integration remain open.
 Ordinary installed MMD consumers import no host target.
 
 ```cmake

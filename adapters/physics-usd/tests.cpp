@@ -1,0 +1,206 @@
+#include <avatarPhysics/SceneResources.h>
+#include <usd_physics/core/six_dof.h>
+#include <cstdlib>
+#include <iostream>
+#include <set>
+
+#define CHECK(x) do { if (!(x)) { std::cerr << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while (0)
+namespace core = usd_physics::core;
+namespace usd = usd_physics::usd;
+using Resources = avatarPhysics::SceneResources;
+
+struct BareWorld : core::PhysicsWorld {
+  uint64_t next = 0;
+  int creates = 0, failAt = 0;
+  bool invalid = false, refuseConstraint = false, refuseBody = false, refuseShape = false;
+  std::set<uint64_t> shapes;
+  std::map<uint64_t, core::BodyDescriptor> bodies;
+  std::map<uint64_t, core::SixDofConstraintDescriptor> constraints;
+  std::vector<std::string> destroyed;
+  uint64_t allocate() {
+    if (++creates == failAt) {
+      if (invalid) return 0;
+      throw std::runtime_error("injected creation failure");
+    }
+    return ++next;
+  }
+  core::ShapeHandle createShape(const core::ShapeDescriptor &) override {
+    auto id = allocate(); if (id) shapes.insert(id); return core::ShapeHandle(id);
+  }
+  bool destroyShape(core::ShapeHandle h) noexcept override {
+    if (refuseShape) return false;
+    for (const auto &[id, body] : bodies) CHECK(body.shape != h);
+    CHECK(shapes.erase(h.value()) == 1); destroyed.push_back("shape"); return true;
+  }
+  core::BodyHandle createBody(const core::BodyDescriptor &d) override {
+    CHECK(shapes.count(d.shape.value()));
+    auto id = allocate(); if (id) bodies.emplace(id, d); return core::BodyHandle(id);
+  }
+  bool destroyBody(core::BodyHandle h) noexcept override {
+    if (refuseBody) return false;
+    for (const auto &[id, joint] : constraints)
+      CHECK(joint.firstBody != h && joint.secondBody != h);
+    CHECK(bodies.erase(h.value()) == 1); destroyed.push_back("body"); return true;
+  }
+  core::ConstraintHandle createConstraint(const core::ConstraintDescriptor &) override {
+    std::abort();
+  }
+  bool destroyConstraint(core::ConstraintHandle h) noexcept override {
+    if (refuseConstraint) return false;
+    CHECK(constraints.erase(h.value()) == 1); destroyed.push_back("joint"); return true;
+  }
+  bool applyForce(core::BodyHandle, core::Vector3) override { std::abort(); }
+  bool setLinearVelocity(core::BodyHandle, core::Vector3) override { std::abort(); }
+  core::BodyState bodyState(core::BodyHandle) const override { std::abort(); }
+  void step(Duration) override { std::abort(); }
+  std::vector<core::BodyState> takeChangedBodyStates() override { std::abort(); }
+};
+
+struct World : BareWorld, core::SixDofConstraints {
+  core::ConstraintHandle createSixDofConstraint(const core::SixDofConstraintDescriptor &d) override {
+    CHECK(!d.firstBody || bodies.count(d.firstBody.value()));
+    CHECK(!d.secondBody || bodies.count(d.secondBody.value()));
+    auto id = allocate(); if (id) constraints.emplace(id, d); return core::ConstraintHandle(id);
+  }
+};
+
+usd::PhysicsScene scene() {
+  usd::PhysicsScene result;
+  for (int i = 0; i < 3; ++i) {
+    usd::PrimitiveBody body;
+    body.path = "/Asset/body" + std::to_string(i);
+    body.motionType = i ? core::MotionType::dynamicBody : core::MotionType::kinematicBody;
+    body.transform.translation = {double(i), 2, 0};
+    result.bodies.push_back(body);
+  }
+  usd::Joint fixed;
+  fixed.path = "/Asset/fixed"; fixed.type = usd::JointType::fixed;
+  fixed.body0 = result.bodies[0].path; fixed.body1 = result.bodies[1].path;
+  fixed.localFrame0.translation = {1, 0, 0};
+  result.joints.push_back(fixed);
+  usd::Joint world;
+  world.path = "/Asset/world"; world.body1 = result.bodies[2].path;
+  world.limits[0] = {true, -.5, .5};
+  result.joints.push_back(world);
+  usd::Joint disabled = world;
+  disabled.path = "/Asset/disabled"; disabled.enabled = false;
+  result.joints.push_back(disabled);
+  return result;
+}
+
+void lifetime() {
+  World world;
+  Resources survivor(world, scene());
+  const auto survivorHandles = survivor.Bodies();
+  const auto baselineBodies = world.bodies.size(), baselineShapes = world.shapes.size();
+  {
+    auto snapshot = scene();
+    Resources removed(world, snapshot, [](const auto &, auto &d) {
+      d.damping = {0, 0}; d.collisionFilter = {1, 0};
+      d.initialTransform.rotation = {.5, 0, 0, .8660254037844386};
+    });
+    // Identical paths in another resource set resolve to different world handles.
+    CHECK(removed.Bodies().at("/Asset/body0") != survivorHandles.at("/Asset/body0"));
+    bool fixedMapped = false, worldMapped = false;
+    for (const auto &[id, joint] : world.constraints) {
+      if (joint.firstBody == removed.Bodies().at("/Asset/body0")) {
+        CHECK(joint.secondBody == removed.Bodies().at("/Asset/body1"));
+        CHECK(joint.firstFrame.translation.x == 1);
+        fixedMapped = true;
+      }
+      if (joint.secondBody == removed.Bodies().at("/Asset/body2")) {
+        CHECK(!joint.firstBody);
+        worldMapped = true;
+      }
+    }
+    CHECK(fixedMapped && worldMapped);
+    for (const auto &[path, handle] : removed.Bodies()) {
+      const auto &d = world.bodies.at(handle.value());
+      CHECK(d.damping.linear == 0 && d.collisionFilter.collidesWith == 0);
+      CHECK(d.initialTransform.rotation.w == .5);
+    }
+    snapshot = {}; // No borrowed scene data survives construction.
+    CHECK(removed.Close() && removed.Bodies().empty());
+    CHECK(removed.Close());
+    CHECK((world.destroyed == std::vector<std::string>{
+      "joint", "joint", "body", "body", "body", "shape", "shape", "shape"}));
+  }
+  CHECK(world.bodies.size() == baselineBodies && world.shapes.size() == baselineShapes);
+  CHECK(survivor.Bodies() == survivorHandles && world.constraints.size() == 2);
+  for (auto [path, handle] : survivorHandles) CHECK(world.bodies.count(handle.value()));
+  CHECK(survivor.Close());
+  CHECK(world.shapes.empty() && world.bodies.empty() && world.constraints.empty());
+  { Resources automatic(world, scene()); }
+  CHECK(world.shapes.empty() && world.bodies.empty() && world.constraints.empty());
+}
+
+void failures() {
+  for (bool invalid : {false, true}) for (int failure = 1; failure <= 8; ++failure) {
+    World world;
+    Resources survivor(world, scene());
+    const auto handles = survivor.Bodies();
+    world.failAt = world.creates + failure; world.invalid = invalid;
+    bool rejected = false;
+    try { Resources resources(world, scene()); }
+    catch (const std::runtime_error &) { rejected = true; }
+    CHECK(rejected);
+    CHECK(world.shapes.size() == 3 && world.bodies.size() == 3 && world.constraints.size() == 2);
+    CHECK(survivor.Bodies() == handles);
+  }
+  for (int refusal = 0; refusal < 3; ++refusal) {
+    World world;
+    Resources resources(world, scene());
+    world.refuseConstraint = refusal == 0;
+    world.refuseBody = refusal == 1;
+    world.refuseShape = refusal == 2;
+    CHECK(!resources.Close());
+    if (refusal == 0) CHECK(world.destroyed.empty());
+    if (refusal == 1) CHECK(world.constraints.empty() && world.bodies.size() == 3 && world.shapes.size() == 3);
+    if (refusal == 2) CHECK(world.constraints.empty() && world.bodies.empty() && world.shapes.size() == 3);
+    world.refuseConstraint = world.refuseBody = world.refuseShape = false;
+    CHECK(resources.Close() && resources.Bodies().empty());
+    CHECK(world.shapes.empty() && world.bodies.empty() && world.constraints.empty());
+  }
+}
+
+void validation() {
+  auto rejects = [](auto mutate) {
+    World world; auto snapshot = scene(); mutate(snapshot);
+    bool rejected = false;
+    try { Resources resources(world, snapshot); }
+    catch (const std::exception &) { rejected = true; }
+    CHECK(rejected && world.creates == 0);
+  };
+  rejects([](auto &s) { s.bodies.push_back(s.bodies.front()); });
+  rejects([](auto &s) { s.bodies.front().path = "relative"; });
+  rejects([](auto &s) { s.joints.push_back(s.joints.front()); });
+  rejects([](auto &s) { s.joints.front().body1 = "/Other/body"; });
+  rejects([](auto &s) { s.joints[1].limits[0] = {true, 1, 1}; });
+  rejects([](auto &s) { s.bodies.front().shape.halfExtents.x = -1; });
+  World world;
+  for (bool shape : {false, true}) {
+    bool rejected = false;
+    try {
+      Resources resources(world, scene(), [shape](const auto &, auto &d) {
+        if (shape) d.shape = core::ShapeHandle(99);
+        else throw std::runtime_error("policy refusal");
+      });
+    } catch (const std::exception &) { rejected = true; }
+    CHECK(rejected && world.creates == 0);
+  }
+  BareWorld plain;
+  bool rejected = false;
+  try { Resources resources(plain, scene()); }
+  catch (const std::invalid_argument &) { rejected = true; }
+  CHECK(rejected && plain.creates == 0);
+  auto snapshot = scene();
+  for (auto &joint : snapshot.joints) joint.enabled = false;
+  { Resources resources(plain, snapshot); }
+  CHECK(plain.bodies.empty() && plain.shapes.empty());
+  { Resources empty(plain, {}); CHECK(empty.Bodies().empty() && empty.Close()); }
+}
+
+int main() {
+  lifetime(); failures(); validation();
+  std::cout << "Scene resource construction, rollback and selective lifetime passed\n";
+}

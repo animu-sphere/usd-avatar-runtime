@@ -61,6 +61,9 @@ if(AVATAR_MMD_TOON_SMOKE)
     endif()
 endif()
 if(AVATAR_MMD_STAGE_RUNNER_SMOKE)
+    if(NOT TARGET AvatarRuntime::avatarPhysicsUsdResources)
+        message(FATAL_ERROR "AVATAR_MMD_STAGE_RUNNER_SMOKE requires AVATAR_BUILD_PHYSICS_USD_RESOURCES")
+    endif()
     if(NOT TARGET AvatarRuntime::avatarStageRunnerSession)
         message(FATAL_ERROR "AVATAR_MMD_STAGE_RUNNER_SMOKE requires AVATAR_BUILD_STAGE_RUNNER_SESSION")
     endif()
@@ -68,7 +71,8 @@ if(AVATAR_MMD_STAGE_RUNNER_SMOKE)
     target_compile_definitions(mmdStageRunnerContracts PRIVATE
         AVATAR_MMD_JOLT_SMOKE AVATAR_MMD_TOON_SMOKE AVATAR_MMD_STAGE_RUNNER_SMOKE)
     target_link_libraries(mmdStageRunnerContracts PRIVATE avatarMmdAdapter
-        physicsJolt::physicsJolt physicsUsd::physicsUsd Toon::AvatarState AvatarRuntime::avatarStageRunnerSession)
+        physicsJolt::physicsJolt physicsUsd::physicsUsd Toon::AvatarState AvatarRuntime::avatarStageRunnerSession
+        AvatarRuntime::avatarPhysicsUsdResources)
     add_test(NAME adapters.mmd_stage_runner COMMAND mmdStageRunnerContracts "${AVATAR_MMD_PMX}" "${AVATAR_MMD_VMD}")
     if(WIN32)
         add_custom_command(TARGET mmdStageRunnerContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different

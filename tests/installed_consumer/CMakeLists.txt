@@ -5,6 +5,7 @@ foreach(owner_target IN ITEMS AvatarRuntime::avatarStageRunnerSession runtimeCor
     AvatarRuntime::avatarUsdBinding AvatarRuntime::avatarVrmUsdBinding
     AvatarRuntime::avatarMotionAdapter AvatarRuntime::avatarVrmAdapter AvatarRuntime::avatarMotionUsdBinding
     AvatarRuntime::avatarMmdAdapter mmdPhysicsAdapter::mmdPhysicsAdapter mmdControl::mmdControl
+    AvatarRuntime::avatarPhysicsUsdResources physicsUsd::physicsUsd
     physicsCore::physicsCore physicsJolt::physicsJolt Toon::AvatarState Toon::RenderWorld
     motionUsd::motionUsd
     motionRetarget::motionRetarget motionSampling::motionSampling vrmRig::vrmRig vrmSchema::vrmSchema usd)
