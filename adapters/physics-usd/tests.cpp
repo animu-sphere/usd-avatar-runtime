@@ -205,6 +205,41 @@ void validation() {
   { Resources empty(plain, {}); CHECK(empty.Bodies().empty() && empty.Close()); }
 }
 
+void jointPolicy() {
+  World world;
+  int calls = 0;
+  Resources resources(world, scene(), {}, [&](const auto &joint, auto &d) {
+    ++calls;
+    CHECK(world.creates == 0 && joint.enabled);
+    if (joint.path == "/Asset/world") {
+      d.translationSprings[0] = {7, 0, .1};
+      d.rotationSprings[2] = {3, 0};
+    }
+  });
+  CHECK(calls == 2); // Disabled joints skip policy; enabled callbacks run once.
+  bool found = false;
+  for (const auto &[id, d] : world.constraints)
+    if (d.secondBody == resources.Bodies().at("/Asset/body2")) {
+      CHECK(!d.firstBody && d.translationSprings[0].stiffness == 7);
+      CHECK(d.translationSprings[0].equilibrium == .1 && d.rotationSprings[2].stiffness == 3);
+      found = true;
+    }
+  CHECK(found);
+  for (int failure = 0; failure < 4; ++failure) {
+    World refused;
+    bool rejected = false;
+    try {
+      Resources invalid(refused, scene(), {}, [failure](const auto &, auto &d) {
+        if (failure == 0) throw std::runtime_error("joint policy refusal");
+        if (failure == 1) d.firstBody = core::BodyHandle(99);
+        if (failure == 2) d.translationSprings[0].stiffness = -1;
+        if (failure == 3) d.translationSprings[0].stiffness = 1; // fixed locked axis
+      });
+    } catch (const std::exception &) { rejected = true; }
+    CHECK(rejected && refused.creates == 0);
+  }
+}
+
 pxr::UsdStageRefPtr stage(bool settings = true) {
   auto result = pxr::UsdStage::CreateInMemory();
   CHECK(result->GetRootLayer()->ImportFromString(R"(#usda 1.0
@@ -251,10 +286,13 @@ void stageWorld() {
   };
   {
     auto input = stage();
-    StageWorld owned(input, factory, [](const auto &, auto &body) { body.mass = 7; });
+    int jointCalls = 0;
+    StageWorld owned(input, factory, [](const auto &, auto &body) { body.mass = 7; },
+        [&](const auto &, auto &joint) { ++jointCalls; joint.collisionEnabled = true; });
     auto *world = dynamic_cast<OwnedWorld *>(owned.World());
     CHECK(world && world->bodies.size() == 1 && world->constraints.size() == 1);
     CHECK(world->bodies.begin()->second.mass == 7 && created == 1);
+    CHECK(jointCalls == 1 && world->constraints.begin()->second.collisionEnabled);
     CHECK(owned.Resources()->Bodies().size() == 1);
     // The binding is a snapshot, with no stage retention or edit subscription.
     CHECK(input->RemovePrim(pxr::SdfPath("/Body")));
@@ -350,6 +388,6 @@ void stageWorld() {
 }
 
 int main() {
-  lifetime(); failures(); validation(); stageWorld();
+  lifetime(); failures(); validation(); jointPolicy(); stageWorld();
   std::cout << "Scene resource construction, rollback and selective lifetime passed\n";
 }

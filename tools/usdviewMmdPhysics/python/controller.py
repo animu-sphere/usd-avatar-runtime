@@ -1,5 +1,6 @@
 """Qt timer submits display time; avatar-runtime alone schedules physics ticks."""
 from pathlib import Path
+import os
 from pxr import Tf
 from pxr.Usdviewq.qt import QtCore, QtWidgets
 from . import _native
@@ -31,11 +32,18 @@ class Controller(QtCore.QObject):
             pmx = stage.GetRootLayer().realPath
             if Path(pmx).suffix.lower() != ".pmx":
                 raise RuntimeError("This first live host requires a directly opened PMX stage")
-            self.session = _native.Session(stage, pmx, self.motion)
+            self.session = _native.Session(stage, pmx, self.motion,
+                os.environ.get("AVATAR_MMD_TRANSLATION_SPRINGS") == "1",
+                os.environ.get("AVATAR_MMD_ROTATION_SPRINGS") == "1")
+            stats = self.session.stats
+            if stats["approximateTranslationSpringAxes"] or stats["approximateRotationSpringAxes"]:
+                Tf.Warn("Experimental MMD spring approximation: {} Hookean translation axes, "
+                        "{} small-angle rotation axes; source solver equivalence is unverified.".format(
+                            stats["approximateTranslationSpringAxes"], stats["approximateRotationSpringAxes"]))
             gaps = self.session.unappliedMetadata
             if gaps:
                 Tf.Warn("Experimental live MMD preview: source joint spring metadata is "
-                        "preserved but not applied. "
+                        "preserved but not fully applied. "
                         "{} attributes; first entries: {}".format(len(gaps), ", ".join(gaps[:5])))
         return self.session
 

@@ -1,7 +1,8 @@
 """Opt-in interactive usdview integration test with real Qt timer callbacks."""
 import sys
 import traceback
-from pxr import Usd, UsdSkel, Usdviewq
+import os
+from pxr import Gf, Usd, UsdSkel, Usdviewq
 from pxr.Usdviewq.qt import QtCore
 
 
@@ -9,6 +10,11 @@ class TestLauncher(Usdviewq.Launcher):
     def LaunchProcess(self, args, app, window):
         from usdviewMmdPhysics import controller
         api = window._usdviewApi
+        springs = os.environ.get("AVATAR_MMD_ROTATION_SPRINGS") == "1"
+        if springs:
+            with Usd.EditContext(api.stage, api.stage.GetSessionLayer()):
+                api.stage.GetPrimAtPath("/Asset/physics/joints/joint_0000").GetAttribute(
+                    "mmd:physics:rotationSpring").Set(Gf.Vec3f(0, 0, 10000))
         original = api.stage.GetRootLayer().ExportToString()
         session_text = api.stage.GetSessionLayer().ExportToString()
         failed = []
@@ -39,7 +45,14 @@ class TestLauncher(Usdviewq.Launcher):
             skeleton = UsdSkel.Skeleton.Get(api.stage, "/Asset/skel/Skeleton")
             query = UsdSkel.Cache().GetSkelQuery(skeleton)
             rotations = query.GetAnimQuery().ComputeJointLocalTransformComponents()[1]
-            assert abs(rotations[1].GetImaginary()[2]) > .1, rotations
+            if springs:
+                assert host.session.stats["approximateRotationSpringAxes"] == 1
+                q = rotations[1]
+                b = host.session.bodyStates["/Asset/physics/rigidBodies/swing"]["rotation"]
+                dot = sum(q.GetImaginary()[i] * b[i] for i in range(3)) + q.GetReal() * b[3]
+                assert abs(dot) > .99999 and .000001 < abs(b[2]) < .15, (q, b)
+            else:
+                assert abs(rotations[1].GetImaginary()[2]) > .1, rotations
             QtCore.QTimer.singleShot(250, reset)
 
         @checked

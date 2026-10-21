@@ -3,6 +3,9 @@ find_package(mmdPhysicsAdapter 0.2 CONFIG REQUIRED)
 if(NOT mmdPhysicsAdapter_BODY_PROPERTIES_VERSION EQUAL 1)
     message(FATAL_ERROR "Live MMD preview requires installed mmdPhysicsAdapter body-properties API version 1; rebuild/install the MMD owner package")
 endif()
+if(NOT mmdPhysicsAdapter_JOINT_SPRINGS_VERSION EQUAL 1)
+    message(FATAL_ERROR "Live MMD preview requires installed mmdPhysicsAdapter joint-springs API version 1; rebuild/install the MMD owner package")
+endif()
 if(NOT TARGET python)
     find_package(pxr CONFIG REQUIRED)
 endif()
@@ -44,6 +47,8 @@ if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
         "${CMAKE_CURRENT_SOURCE_DIR}/test_live.py" "${AVATAR_MMD_PREVIEW_PMX}")
     add_test(NAME hosts.usdview_mmd_properties COMMAND ${Python3_EXECUTABLE}
         "${CMAKE_CURRENT_SOURCE_DIR}/test_properties.py" "${AVATAR_MMD_PREVIEW_PMX}")
-    set_tests_properties(hosts.usdview_mmd_native hosts.usdview_mmd_properties PROPERTIES ENVIRONMENT_MODIFICATION
+    add_test(NAME hosts.usdview_mmd_springs COMMAND ${Python3_EXECUTABLE}
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_springs.py" "${AVATAR_MMD_PREVIEW_PMX}")
+    set_tests_properties(hosts.usdview_mmd_native hosts.usdview_mmd_properties hosts.usdview_mmd_springs PROPERTIES ENVIRONMENT_MODIFICATION
         "PYTHONPATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/python;PYTHONPATH=path_list_prepend:${pxr_DIR}/lib/python;PATH=path_list_prepend:${pxr_DIR}/bin;PATH=path_list_prepend:${pxr_DIR}/lib")
 endif()

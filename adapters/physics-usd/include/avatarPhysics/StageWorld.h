@@ -14,7 +14,8 @@ public:
       const std::optional<usd_physics::usd::SceneSettings> &)>;
 
   StageWorld(const pxr::UsdStageRefPtr &stage, WorldFactory factory,
-             SceneResources::BodyPolicy policy = {});
+             SceneResources::BodyPolicy policy = {},
+             SceneResources::JointPolicy jointPolicy = {});
   ~StageWorld();
   StageWorld(const StageWorld &) = delete;
   StageWorld &operator=(const StageWorld &) = delete;

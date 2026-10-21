@@ -1,6 +1,7 @@
 #pragma once
 
 #include <usd_physics/core/world.h>
+#include <usd_physics/core/six_dof.h>
 #include <usd_physics/usd/box_scene.h>
 #include <functional>
 #include <map>
@@ -16,9 +17,11 @@ class SceneResources {
 public:
   using BodyPolicy = std::function<void(const usd_physics::usd::PrimitiveBody &,
                                        usd_physics::core::BodyDescriptor &)>;
+  using JointPolicy = std::function<void(const usd_physics::usd::Joint &,
+                                        usd_physics::core::SixDofConstraintDescriptor &)>;
   SceneResources(usd_physics::core::PhysicsWorld &world,
                  const usd_physics::usd::PhysicsScene &scene,
-                 BodyPolicy policy = {});
+                 BodyPolicy policy = {}, JointPolicy jointPolicy = {});
   ~SceneResources();
   SceneResources(const SceneResources &) = delete;
   SceneResources &operator=(const SceneResources &) = delete;

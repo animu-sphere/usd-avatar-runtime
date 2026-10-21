@@ -49,6 +49,15 @@ policy-supplied shape handle rejects. Policy must not mutate the borrowed world.
 Source-specific interpretation stays in the caller's format adapter. Standard
 reader admission rules and unsupported format metadata remain unchanged.
 
+An optional `JointPolicy` prepares each enabled joint's converted neutral
+six-DOF descriptor once, before backend mutation. It may configure springs
+or other neutral properties but cannot change endpoint handles. The adapter
+validates its result, then replaces provisional endpoints with the actual
+body handles during resource creation. Disabled joints skip this callback.
+Policy failure creates no resources; callbacks and descriptors are not retained
+after construction. `StageWorld` forwards both optional policies. Format
+semantics and experimental opt-in selection remain the caller's responsibility.
+
 Bookkeeping allocation, path/endpoint validation, descriptor preparation and
 owner conversion precede backend mutation. Construction then creates shapes,
 bodies and enabled constraints. A backend exception or invalid returned handle

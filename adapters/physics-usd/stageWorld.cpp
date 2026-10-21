@@ -5,7 +5,8 @@
 namespace avatarPhysics {
 
 StageWorld::StageWorld(const pxr::UsdStageRefPtr &stage, WorldFactory factory,
-                       SceneResources::BodyPolicy policy) {
+                       SceneResources::BodyPolicy policy,
+                       SceneResources::JointPolicy jointPolicy) {
   if (!factory)
     throw std::invalid_argument("StageWorld requires a world factory");
   // Owner validation precedes backend selection and any world mutation.
@@ -14,7 +15,8 @@ StageWorld::StageWorld(const pxr::UsdStageRefPtr &stage, WorldFactory factory,
   world_ = factory(settings_);
   if (!world_)
     throw std::runtime_error("StageWorld factory returned no world");
-  resources_ = std::make_unique<SceneResources>(*world_, scene, std::move(policy));
+  resources_ = std::make_unique<SceneResources>(*world_, scene, std::move(policy),
+                                               std::move(jointPolicy));
 }
 
 StageWorld::~StageWorld() { (void)Close(); }

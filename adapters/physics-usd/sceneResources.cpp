@@ -9,7 +9,8 @@ namespace core = usd_physics::core;
 namespace usd = usd_physics::usd;
 
 SceneResources::SceneResources(core::PhysicsWorld &world,
-                               const usd::PhysicsScene &scene, BodyPolicy policy)
+                               const usd::PhysicsScene &scene, BodyPolicy policy,
+                               JointPolicy jointPolicy)
     : world_(world), shapes_(scene.bodies.size()),
       constraints_(scene.joints.size()) {
   // Allocate bookkeeping and validate all declarations/policy before touching
@@ -45,8 +46,11 @@ SceneResources::SceneResources(core::PhysicsWorld &world,
     return found->second;
   };
   std::set<std::string> paths;
+  std::vector<std::optional<core::SixDofConstraintDescriptor>> preparedJoints;
+  preparedJoints.reserve(scene.joints.size());
   auto *sixDof = dynamic_cast<core::SixDofConstraints *>(&world_);
   for (const auto &joint : scene.joints) {
+    preparedJoints.emplace_back();
     const pxr::SdfPath path(joint.path);
     if (!path.IsAbsolutePath() || !path.IsPrimPath() ||
         !paths.insert(joint.path).second)
@@ -55,8 +59,15 @@ SceneResources::SceneResources(core::PhysicsWorld &world,
       continue;
     if (!sixDof)
       throw std::invalid_argument("SceneResources requires SixDofConstraints for enabled joints");
-    (void)usd::toSixDofConstraint(joint, endpoint(provisional, joint.body0),
-                                endpoint(provisional, joint.body1));
+    auto descriptor = usd::toSixDofConstraint(joint, endpoint(provisional, joint.body0),
+                                             endpoint(provisional, joint.body1));
+    const auto first = descriptor->firstBody, second = descriptor->secondBody;
+    if (jointPolicy)
+      jointPolicy(joint, *descriptor);
+    if (descriptor->firstBody != first || descriptor->secondBody != second)
+      throw std::invalid_argument("SceneResources owns joint endpoint assignment");
+    core::validateSixDofConstraintDescriptor(*descriptor);
+    preparedJoints.back() = std::move(descriptor);
   }
   try {
     for (size_t i = 0; i < scene.bodies.size(); ++i) {
@@ -73,9 +84,10 @@ SceneResources::SceneResources(core::PhysicsWorld &world,
       const auto &joint = scene.joints[i];
       if (!joint.enabled)
         continue;
-      const auto descriptor = usd::toSixDofConstraint(
-          joint, endpoint(bodies_, joint.body0), endpoint(bodies_, joint.body1));
-      constraints_[i] = sixDof->createSixDofConstraint(*descriptor);
+      auto descriptor = *preparedJoints[i];
+      descriptor.firstBody = endpoint(bodies_, joint.body0);
+      descriptor.secondBody = endpoint(bodies_, joint.body1);
+      constraints_[i] = sixDof->createSixDofConstraint(descriptor);
       if (!constraints_[i])
         throw std::runtime_error("SceneResources backend returned an invalid constraint");
     }
