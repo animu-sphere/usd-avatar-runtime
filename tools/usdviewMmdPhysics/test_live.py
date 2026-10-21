@@ -11,6 +11,7 @@ skeleton = UsdSkel.Skeleton.Get(stage, "/Asset/skel/Skeleton")
 session = _native.Session(stage, sys.argv[1], "")
 assert session.stats["bodies"] == 2 and session.stats["steps"] == 0
 assert session.unappliedMetadata
+assert all(path.endswith(("translationSpring", "rotationSpring")) for path in session.unappliedMetadata)
 session.advance(10)
 assert session.stats["steps"] == 0
 

@@ -740,10 +740,36 @@ and checks final physics-driven rotation through the composed UsdSkel query.
 Stage replacement additionally stops its timer/session and cleans the old stage.
 The [guide](../guides/live-mmd-physics.md) owns reproduction and UI behavior.
 
-This first application deliberately disables contacts/body damping and reports
-preserved filter/contact/damping/spring metadata as unapplied. Output is joints
+That initial check disabled contacts/body damping and reported preserved
+filter/contact/damping/spring metadata as unapplied. The body-properties
+follow-up below extends that scope. Output is joints
 only, with unsupported owner morph/hidden channels refusing through the MMD
-adapter. Representative PMX/VMD intake, collision/spring semantics, multi-avatar
+adapter. Representative PMX/VMD intake, spring semantics, multi-avatar
 application binding, seek, full material/morph/visibility output, resident Toon
 resources and Hydra/direct agreement remain open. The local application uses
 usdview's default renderer; hydra-toon rendering/pixel parity is not established.
+
+## Live MMD body properties evidence (2026-10-21)
+
+Runtime base `80246f4` plus local changes consumes a separately installed MMD
+owner package from base `c11f274` plus its body-properties API. The preceding
+live-host environment is unchanged. All fifteen configured source/installed
+CTests pass. `hosts.usdview_mmd_properties` isolates contact from joint collision
+suppression using in-memory edits over the generated pendulum. It checks
+acceptance-mask bits, rejected/admitted drops, restitution, inclined-floor
+friction and independent linear/angular damping responses. It also checks
+construction/Reset refusal with preserved owner code/path, retained display
+after failure, repair/reset recovery, copied body-state lifetime and session
+cleanup. The existing native three-replay test and actual-window usdview
+Play/Pause/Reset/resume/Stop/stage-replacement check still pass.
+
+The host delegates metadata interpretation and source damping conversion to
+installed `mmdPhysicsAdapter::ReadBodyProperties`, maps optional values into
+neutral descriptors and selects the owner's product pair policy. It introduces
+no solver/provider dependency into core. The MMD owner's
+[contract and report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-21-phase8-live-body-properties.md)
+record conversion domains, measured controls and approximation boundaries.
+The [guide](../guides/live-mmd-physics.md) owns build/run steps and the package
+feature-version requirement. Joint springs remain reported as unapplied;
+representative PMX/VMD, resident Toon and Hydra/direct parity gates remain open.
+This is local generated evidence, without publication, hosted CI or L3 claims.

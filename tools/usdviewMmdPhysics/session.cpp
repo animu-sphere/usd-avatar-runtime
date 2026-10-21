@@ -1,4 +1,5 @@
 #include <avatarMmd/PhysicsAdapter.h>
+#include <mmdPhysicsAdapter/BodyProperties.h>
 #include <avatarUsd/SkeletonPoseOutput.h>
 #include <avatarPhysics/StageWorld.h>
 #include <avatarStageRunner/PhysicsSession.h>
@@ -57,7 +58,9 @@ class Session {
     std::vector<std::string> warnings_;
     static void AR_CALL diagnostic(void* data, const ArDiagnostic* d) {
         auto& self = *static_cast<Session*>(data);
-        self.error_ = std::string(d->code) + ": " + d->message;
+        // A callback may already hold an owner refusal with a body path/code.
+        // Retain it when the runtime adds its generic callback-failure report.
+        if (self.error_.empty()) self.error_ = std::string(d->code) + ": " + d->message;
     }
     void status(ArStatus value) {
         if (value != AR_OK) throw std::runtime_error(error_.empty() ?
@@ -67,12 +70,20 @@ class Session {
         if (world_ && !world_->Close()) throw std::runtime_error("Physics resource close refused; retry reset");
         world_.reset(); pending_.clear(); result_.clear(); pendingFrame_ = resultFrame_ = steps_ = 0;
         world_ = std::make_unique<avatarPhysics::StageWorld>(stage_, [](const auto& settings) {
-            if (settings) return usd_physics::jolt::createWorld({}, settings->gravity);
-            return usd_physics::jolt::createWorld();
-        }, [](const auto&, auto& descriptor) {
-            // Explicit contact-free host policy for the first live publication
-            // slice, not an interpretation of MMD's preserved coefficients.
-            descriptor.collisionFilter = {1, 0}; descriptor.damping = {0, 0};
+            // MMD owner contract section 7.1; immutable policy for this single-format world.
+            using Rule = core::ContactCombineRule;
+            const core::ContactMixing mixing{Rule::product, Rule::product, 10};
+            if (settings) return usd_physics::jolt::createWorld(mixing, settings->gravity);
+            return usd_physics::jolt::createWorld(mixing);
+        }, [this](const auto& body, auto& descriptor) {
+            const auto properties = take(mmd::physics::ReadBodyProperties(
+                stage_->GetPrimAtPath(SdfPath(body.path))));
+            if (properties.filter)
+                descriptor.collisionFilter = {properties.filter->category, properties.filter->mask};
+            if (properties.contact)
+                descriptor.contactMaterial = {properties.contact->friction, properties.contact->restitution};
+            if (properties.damping)
+                descriptor.damping = {properties.damping->linear, properties.damping->angular};
         });
         if (!dynamic_cast<core::KinematicMotion*>(world_->World()))
             throw std::runtime_error("Live MMD preview requires KinematicMotion");
@@ -128,8 +139,6 @@ public:
             for (const auto& attr : prim.GetAttributes()) {
                 const auto name = attr.GetName().GetString();
                 static const std::set<std::string> unapplied{
-                    "mmd:physics:collisionGroup", "mmd:physics:collisionMask", "mmd:physics:friction",
-                    "mmd:physics:restitution", "mmd:physics:linearDamping", "mmd:physics:angularDamping",
                     "mmd:physics:translationSpring", "mmd:physics:rotationSpring"};
                 if (unapplied.count(name))
                     warnings_.push_back(prim.GetPath().GetString() + "." + name);
@@ -205,11 +214,28 @@ public:
         return d;
     }
     py::list warnings() const { py::list rows; for (const auto& w : warnings_) rows.append(w); return rows; }
+    py::dict bodyStates() const {
+        py::dict rows;
+        if (world_ && world_->Resources()) {
+            for (const auto& [path, handle] : world_->Resources()->Bodies()) {
+                const auto state = world_->World()->bodyState(handle);
+                const auto& t = state.transform;
+                const auto& v = state.linearVelocity;
+                py::dict row;
+                row["translation"] = py::make_tuple(t.translation.x, t.translation.y, t.translation.z);
+                row["rotation"] = py::make_tuple(t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w);
+                row["linearVelocity"] = py::make_tuple(v.x, v.y, v.z);
+                rows[path] = row;
+            }
+        }
+        return rows;
+    }
 };
 }
 PXR_BOOST_PYTHON_MODULE(_native) {
     py::class_<Session, py::noncopyable>("Session", py::init<UsdStageRefPtr, std::string, std::string>())
         .def("play", &Session::play).def("pause", &Session::pause).def("advance", &Session::advance)
         .def("reset", &Session::reset).def("close", &Session::close)
-        .add_property("stats", &Session::stats).add_property("unappliedMetadata", &Session::warnings);
+        .add_property("stats", &Session::stats).add_property("unappliedMetadata", &Session::warnings)
+        .add_property("bodyStates", &Session::bodyStates);
 }
