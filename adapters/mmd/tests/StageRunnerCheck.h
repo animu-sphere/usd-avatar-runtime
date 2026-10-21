@@ -74,6 +74,43 @@ public:
   }
 };
 
+void stageWorldJolt(Assets &assets) {
+  // Whole-stage discovery/factory lifetime is independent of the explicitly
+  // configured two-avatar scheduler fixture below. No edits reach the importer.
+  auto stage = UsdStage::CreateInMemory();
+  stage->GetRootLayer()->TransferContent(assets.stage->Flatten());
+  auto settings = UsdPhysicsScene::Define(stage, SdfPath("/HostPhysics"));
+  settings.CreateGravityDirectionAttr().Set(GfVec3f(0, -1, 0));
+  settings.CreateGravityMagnitudeAttr().Set(2.0f);
+  double previous = 0;
+  for (int replay = 0; replay < 2; ++replay) {
+    int factoryCalls = 0;
+    avatarPhysics::StageWorld owned(stage, [&](const auto& scene) {
+      CHECK(scene && scene->path == "/HostPhysics" && scene->gravity.y == -2);
+      ++factoryCalls;
+      return usd_physics::jolt::createWorld({}, scene->gravity);
+    }, [](const auto&, auto& body) {
+      body.collisionFilter = {1,0}; body.damping = {0,0};
+    });
+    CHECK(factoryCalls == 1 && owned.Resources()->Bodies().size() == assets.bodies.size());
+    const auto scene = usd_physics::usd::readPhysicsScene(stage);
+    const auto body = std::find_if(scene.bodies.begin(), scene.bodies.end(), [](const auto& b) {
+      return b.motionType == usd_physics::core::MotionType::dynamicBody;
+    });
+    CHECK(body != scene.bodies.end());
+    auto* world = owned.World();
+    const auto handle = owned.Resources()->Bodies().at(body->path);
+    const double initial = world->bodyState(handle).transform.translation.y;
+    for (int tick = 0; tick < 120; ++tick)
+      world->step(std::chrono::duration<double>(1.0 / 120));
+    const double final = world->bodyState(handle).transform.translation.y;
+    CHECK(std::isfinite(final) && final < initial - .5 && final > initial - 1.5);
+    if (replay) CHECK(final == previous);
+    previous = final;
+    CHECK(owned.Close() && !owned.World() && !owned.Resources());
+  }
+}
+
 void stageRunner(Assets &assets) {
   std::unique_ptr<MmdToonCheck> consumers[2];
   {

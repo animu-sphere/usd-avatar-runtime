@@ -1,5 +1,5 @@
 find_package(physicsUsd 0.1 CONFIG REQUIRED)
-add_library(avatarPhysicsUsdResources STATIC sceneResources.cpp)
+add_library(avatarPhysicsUsdResources STATIC sceneResources.cpp stageWorld.cpp)
 add_library(AvatarRuntime::avatarPhysicsUsdResources ALIAS avatarPhysicsUsdResources)
 target_compile_features(avatarPhysicsUsdResources PUBLIC cxx_std_17)
 set_target_properties(avatarPhysicsUsdResources PROPERTIES POSITION_INDEPENDENT_CODE ON)

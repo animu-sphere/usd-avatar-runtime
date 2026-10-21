@@ -667,3 +667,41 @@ The [resource contract](../architecture/PHYSICS_USD_RESOURCES.md) owns preparati
 rollback and teardown rules. Automatic application/stage discovery, solver
 selection, avatar configuration, cross-avatar constraints, resident rendering,
 Hydra agreement and representative L3 acceptance remain open.
+
+## Scoped stage-world binding evidence (2026-10-21)
+
+Runtime base `7f8858b` plus the `StageWorld` changes, using the same installed
+physics/MMD/Jolt/clock/ABI-4 Toon inputs as the resource-set evidence above.
+Local Windows x64/MSVC 19.51 Release/OpenUSD 26.08 checks pass fourteen tests in
+the composed configuration and six in the physics-resource-only configuration.
+No sibling source is compiled into the consumer. These are source/install
+checks without publication, hosted CI or representative L3 claims.
+
+The source and separately built installed `physics_usd` contracts exercise the
+whole-stage scope with a caller factory. Owner scene identity and gravity reach
+the factory unchanged; absent scene settings stay absent. Invalid stages,
+multiple scenes and unsupported units fail before factory invocation. Missing,
+throwing and null-returning factories reject. Policy failure and all three
+backend creation positions, by exception and invalid handle, destroy the new
+world only after rolling back owned resources. A teardown refusal keeps the
+world alive for explicit retry; successful repeated close and destructor cleanup
+release resources before the world. Stage mutation/destruction leaves the
+snapshot binding intact. A generated joint between different root bodies maps
+both endpoints into the single whole-stage scope. No world step/query is made
+by the adapter; mock operations abort on accidental calls.
+
+`adapters.mmd_stage_runner` additionally reads a copied generated PMX stage with
+an in-memory standard PhysicsScene and uses the reusable scope with the installed
+Jolt factory. The declared gravity is passed to Jolt, all three source bodies are
+discovered, and the host advances 120 fixed ticks. A selected dynamic body's
+downward displacement is finite and between 0.5 and 1.5 metres with 2 m/s^2
+gravity. Closing and reconstructing the complete scope reproduces that position
+exactly on this build. The existing two-avatar clock/barrier/reset/unload and
+Toon snapshot transport checks still pass; their explicit participant binding
+is unchanged. This additional test establishes stage/factory/resource composition,
+not automatic runtime participant discovery or full application wiring.
+
+The [whole-stage contract](../architecture/PHYSICS_USD_RESOURCES.md#whole-stage-world-binding)
+owns factory selection and lifetime. Backend policy, application events,
+automatic avatar configuration, selective unload with cross-avatar constraints,
+resident renderer resources, Hydra agreement and representative L3 remain open.

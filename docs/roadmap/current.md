@@ -424,9 +424,12 @@ adds a membership extension and session operation, with explicit generated-host
 body teardown while the surviving avatar and non-avatar body continue. Automatic
 stage/body binding and application teardown, including cross-avatar constraints,
 remain in B/E. The separate [scene resource adapter](../architecture/PHYSICS_USD_RESOURCES.md)
-now supplies construction and ordered teardown over owner-read snapshots;
-application-driven discovery/world selection and cross-avatar constraint policy
-remain in B/E, with resident output work still in D.
+now supplies construction and ordered teardown over owner-read snapshots, plus
+a [whole-stage world scope](../architecture/PHYSICS_USD_RESOURCES.md#whole-stage-world-binding)
+that delegates settings discovery to the owner and backend construction to a
+caller factory. Application-driven discovery, runtime participant binding and
+selective unload with cross-avatar constraints remain in B/E, with resident
+output work still in D.
 
 ## Open decisions
 
