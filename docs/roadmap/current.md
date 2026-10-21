@@ -1,5 +1,9 @@
 # Current implementation roadmap
 
+Immediate implementation priority is the live single-avatar usdview path under
+the [physics milestones](#physics-orchestration-milestones), followed by
+owner-side physics metadata and representative PMX/VMD visual checks.
+
 Runtime Phases A–F remain open. The adopted
 [near-term direction](../design/NEAR_TERM_PLAN.md) refines the original phase
 sequence: A/B overlap, early direct consumer work from C validates the state,
@@ -356,6 +360,14 @@ Device adapters stay with `motion-connectors`; WebGPU realization stays with
 the renderer. Native support does not establish browser support.
 
 ## Physics orchestration milestones
+
+The first visual priority is live single-avatar usdview playback. The optional
+[MMD host](../guides/live-mmd-physics.md) supplies a generated contact-free
+pendulum path through Play/Pause/Reset/Stop and final UsdSkel publication.
+Next connect owner-side filter/contact/damping/spring semantics and representative
+PMX/VMD inputs without replacing the runtime clock or owner controls. Broad
+application binding, resident Toon resources and Hydra/direct parity remain
+separate gates below.
 
 This is the 2026-10-20 MMD-first physics integration track. Its A–E labels are
 local to this track, separate from Runtime Phases A–F, cleanup workstreams A–F

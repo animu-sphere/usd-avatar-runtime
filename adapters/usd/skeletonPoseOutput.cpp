@@ -1,0 +1,153 @@
+#include <avatarUsd/SkeletonPoseOutput.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/xformCache.h>
+#include <pxr/usd/usdSkel/animation.h>
+#include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/skeleton.h>
+#include <pxr/usd/usdSkel/utils.h>
+#include <pxr/usd/sdf/changeBlock.h>
+#include <pxr/usd/sdf/relationshipSpec.h>
+#include <pxr/base/gf/rotation.h>
+#include <algorithm>
+#include <atomic>
+#include <cmath>
+#include <limits>
+#include <map>
+#include <stdexcept>
+
+namespace avatarUsd {
+using namespace pxr;
+namespace {
+void require(bool ok, const char* message) {
+    if (!ok) throw std::invalid_argument(message);
+}
+GfMatrix4d matrix(const ArTransform& t) {
+    GfMatrix4d s(1), r(1), p(1);
+    double norm = 0;
+    for (auto x : t.translation) require(std::isfinite(x), "USD_OUTPUT_TRANSFORM: nonfinite translation");
+    for (auto x : t.scale) require(std::isfinite(x) && x > 0, "USD_OUTPUT_TRANSFORM: invalid scale");
+    for (auto x : t.rotation) {
+        require(std::isfinite(x), "USD_OUTPUT_TRANSFORM: nonfinite quaternion"); norm += x*x;
+    }
+    require(std::abs(norm - 1) <= 1e-6, "USD_OUTPUT_TRANSFORM: nonunit quaternion");
+    s.SetScale(GfVec3d(t.scale[0], t.scale[1], t.scale[2]));
+    r.SetRotate(GfQuatd(t.rotation[3], GfVec3d(t.rotation[0], t.rotation[1], t.rotation[2])));
+    p.SetTranslate(GfVec3d(t.translation[0], t.translation[1], t.translation[2]));
+    return s*r*p;
+}
+}
+SkeletonPoseOutput::SkeletonPoseOutput(UsdStageRefPtr stage, SkeletonBinding binding)
+    : stage_(std::move(stage)), binding_(std::move(binding)),
+      layer_(SdfLayer::CreateAnonymous("avatar-runtime-pose.usda")) {
+    require(bool(stage_) && bool(stage_->GetSessionLayer()), "USD_OUTPUT_STAGE: missing stage/session layer");
+    units_ = UsdGeomGetStageMetersPerUnit(stage_);
+    static std::atomic<uint64_t> next{0};
+    do {
+        animation_ = SdfPath("/__AvatarRuntimePose" + std::to_string(++next));
+    } while (stage_->GetPrimAtPath(animation_));
+}
+SkeletonPoseOutput::~SkeletonPoseOutput() { Close(); }
+
+void SkeletonPoseOutput::Apply(const ArRuntimeApi& api, ArSnapshot snapshot) {
+    require(api.get_snapshot != nullptr, "USD_OUTPUT_SNAPSHOT: missing accessor");
+    ArStateView state{AR_HEADER(ArStateView)};
+    require(api.get_snapshot(snapshot, &state) == AR_OK, "USD_OUTPUT_SNAPSHOT: invalid snapshot");
+    Apply(state);
+}
+
+void SkeletonPoseOutput::Apply(const ArStateView& state) {
+    require(bool(stage_), "USD_OUTPUT_CLOSED");
+    require(stage_->GetSessionLayer()->PermissionToEdit() && layer_->PermissionToEdit(),
+        "USD_OUTPUT_LAYER: layer is not editable");
+    const auto& baseline = binding_.Baseline();
+    require(state.struct_size >= sizeof(ArStateView) && state.abi_version == AR_ABI_VERSION &&
+        state.layout_id && baseline.layout_id == std::string(state.layout_id) &&
+        state.layout_version == baseline.layout_version, "USD_OUTPUT_LAYOUT: incompatible layout");
+    require(state.instance && state.generation && state.frame_id &&
+        (!instance_ || instance_ == state.instance), "USD_OUTPUT_IDENTITY: invalid instance/frame");
+    require(state.generation > generation_ ||
+        (state.generation == generation_ && state.frame_id >= frame_), "USD_OUTPUT_STALE: older output");
+    require(state.joint_count && state.joints, "USD_OUTPUT_JOINTS: missing joints");
+    const auto skeleton = UsdSkelSkeleton::Get(stage_, SdfPath(binding_.SkeletonId()));
+    VtTokenArray tokens;
+    require(skeleton && skeleton.GetJointsAttr().Get(&tokens) && tokens.size() == baseline.joint_count,
+        "USD_OUTPUT_TOPOLOGY: changed skeleton");
+    for (size_t i = 0; i < tokens.size(); ++i)
+        require(tokens[i].GetString() == binding_.JointIds()[i], "USD_OUTPUT_TOPOLOGY: changed joints");
+    const double units = UsdGeomGetStageMetersPerUnit(stage_);
+    require(std::isfinite(units) && units > 0 && units == units_, "USD_OUTPUT_UNITS: invalid/changed units");
+    const auto stronger = stage_->GetSessionLayer()->GetRelationshipAtPath(
+        skeleton.GetPath().AppendProperty(TfToken("skel:animationSource")));
+    require(!stronger || !stronger->HasInfo(TfToken("targetPaths")),
+        "USD_OUTPUT_LAYER: session-root animation binding would mask live output");
+    auto current = UsdGeomXformCache().GetLocalToWorldTransform(skeleton.GetPrim());
+    for (int c = 0; c < 3; ++c) current[3][c] *= units;
+    const auto placement = matrix(binding_.RootPlacement());
+    for (int r = 0; r < 4; ++r) for (int c = 0; c < 4; ++c)
+        require(std::abs(current[r][c] - placement[r][c]) <= 1e-6,
+            "USD_OUTPUT_PLACEMENT: rebind after placement edits");
+
+    std::map<std::pair<std::string, std::string>, uint32_t> indices;
+    for (uint32_t i = 0; i < state.joint_count; ++i) {
+        const auto& j = state.joints[i];
+        require(j.skeleton_id && j.joint_id &&
+            indices.emplace(std::make_pair(j.skeleton_id, j.joint_id), i).second,
+            "USD_OUTPUT_JOINTS: duplicate/missing identity");
+    }
+    VtMatrix4dArray local(tokens.size());
+    const auto inverse = placement.GetInverse();
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        const auto found = indices.find({binding_.SkeletonId(), tokens[i].GetString()});
+        require(found != indices.end(), "USD_OUTPUT_JOINTS: missing bound joint");
+        const auto& joint = state.joints[found->second];
+        const auto parent = baseline.joints[i].parent_index;
+        const int64_t expectedParent = parent < 0 ? -1 : int64_t(indices.at(
+            {binding_.SkeletonId(), tokens[parent].GetString()}));
+        require(joint.parent_index == expectedParent, "USD_OUTPUT_TOPOLOGY: runtime parent mismatch");
+        local[i] = matrix(joint.local);
+        if (parent < 0) local[i] *= inverse;
+        for (int c = 0; c < 3; ++c) local[i][3][c] /= units;
+    }
+    VtVec3fArray translations; VtQuatfArray rotations; VtVec3hArray scales;
+    require(UsdSkelDecomposeTransforms(local, &translations, &rotations, &scales),
+        "USD_OUTPUT_TRANSFORM: USD decomposition refused");
+    for (size_t i = 0; i < tokens.size(); ++i) for (int c = 0; c < 3; ++c)
+        require(std::isfinite(translations[i][c]) && std::isfinite(float(scales[i][c])) &&
+            float(scales[i][c]) > 0, "USD_OUTPUT_TRANSFORM: USD narrowing overflow/underflow");
+
+    // Prepare the entire publication away from the displayed stage. Invalid
+    // input never changes the live layer or its previously displayed values.
+    auto scratch = UsdStage::CreateInMemory();
+    auto animation = UsdSkelAnimation::Define(scratch, animation_);
+    require(animation.CreateJointsAttr().Set(tokens) &&
+        animation.CreateTranslationsAttr().Set(translations) &&
+        animation.CreateRotationsAttr().Set(rotations) && animation.CreateScalesAttr().Set(scales),
+        "USD_OUTPUT_AUTHOR: animation authoring failed");
+    auto prim = scratch->OverridePrim(skeleton.GetPath());
+    require(UsdSkelBindingAPI::Apply(prim).CreateAnimationSourceRel().SetTargets({animation_}),
+        "USD_OUTPUT_AUTHOR: animation binding failed");
+    auto paths = stage_->GetSessionLayer()->GetSubLayerPaths();
+    std::vector<std::string> ordered(paths.begin(), paths.end());
+    const auto id = layer_->GetIdentifier();
+    require(ordered.empty() || std::count(ordered.begin(), ordered.end(), id) <= 1,
+        "USD_OUTPUT_LAYER: duplicate layer attachment");
+    const bool attached = std::find(ordered.begin(), ordered.end(), id) != ordered.end();
+    {
+        SdfChangeBlock block;
+        layer_->TransferContent(scratch->GetRootLayer());
+        if (!attached) stage_->GetSessionLayer()->InsertSubLayerPath(id, 0);
+    }
+    instance_ = state.instance; generation_ = state.generation; frame_ = state.frame_id;
+}
+
+void SkeletonPoseOutput::Close() {
+    if (!stage_) return;
+    auto paths = stage_->GetSessionLayer()->GetSubLayerPaths();
+    std::vector<std::string> ordered(paths.begin(), paths.end());
+    for (size_t i = ordered.size(); i; --i)
+        if (ordered[i - 1] == layer_->GetIdentifier())
+            stage_->GetSessionLayer()->RemoveSubLayerPath(int(i - 1));
+    stage_.Reset();
+}
+} // namespace avatarUsd

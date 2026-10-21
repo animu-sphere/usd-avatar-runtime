@@ -39,6 +39,12 @@ draw submission and late-latching implementation stay with the renderer.
 
 ## 1. Hydra
 
+The scoped [live UsdSkel output](USD_POSE_OUTPUT.md) now publishes final joints
+through an anonymous session sublayer for usdview. This pose-only application
+path supplies no material/morph/visibility overlay or complete Scene Index and
+does not close the Hydra/direct parity gate. Its first consumer is the optional
+[live MMD host](../guides/live-mmd-physics.md).
+
 ```text
 UsdImagingStageSceneIndex
            |

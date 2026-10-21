@@ -51,6 +51,11 @@ Its separately opt-in `AVATAR_MMD_TOON_SMOKE` executable also consumes installed
 adapter and its installed component.
 Connector adapters and OST composition remain unconfigured.
 
+The optional [live usdview MMD host](../guides/live-mmd-physics.md) composes the
+installed MMD, physics/Jolt and Stage Runner packages with USD binding/output
+and Python. Its backend/UI dependencies belong only to the application module;
+the reusable adapter and core boundaries above are unchanged.
+
 The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) refines
 these placement rules. The descriptions above record current integrations;
 generic validation in the motion adapter now delegates to installed owner

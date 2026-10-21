@@ -2,3 +2,5 @@
 /install/
 CMakeUserPresets.json
 /.vs/
+__pycache__/
+*.py[cod]
