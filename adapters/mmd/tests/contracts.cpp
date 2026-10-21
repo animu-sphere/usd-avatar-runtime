@@ -93,6 +93,7 @@ struct Fixture {
     ArRuntime runtime = 0; ArPhysicsWorld world = 0;
     std::unique_ptr<avatarMmd::PhysicsAdapter> adapter;
     ArInstance avatars[2]{}; ArSnapshot snapshots[2]{};
+    ArPhysicsParticipant participants[2]{};
     ArInputFrame input{AR_HEADER(ArInputFrame)};
     ArPhysicsInput inputs[2]{};
     std::map<ArInstance, std::vector<Body>> pending, results;
@@ -149,7 +150,8 @@ struct Fixture {
         }
     }
     Fixture(Assets& a, bool jolt = false,
-            std::function<void(avatarMmd::PhysicsAdapterConfig&)> configure = {}) : assets(a) {
+            std::function<void(avatarMmd::PhysicsAdapterConfig&)> configure = {},
+            bool registerWorld = true) : assets(a) {
         CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
         CHECK(arGetPhysicsApi(1, sizeof(physics), &physics) == AR_OK);
         CHECK(api.create_runtime(&runtime) == AR_OK);
@@ -202,12 +204,19 @@ struct Fixture {
 #else
         CHECK(!jolt);
 #endif
-        ArPhysicsParticipant participants[]{{avatars[1], post.id}, {avatars[0], post.id}};
+        participants[0] = {avatars[1], post.id};
+        participants[1] = {avatars[0], post.id};
+        if (registerWorld) {
+            const auto wd = worldDescriptor();
+            CHECK(physics.create_world(runtime, &wd, nullptr, &world) == AR_OK);
+        }
+        inputs[0] = {avatars[1], &input}; inputs[1] = {avatars[0], &input};
+    }
+    ArPhysicsWorldDesc worldDescriptor() {
         ArPhysicsWorldDesc wd{AR_HEADER(ArPhysicsWorldDesc)}; wd.id = "world"; wd.participants = participants;
         wd.participant_count = 2; wd.fixed_step_seconds = 1.0 / 120; wd.max_catch_up_ticks = 4;
         wd.user_data = this; wd.step = step; wd.reset = reset;
-        CHECK(physics.create_world(runtime, &wd, nullptr, &world) == AR_OK);
-        inputs[0] = {avatars[1], &input}; inputs[1] = {avatars[0], &input};
+        return wd;
     }
     ~Fixture() {
         release(); CHECK(api.destroy_runtime(runtime) == AR_OK);

@@ -6,10 +6,10 @@
 
 namespace avatarStageRunner {
 
-// Single-threaded host binding over an existing runtime world. The caller owns
-// runtime/world/providers and must keep them alive until this session is gone.
-// This class owns only its clock and retained output, never a fixed
-// accumulator.
+// Single-threaded host binding. Runtime outlives the session. World callback
+// resources outlive registration; evaluator lifetimes follow the core API.
+// It owns its clock and retained output and can optionally own the runtime
+// world registration. Solver resources remain caller-owned. No accumulator.
 class PhysicsSession {
 public:
   using FrameClock = usd_stage_runner::runtime::FrameClock;
@@ -18,6 +18,16 @@ public:
       FrameClock::NowFunction now = [] {
         return std::chrono::steady_clock::now();
       });
+  // Create and own a runtime world registration. Descriptor data is consumed
+  // during construction; world callbacks/resources live until successful Close
+  // or destruction. Evaluator instances/registrations remain caller-owned.
+  // Registration failure throws std::runtime_error without taking membership.
+  PhysicsSession(
+      ArRuntime runtime, const ArPhysicsWorldDesc &world,
+      FrameClock::NowFunction now = [] {
+        return std::chrono::steady_clock::now();
+      },
+      const ArDiagnosticSink *diagnostics = nullptr);
   ~PhysicsSession();
   PhysicsSession(const PhysicsSession &) = delete;
   PhysicsSession &operator=(const PhysicsSession &) = delete;
@@ -25,6 +35,12 @@ public:
   void Play();
   void Pause();
   bool IsPaused() const noexcept { return paused_; }
+  bool IsOpen() const noexcept { return world_ != 0; }
+  // Pauses and releases output. An owned registration is removed before
+  // callback resources can be unloaded; a borrowed world stays registered.
+  // Idempotent; a failed removal preserves output and leaves the session open.
+  // Closed sessions reject Display/RetryAdvance/Reset; Play/Pause do nothing.
+  ArStatus Close() noexcept;
   ArStatus Display(const ArPhysicsInput *inputs, uint32_t count,
                    const ArDiagnosticSink *diagnostics = nullptr);
   // Retry simulation after a pre-Step failure with a NEW request and zero
@@ -45,11 +61,13 @@ public:
   const ArPhysicsAdvanceResult &LastAdvance() const noexcept { return result_; }
 
 private:
+  void Initialize();
   ArStatus Advance(double elapsed, const ArPhysicsInput *, uint32_t,
                    const ArDiagnosticSink *);
   void ReleaseSnapshots() noexcept;
   ArRuntime runtime_;
-  ArPhysicsWorld world_;
+  ArPhysicsWorld world_ = 0;
+  bool ownsWorld_ = false;
   ArRuntimeApi api_{};
   ArPhysicsApi physics_{};
   FrameClock clock_;

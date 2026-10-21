@@ -29,7 +29,7 @@ workstream B validation is recorded below; the
 | input/evaluated-state contracts | experimental revision-4 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version, active capabilities and source-sample provenance (selected inputs plus provider-reported pose samples with mapped runtime seconds); scalar/vec2/vec3/vec4 material values; configured owner clip-to-pose mapping with retained interpolated/held sample time and owned selected-motion scalar/world-gaze assembly implemented; live observation intake, multi-source composition, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | physics orchestration | Experimental optional C table implements exclusive world membership, existing-plan pre/Step/post boundaries, fixed-tick accumulation with retained bounded catch-up, pause, group reset and invalidation after Step begins; generated MMD/Jolt callbacks and two-avatar shared-world smoke pass. Display interpolation, dynamic unload, checkpoint restore and VRM secondary-motion integration remain unimplemented | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
-| Stage Runner host session | Optional installed `avatarStageRunnerSession` wraps an existing runtime world with measured display time, play/pause, group reset, zero-elapsed simulation retry and retained last successful output; no second accumulator. Application/stage lifecycle and automatic world construction remain open | [host session](../architecture/STAGE_RUNNER_SESSION.md) |
+| Stage Runner host session | Optional installed `avatarStageRunnerSession` wraps a borrowed or owned runtime world registration with measured display time, play/pause, group reset, zero-elapsed simulation retry, retained last successful output and explicit/idempotent close; no second accumulator. Automatic stage/world construction, application wiring and selective live-avatar unload remain open | [host session](../architecture/STAGE_RUNNER_SESSION.md) |
 | MMD control/coupling registration | Optional installed `avatarMmdAdapter` invokes owner BeginPhysics -> path-keyed kinematic targets -> caller-owned world snapshot -> feedback -> ResumePhysics; explicit joint/layout/root placement, scalar morph and visibility mapping; generated PMX/VMD/Jolt headless and installed-consumer tests pass. Generic retarget intake, automatic host/renderer binding and avatar L3 acceptance remain open | [MMD adapter](../architecture/MMD_ADAPTER.md) |
 | versioned C ABI | revision-4/size validation, revision-1–3 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
@@ -564,3 +564,30 @@ lifetime and build instructions. World resources are still explicitly built
 by the test host. Automatic world binding, `StageSession`, application/UI
 composition, resident PMX resources, Hydra agreement and representative L3
 acceptance remain open; the session target does not complete those gates.
+
+## Scoped session world-lifetime evidence (2026-10-21)
+
+Runtime base `62b869e` plus the owned-registration/close changes. The same local
+Windows/MSVC Release configurations pass six session-only tests and twelve
+MMD/Stage Runner/Jolt/Toon tests. `adapters.stage_runner_installed` also compiles
+and executes the new constructor and Close API from installed headers/library
+without provider, OpenUSD, physics or renderer targets.
+
+The session contract test checks two-member registration, failed construction
+without leaked membership, repeated close, closed-call refusal without clock or
+callback activity, removal on destruction, explicit instance reset and new
+session registration under the same world ID. Another world in the same runtime
+continues advancing. Closing a borrowed registration leaves membership intact.
+Retained snapshots keep the original instance/generation after member removal.
+
+The generated MMD host now uses the owning constructor. After the existing
+owner-pose, held-input, reset/replay and renderer transport checks, it closes
+the session before destroying both instances and releasing all Jolt bodies and
+the solver. No step/reset/provider callback occurs on close or a subsequent
+display request. Independently retained poses remain readable, and installed
+Toon output survives producer destruction. Physics resources and instance
+discovery are still supplied explicitly by this test host.
+
+This validates whole-world registration lifetime, not selective removal from a
+running shared world. Automatic stage binding, application/UI wiring, resident
+avatar rendering, Hydra agreement and representative L3 acceptance remain open.

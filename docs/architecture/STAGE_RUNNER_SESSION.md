@@ -7,7 +7,7 @@ owner: usd-avatar-runtime
 
 The optional `avatarStageRunnerSession` target supplies
 [`avatarStageRunner::PhysicsSession`](../../adapters/stage-runner/include/avatarStageRunner/PhysicsSession.h)
-over an already configured runtime world. It consumes the installed Stage
+over an explicitly configured runtime world. It consumes the installed Stage
 Runner `runtimeCore::FrameClock`. Avatar-runtime remains the sole owner of
 fixed ticks, backlog, evaluation order and the shared-world barrier under the
 [frame lifecycle](FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities).
@@ -32,10 +32,22 @@ independent of the session target.
 
 ## Lifecycle and ownership
 
-The caller creates the runtime, instances, owner adapters and world binding,
-then constructs one session with that runtime/world pair. The session borrows
-those handles; the caller keeps them and provider code/resources alive through
-session destruction. Use a single thread and one exclusive driver per world.
+The caller creates the runtime, instances, owner adapters and solver resources.
+Construct with a runtime/world handle pair to borrow an existing registration,
+or with a runtime and `ArPhysicsWorldDesc` to create a registration owned by the
+session. The descriptor constructor forwards diagnostics and throws
+`std::runtime_error` on registration failure, preserving the runtime's status in
+the exception message. It copies no solver resources and performs no solver
+reset. Descriptor arrays/strings are consumed during construction; callback
+code and data remain borrowed until the registration is removed.
+
+The caller keeps the runtime alive through session destruction. With a borrowed
+registration it also keeps the world and its callback resources alive that long;
+with an owned registration world callback resources may be released after
+successful `Close()`. Close does not destroy instances or unregister evaluators;
+their provider code/resources still follow the core and provider lifetime
+contracts, including reset and destruction requirements. Use a single thread
+and one exclusive driver per world.
 Do not also advance the world through `StageSession` or another accumulator.
 The clock can be injected for deterministic host tests.
 
@@ -63,18 +75,35 @@ The clock can be injected for deterministic host tests.
   preserves displayable snapshots and propagates the runtime status; group
   validity follows the runtime's own reset contract. The caller supplies an
   increasing generation and chooses when to resume.
+- `Close` pauses, removes an owned registration, releases session output and
+  clears request/result history. It neither steps nor resets the external
+  solver. A borrowed registration stays registered. Close is idempotent;
+  `IsOpen()` becomes false on success, and Display/RetryAdvance/Reset subsequently
+  return `AR_INVALID_STATE` without reading the clock or invoking callbacks.
+  Play/Pause do nothing while closed. Failed removal leaves the session paused
+  and open, preserves output/history and returns the runtime status.
+
+Destruction closes the session automatically and releases its snapshot
+references. Destroy a session before its runtime. Closing an owned registration
+is a whole-world discontinuity: all of its members require explicit increasing-
+generation instance reset before reuse, or may be destroyed. It leaves other
+worlds in the same runtime alone. A new session may register the same world ID
+after removal and instance reset; the host must separately restore solver/body
+state and bindings before resuming. The session cannot be reopened in place.
 
 Renderer delivery retries read retained output without another simulation
 request. Independently retain a handle before the next successful advance,
-reset or session destruction. Session destruction releases only its snapshot
-references; it does not destroy or reset the caller's world or runtime.
+reset, close or session destruction. The session never destroys the caller's
+solver, body resources or runtime.
 
 ## Scope
 
 This is a reusable host session for explicitly prepared worlds, validated by
-the [capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-session-evidence-2026-10-21).
+the [session evidence](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-session-evidence-2026-10-21)
+and [world-lifetime evidence](../reference/CAPABILITY_MATRIX.md#scoped-session-world-lifetime-evidence-2026-10-21).
 Automatic stage/world construction, `StageSession`/usdview/standalone application
-wiring, stop/single-step UI semantics, avatar unload, resident renderer resource
-matching and Hydra/direct agreement remain open. Stop/reset policy must be
-selected by the application rather than silently translating stop into seek or
+wiring, stop/single-step UI semantics, removing one avatar while a shared world
+continues, resident renderer resource matching and Hydra/direct agreement remain
+open. Stop/reset policy must be selected by the application rather than silently
+translating stop into seek or
 a second fixed-step loop.
