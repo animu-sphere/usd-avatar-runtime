@@ -2,7 +2,7 @@
 
 Immediate implementation priority is the live single-avatar usdview path under
 the [physics milestones](#physics-orchestration-milestones), followed by
-owner-side physics metadata and representative PMX/VMD visual checks.
+owner-side spring semantics and representative PMX/VMD visual checks.
 
 Runtime Phases A–F remain open. The adopted
 [near-term direction](../design/NEAR_TERM_PLAN.md) refines the original phase
@@ -364,8 +364,11 @@ the renderer. Native support does not establish browser support.
 The first visual priority is live single-avatar usdview playback. The optional
 [MMD host](../guides/live-mmd-physics.md) supplies a generated contact-free
 pendulum path through Play/Pause/Reset/Stop and final UsdSkel publication.
-Next connect owner-side filter/contact/damping/spring semantics and representative
-PMX/VMD inputs without replacing the runtime clock or owner controls. Broad
+The installed MMD owner now supplies filter/contact/damping conversion to the
+live host, with generated response and refusal checks recorded in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md#live-mmd-body-properties-evidence-2026-10-21).
+Next connect owner-side spring semantics and representative PMX/VMD inputs
+without replacing the runtime clock or owner controls. Broad
 application binding, resident Toon resources and Hydra/direct parity remain
 separate gates below.
 

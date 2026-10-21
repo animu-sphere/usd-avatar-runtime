@@ -34,8 +34,8 @@ class Controller(QtCore.QObject):
             self.session = _native.Session(stage, pmx, self.motion)
             gaps = self.session.unappliedMetadata
             if gaps:
-                Tf.Warn("Experimental live MMD preview: contacts and body damping are disabled. "
-                        "Source contact/filter/damping/spring metadata is preserved but not applied. "
+                Tf.Warn("Experimental live MMD preview: source joint spring metadata is "
+                        "preserved but not applied. "
                         "{} attributes; first entries: {}".format(len(gaps), ", ".join(gaps[:5])))
         return self.session
 
