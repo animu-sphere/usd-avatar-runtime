@@ -12,6 +12,7 @@ ArStatus AR_CALL registerContractProvider(const ArRuntimeApi*, ArRuntime);
 int main(void) {
     ArRuntimeApi api = {0};
     ArPhysicsApi physics = {0};
+    ArPhysicsMembershipApi membership = {0};
     ArRuntime runtime = 0;
     ArInstance instance = 0;
     ArSnapshot snapshot = 0;
@@ -32,6 +33,9 @@ int main(void) {
     CHECK(arGetApi(3, sizeof(api), &api) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetPhysicsApi(AR_PHYSICS_API_VERSION, sizeof(physics), &physics) == AR_OK);
     CHECK(physics.create_world && physics.advance_world && physics.reset_world && physics.destroy_world);
+    CHECK(arGetPhysicsMembershipApi(AR_PHYSICS_MEMBERSHIP_API_VERSION, sizeof(membership), &membership) == AR_OK);
+    CHECK(membership.remove_participant);
+    CHECK(membership.remove_participant(0, 0, 0) == AR_INVALID_HANDLE);
     CHECK(api.create_runtime(&runtime) == AR_OK);
     CHECK(registerContractProvider(&api, runtime) == AR_OK);
     desc.generation = 1; desc.evaluators = selected; desc.evaluator_count = 1;

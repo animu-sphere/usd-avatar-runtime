@@ -419,7 +419,11 @@ and automatic world construction; D still requires resident-avatar resources
 and Hydra agreement. No physics MVP or composed-consumer completion is implied.
 The [world-lifetime check](../reference/CAPABILITY_MATRIX.md#scoped-session-world-lifetime-evidence-2026-10-21)
 adds owned registration and whole-world close before instance/solver teardown.
-Selective live-avatar unload and automatic stage binding remain in B/E.
+The [selective-unload check](../reference/CAPABILITY_MATRIX.md#scoped-selective-unload-evidence-2026-10-21)
+adds a membership extension and session operation, with explicit generated-host
+body teardown while the surviving avatar and non-avatar body continue. Automatic
+stage/body binding and application teardown, including cross-avatar constraints,
+remain in B/E.
 
 ## Open decisions
 

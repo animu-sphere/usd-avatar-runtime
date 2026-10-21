@@ -46,6 +46,9 @@ struct Fixture {
         CHECK(tick->evaluation_seconds == f.steps * .125);
         ArSnapshot snapshot = 99;
         CHECK(f.api.evaluate_frame(f.runtime, f.avatars[0], &f.input, nullptr, &snapshot) == AR_BUSY && snapshot == 0);
+        ArPhysicsMembershipApi membership{};
+        CHECK(arGetPhysicsMembershipApi(1, sizeof(membership), &membership) == AR_OK);
+        CHECK(membership.remove_participant(f.runtime, f.world, f.avatars[0]) == AR_BUSY);
         return f.failStep ? AR_PROVIDER_ERROR : AR_OK;
     }
     static ArStatus AR_CALL reset(void* p, const ArDiagnosticSink*) {
@@ -185,7 +188,72 @@ void fractionalClock() {
     CHECK(api.destroy_runtime(runtime) == AR_OK);
 }
 
+void selectiveRemoval() {
+    Fixture f;
+    ArPhysicsMembershipApi membership{};
+    CHECK(arGetPhysicsMembershipApi(1, sizeof(membership), nullptr) == AR_INVALID_ARGUMENT);
+    CHECK(arGetPhysicsMembershipApi(2, sizeof(membership), &membership) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetPhysicsMembershipApi(1, sizeof(membership) - 1, &membership) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetPhysicsMembershipApi(1, sizeof(membership), &membership) == AR_OK);
+    CHECK(f.advance(.3125) == AR_OK && f.steps == 2 && f.result.pending_seconds == .0625);
+    const auto removed = f.avatars[1], survivor = f.avatars[0];
+    const auto retained = f.snapshots[0];
+    CHECK(f.api.retain_snapshot(retained) == AR_OK);
+    const auto calls = f.calls;
+    int otherSteps = 0;
+    ArPhysicsWorld other{};
+    ArPhysicsWorldDesc otherDesc{AR_HEADER(ArPhysicsWorldDesc)};
+    otherDesc.id = "other"; otherDesc.fixed_step_seconds = .125; otherDesc.max_catch_up_ticks = 1;
+    otherDesc.user_data = &otherSteps;
+    otherDesc.step = [](void* p, const ArPhysicsTick*, const ArDiagnosticSink*) -> ArStatus {
+        ++*static_cast<int*>(p); return AR_OK;
+    };
+    otherDesc.reset = [](void*, const ArDiagnosticSink*) -> ArStatus { return AR_OK; };
+    CHECK(f.physics.create_world(f.runtime, &otherDesc, nullptr, &other) == AR_OK);
+    CHECK(membership.remove_participant(f.runtime, other, removed) == AR_INVALID_ARGUMENT);
+    CHECK(membership.remove_participant(0, f.world, removed) == AR_INVALID_HANDLE);
+    CHECK(membership.remove_participant(f.runtime, 0, removed) == AR_INVALID_HANDLE);
+    CHECK(membership.remove_participant(f.runtime, f.world, 0) == AR_INVALID_HANDLE);
+    CHECK(membership.remove_participant(f.runtime, f.world, removed) == AR_OK);
+    CHECK(membership.remove_participant(f.runtime, f.world, removed) == AR_INVALID_ARGUMENT);
+    CHECK(f.calls == calls && f.resets == 0 && f.steps == 2);
+    CHECK(f.api.destroy_instance(f.runtime, survivor) == AR_INVALID_STATE);
+    ArSnapshot direct = 99;
+    CHECK(f.api.evaluate_frame(f.runtime, removed, &f.input, nullptr, &direct) == AR_INVALID_STATE && !direct);
+    // Detached instance can be reset, but does not rejoin this world implicitly.
+    CHECK(f.api.reset_instance(f.runtime, removed, 2) == AR_OK);
+    CHECK(f.api.destroy_instance(f.runtime, removed) == AR_OK);
+    CHECK(f.view(retained).instance == removed && f.view(retained).frame_id == 2);
+    CHECK(f.advance(.0625) == AR_INVALID_ARGUMENT && f.steps == 2);
+    f.calls.clear();
+    ArPhysicsInput input{survivor, &f.input};
+    ArPhysicsAdvanceDesc desc{AR_HEADER(ArPhysicsAdvanceDesc)};
+    desc.request_id = ++f.request; desc.elapsed_seconds = .0625;
+    desc.inputs = &input; desc.input_count = 1;
+    ArSnapshot snapshot{};
+    CHECK(f.physics.advance_world(f.runtime, f.world, &desc, nullptr, &f.result, &snapshot) == AR_OK);
+    CHECK(f.steps == 3 && f.result.last_tick_id == 3 && f.result.pending_seconds == 0);
+    CHECK((f.calls == std::vector<std::string>{"pre." + std::to_string(survivor), "step", "post." + std::to_string(survivor)}));
+    CHECK(f.view(snapshot).instance == survivor && f.view(snapshot).generation == 1);
+    CHECK(f.api.release_snapshot(snapshot) == AR_OK);
+    CHECK(membership.remove_participant(f.runtime, f.world, survivor) == AR_OK);
+    CHECK(f.api.destroy_instance(f.runtime, survivor) == AR_OK);
+    // A non-avatar solver may keep running after the final avatar leaves.
+    desc.request_id = ++f.request; desc.elapsed_seconds = .125;
+    desc.inputs = nullptr; desc.input_count = 0;
+    CHECK(f.physics.advance_world(f.runtime, f.world, &desc, nullptr, &f.result, nullptr) == AR_OK && f.steps == 4);
+    CHECK(f.api.release_snapshot(retained) == AR_OK);
+    desc.request_id = 1;
+    CHECK(f.physics.advance_world(f.runtime, other, &desc, nullptr, &f.result, nullptr) == AR_OK && otherSteps == 1);
+
+    Fixture invalid;
+    invalid.failPost = true;
+    CHECK(invalid.advance(.125) == AR_PROVIDER_ERROR);
+    CHECK(membership.remove_participant(invalid.runtime, invalid.world, invalid.avatars[1]) == AR_INVALID_STATE);
+    CHECK(invalid.api.destroy_instance(invalid.runtime, invalid.avatars[1]) == AR_INVALID_STATE);
+}
+
 int main() {
-    clockAndBarrier(); failures(); fractionalClock();
+    clockAndBarrier(); failures(); fractionalClock(); selectiveRemoval();
     std::cout << "Shared-world order, fixed ticks, retained state and reset recovery passed\n";
 }

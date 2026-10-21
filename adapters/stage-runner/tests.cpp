@@ -211,13 +211,65 @@ void borrowedLifecycle() {
   }
   // Neither explicit Close nor destruction removes a borrowed registration.
   CHECK(w.api.destroy_instance(w.runtime, w.avatar) == AR_INVALID_STATE);
+  {
+    Session session(w.runtime, w.world);
+    // Explicit removal also works on a borrowed world before any output.
+    CHECK(session.RemoveParticipant(w.avatar) == AR_OK);
+    CHECK(session.Snapshots().empty() && session.IsOpen());
+    CHECK(w.api.destroy_instance(w.runtime, w.avatar) == AR_OK);
+  }
+  // The now avatar-free borrowed registration itself still belongs to caller.
   CHECK(w.physics.destroy_world(w.runtime, w.world) == AR_OK);
+}
+
+void selectiveLifecycle() {
+  using Session = avatarStageRunner::PhysicsSession;
+  World w(false, 2);
+  Session::FrameClock::Clock::time_point now{};
+  int clockCalls = 0;
+  Session session(w.runtime, w.Descriptor(), [&] { ++clockCalls; return now; });
+  ArInputFrame frame{AR_HEADER(ArInputFrame)};
+  const auto removed = w.members[1].instance;
+  ArPhysicsInput inputs[]{{removed, &frame}, {w.avatar, &frame}};
+  session.Play();
+  now += std::chrono::milliseconds(312);
+  CHECK(session.Display(inputs, 2) == AR_OK && w.steps == 2);
+  const auto retained = session.Snapshots()[0], survivor = session.Snapshots()[1];
+  CHECK(w.api.retain_snapshot(retained) == AR_OK);
+  const auto result = session.LastAdvance();
+  const auto clocks = clockCalls;
+  CHECK(session.RemoveParticipant(0) == AR_INVALID_HANDLE);
+  CHECK(session.Snapshots().size() == 2);
+  CHECK(session.RemoveParticipant(removed) == AR_OK);
+  CHECK(session.RemoveParticipant(removed) == AR_INVALID_ARGUMENT);
+  CHECK(!session.IsPaused() && clockCalls == clocks && w.steps == 2);
+  CHECK(session.Snapshots().size() == 1 && session.Snapshots()[0] == survivor);
+  CHECK(session.LastAdvance().last_tick_id == result.last_tick_id &&
+        session.LastAdvance().pending_seconds == result.pending_seconds);
+  CHECK(w.api.destroy_instance(w.runtime, removed) == AR_OK);
+  now += std::chrono::milliseconds(63);
+  CHECK(session.Display(inputs + 1, 1) == AR_OK && w.steps == 3);
+  ArStateView view{AR_HEADER(ArStateView)};
+  CHECK(w.api.get_snapshot(session.Snapshots()[0], &view) == AR_OK &&
+        view.instance == w.avatar && view.frame_id == 3 && view.generation == 1);
+  CHECK(w.api.get_snapshot(retained, &view) == AR_OK && view.instance == removed);
+  // Reset and close operate on survivors only, after the removed instance dies.
+  CHECK(session.Reset(2) == AR_OK && session.Snapshots().empty());
+  CHECK(session.RemoveParticipant(w.avatar) == AR_OK);
   CHECK(w.api.destroy_instance(w.runtime, w.avatar) == AR_OK);
+  session.Play();
+  now += std::chrono::milliseconds(125);
+  CHECK(session.Display(nullptr, 0) == AR_OK && w.steps == 1);
+  CHECK(session.Close() == AR_OK);
+  CHECK(session.RemoveParticipant(w.avatar) == AR_INVALID_STATE);
+  CHECK(w.api.get_snapshot(retained, &view) == AR_OK && view.instance == removed);
+  CHECK(w.api.release_snapshot(retained) == AR_OK);
 }
 
 int main() {
   ownedLifecycle();
   borrowedLifecycle();
+  selectiveLifecycle();
   using Session = avatarStageRunner::PhysicsSession;
   Session::FrameClock::Clock::time_point now{};
   ArSnapshot retained{};
@@ -256,6 +308,8 @@ int main() {
     w.failPost = true;
     CHECK(display(125) == AR_PROVIDER_ERROR && w.steps == 6);
     CHECK(session.Snapshots()[0] == latest);
+    CHECK(session.RemoveParticipant(w.avatar) == AR_INVALID_STATE &&
+          session.Snapshots()[0] == latest);
     CHECK(session.RetryAdvance(&input, 1) == AR_INVALID_STATE && w.steps == 6);
     CHECK(session.Reset(1) == AR_INVALID_ARGUMENT && session.IsPaused());
     CHECK(session.Snapshots()[0] == latest);

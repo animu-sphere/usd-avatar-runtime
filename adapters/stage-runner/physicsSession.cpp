@@ -34,7 +34,9 @@ PhysicsSession::PhysicsSession(ArRuntime runtime, const ArPhysicsWorldDesc &worl
 void PhysicsSession::Initialize() {
   if (arGetApi(AR_ABI_VERSION, sizeof(api_), &api_) != AR_OK ||
       arGetPhysicsApi(AR_PHYSICS_API_VERSION, sizeof(physics_), &physics_) !=
-          AR_OK)
+          AR_OK ||
+      arGetPhysicsMembershipApi(AR_PHYSICS_MEMBERSHIP_API_VERSION,
+                               sizeof(membership_), &membership_) != AR_OK)
     throw std::runtime_error(
         "PhysicsSession requires compatible runtime API tables");
   (void)clock_.tick();
@@ -67,6 +69,25 @@ void PhysicsSession::ReleaseSnapshots() noexcept {
     if (snapshot)
       (void)api_.release_snapshot(snapshot);
   snapshots_.clear();
+  snapshotInstances_.clear();
+}
+
+ArStatus PhysicsSession::RemoveParticipant(ArInstance instance) noexcept {
+  if (!IsOpen())
+    return AR_INVALID_STATE;
+  const auto status = membership_.remove_participant(runtime_, world_, instance);
+  if (status != AR_OK)
+    return status;
+  for (size_t i = 0; i < snapshotInstances_.size(); ++i) {
+    if (snapshotInstances_[i] == instance) {
+      if (snapshots_[i])
+        (void)api_.release_snapshot(snapshots_[i]);
+      snapshots_.erase(snapshots_.begin() + i);
+      snapshotInstances_.erase(snapshotInstances_.begin() + i);
+      break;
+    }
+  }
+  return AR_OK;
 }
 
 void PhysicsSession::Play() {
@@ -105,6 +126,14 @@ ArStatus PhysicsSession::Advance(double elapsed, const ArPhysicsInput *inputs,
   if (request_ == std::numeric_limits<uint64_t>::max())
     return AR_INVALID_STATE;
   std::vector<ArSnapshot> next(count, 0);
+  // Copy identities before runtime accepts elapsed time. A null input span
+  // still goes through runtime validation without dereferencing it here.
+  std::vector<ArInstance> instances;
+  if (inputs) {
+    instances.reserve(count);
+    for (uint32_t i = 0; i < count; ++i)
+      instances.push_back(inputs[i].instance);
+  }
   ArPhysicsAdvanceDesc desc{AR_HEADER(ArPhysicsAdvanceDesc)};
   desc.request_id = ++request_;
   desc.elapsed_seconds = elapsed;
@@ -117,6 +146,7 @@ ArStatus PhysicsSession::Advance(double elapsed, const ArPhysicsInput *inputs,
   if (status == AR_OK) {
     ReleaseSnapshots();
     snapshots_.swap(next);
+    snapshotInstances_.swap(instances);
   }
   return status;
 }

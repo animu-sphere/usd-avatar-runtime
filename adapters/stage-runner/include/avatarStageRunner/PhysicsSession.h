@@ -41,6 +41,11 @@ public:
   // Idempotent; a failed removal preserves output and leaves the session open.
   // Closed sessions reject Display/RetryAdvance/Reset; Play/Pause do nothing.
   ArStatus Close() noexcept;
+  // Synchronously removes scheduler membership and this member's display
+  // reference. Does not read the clock, pause, reset or touch solver resources.
+  // Detach external bodies/commands before the next Display/Reset; subsequent
+  // requests must cover the remaining members. Provider code remains borrowed.
+  ArStatus RemoveParticipant(ArInstance instance) noexcept;
   ArStatus Display(const ArPhysicsInput *inputs, uint32_t count,
                    const ArDiagnosticSink *diagnostics = nullptr);
   // Retry simulation after a pre-Step failure with a NEW request and zero
@@ -54,7 +59,7 @@ public:
                  const ArDiagnosticSink *diagnostics = nullptr);
 
   // Borrowed handles in the last successful request's input order. Retain
-  // independently before the next successful advance/reset or destruction.
+  // independently before advance/reset/member removal/close or destruction.
   const std::vector<ArSnapshot> &Snapshots() const noexcept {
     return snapshots_;
   }
@@ -70,10 +75,12 @@ private:
   bool ownsWorld_ = false;
   ArRuntimeApi api_{};
   ArPhysicsApi physics_{};
+  ArPhysicsMembershipApi membership_{};
   FrameClock clock_;
   bool paused_ = true;
   uint64_t request_ = 0;
   std::vector<ArSnapshot> snapshots_;
+  std::vector<ArInstance> snapshotInstances_;
   ArPhysicsAdvanceResult result_{AR_HEADER(ArPhysicsAdvanceResult)};
 };
 

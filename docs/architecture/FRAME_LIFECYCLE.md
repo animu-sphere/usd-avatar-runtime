@@ -171,7 +171,8 @@ with a measured host clock, playback transitions and retained display output.
 It introduces no accumulator or physics/backend dependency into core.
 Its optional owned registration permits whole-world close before external
 resource unload. This removes every member and requires explicit instance
-reset before reuse; it does not implement selective live-avatar removal.
+reset before reuse. Selective removal uses the separately negotiated membership
+extension below.
 
 `advance_world` accepts nonnegative finite elapsed time, pause state and exactly
 one input template per participant. Runtime preserves observations and input
@@ -203,6 +204,26 @@ evaluation, allocation or commit failure, invalidates the entire group and
 returns no snapshots. Prior committed snapshots remain valid. Further advances
 are rejected until `reset_world`; runtime never assumes backend rollback.
 An infallible provider lifecycle violation likewise requires group reset.
+
+`arGetPhysicsMembershipApi` negotiates `ArPhysicsMembershipApi` version 1,
+independently of the unchanged core and physics tables. Its
+`remove_participant(runtime, world, instance)` removes one participant at a
+serialized call boundary. It invokes no callback and preserves the world's
+tick, simulation time, backlog, request history, remaining instance generations
+and committed snapshots. The detached instance is invalidated for evaluation
+or rebinding until an explicit increasing-generation reset; destruction is
+immediately permitted. Retained snapshots keep their values and identities.
+Removing the last avatar leaves a valid world for non-avatar simulation.
+
+An invalid handle, non-member or invalidated world refuses without membership
+changes. Removal cannot recover a poisoned group, including a poisoned member:
+reset the group or close it. Callback reentry returns `AR_BUSY`. The exclusive
+host driver must remove external body/constraint resources, pending commands,
+body snapshots and input rows before its next advance or reset. The core owns
+only scheduler membership; it never infers those resources. Cross-avatar
+constraints require an explicit host teardown policy. Provider registrations,
+code and shared `user_data` still outlive the runtime; removing an instance is
+not an evaluator-unregister API.
 
 `reset_world` first creates all replacement provider states with a generation
 greater than every participant's. Creation failure leaves the old group intact.
