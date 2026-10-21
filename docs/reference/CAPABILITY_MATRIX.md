@@ -625,3 +625,45 @@ constraint policy, provider unregister, stage discovery, interactive application
 wiring, resident renderer resources and representative L3 acceptance remain
 open. The [lifecycle](../architecture/FRAME_LIFECYCLE.md#experimental-fixed-tick-requests)
 and [session](../architecture/STAGE_RUNNER_SESSION.md) own API/ownership rules.
+
+## Scoped physics scene resource evidence (2026-10-21)
+
+Runtime base `9cb59d9` plus the optional `avatarPhysicsUsdResources` changes.
+Local Windows x64/MSVC 19.51 Release/OpenUSD 26.08 checks use installed physics
+packages, with no sibling source compiled into runtime. The MMD/Stage Runner/
+Jolt/Toon configuration passes fourteen tests; a physics-resource-only build
+passes six, and the physics-free session-only build passes six. These are local
+source/install checks without publication or hosted CI claims.
+
+`adapters.physics_usd_resources` checks identical paths in independent resource
+sets, exact endpoint/handle mapping, world anchors, fixed-joint local frames,
+disabled joints, body policy and snapshot lifetime. All eight backend creation
+positions fail by exception and by invalid handle in separate runs; rollback
+leaves an existing resource set's handles/resources intact. Invalid paths,
+duplicate identities, external endpoints, unsupported limits, malformed shapes,
+missing capability and policy exceptions reject before any backend creation.
+Constraint/body/shape teardown refusals stop before their dependencies and allow
+explicit retry; successful repeated close and destruction leave no owned handles.
+No step, state query, force or velocity operation occurs in this component.
+
+`adapters.physics_usd_installed` separately builds and executes that contract
+through `COMPONENTS physics_usd`, rejecting accidental MMD, backend, Stage Runner
+or renderer imports. Core/session-only installed consumers additionally reject
+the new resource target and physics USD targets.
+
+The generated MMD host now constructs imported body snapshots through the
+reusable resource target. A second selective-unload run authors a standard
+world joint into the stage's in-memory session layer; the installed reader
+discovers it on initial construction and reset. Removing one avatar closes its
+constraint/body/shape set after membership removal. Existing final-pose owner
+parity, Toon transport, retained output, shared non-avatar stepping and survivor
+reset checks pass. After removal the survivor runs another 120 fixed ticks:
+its constrained body remains within 0.27 metres of the world anchor's Y for
+the declared +/-0.25 metre limit and moves downward by more than 0.1 metres.
+Contacts remain disabled; these are generated joint-lifetime/bounded-execution
+checks rather than representative avatar acceptance.
+
+The [resource contract](../architecture/PHYSICS_USD_RESOURCES.md) owns preparation,
+rollback and teardown rules. Automatic application/stage discovery, solver
+selection, avatar configuration, cross-avatar constraints, resident rendering,
+Hydra agreement and representative L3 acceptance remain open.

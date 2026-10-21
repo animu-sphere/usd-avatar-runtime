@@ -35,10 +35,8 @@ public:
     CHECK(session_.RemoveParticipant(instance) == AR_OK);
     // Membership first; then stop all external references to the removed body
     // set before the exclusive host driver can issue another request/reset.
-    for (const auto& [path, body] : fixture_.handles.at(instance))
-      CHECK(fixture_.solver->destroyBody(body));
-    for (auto shape : fixture_.shapes.at(instance))
-      CHECK(fixture_.solver->destroyShape(shape));
+    CHECK(fixture_.resources.at(instance)->Close());
+    fixture_.resources.erase(instance);
     fixture_.handles.erase(instance);
     fixture_.shapes.erase(instance);
     fixture_.pending.erase(instance);
@@ -238,6 +236,8 @@ void stageRunner(Assets &assets) {
     CHECK(f.steps == steps && f.resets == resets && f.calls == calls);
     for (auto avatar : f.avatars)
       CHECK(f.api.destroy_instance(f.runtime, avatar) == AR_OK);
+    for (auto& [avatar, owned] : f.resources) CHECK(owned->Close());
+    f.resources.clear();
     f.solver.reset();
     f.handles.clear();
     CHECK(f.pose(retained) == retainedPose);
@@ -247,10 +247,29 @@ void stageRunner(Assets &assets) {
     consumer->AfterProducerDestruction();
 }
 
-void stageRunnerUnload(Assets &assets) {
+void stageRunnerUnload(Assets &assets, bool constrained = false) {
+  // Add a standard joint only in the in-memory session layer. The installed
+  // reader discovers it on every initial build/reset alongside imported bodies.
+  UsdEditContext edit(assets.stage, assets.stage->GetSessionLayer());
+  SdfPath constrainedBody;
+  double anchorY = 0;
+  if (constrained) {
+    const auto scene = usd_physics::usd::readPhysicsScene(assets.stage);
+    const auto body = std::find_if(scene.bodies.begin(), scene.bodies.end(),
+        [](const auto& b) { return b.motionType == usd_physics::core::MotionType::dynamicBody; });
+    CHECK(body != scene.bodies.end());
+    constrainedBody = SdfPath(body->path);
+    anchorY = body->transform.translation.y;
+    auto joint = UsdPhysicsJoint::Define(assets.stage, SdfPath("/Host/worldJoint"));
+    joint.CreateBody1Rel().SetTargets({constrainedBody});
+    joint.CreateLocalPos0Attr().Set(GfVec3f(body->transform.translation.x,
+        body->transform.translation.y, body->transform.translation.z));
+    auto limit = UsdPhysicsLimitAPI::Apply(joint.GetPrim(), TfToken("transY"));
+    limit.CreateLowAttr().Set(-.25f); limit.CreateHighAttr().Set(.25f);
+  }
   std::unique_ptr<MmdToonCheck> consumers[2];
   {
-    Fixture f(assets, true, {}, false);
+    Fixture f(assets, true, {}, false, constrained);
     StageRunnerCheck host(f);
     host.Pause(false);
     CHECK(host.Display(std::chrono::milliseconds(25)) == AR_OK);
@@ -268,6 +287,7 @@ void stageRunnerUnload(Assets &assets) {
     const auto calls = f.calls;
     auto* solver = f.solver.get();
     host.Unload(removed);
+    CHECK(f.resources.size() == 1 && !f.resources.count(removed));
     CHECK(f.solver.get() == solver && f.steps == 3 && f.resets == 1 && f.calls == calls);
     CHECK(f.handles.size() == 1 && f.handles.at(survivor).size() == 3);
     CHECK(f.solver->bodyState(f.sharedBody).transform.translation.y == bodyBefore.transform.translation.y);
@@ -287,6 +307,16 @@ void stageRunnerUnload(Assets &assets) {
     CHECK(expected && f.pose(f.snapshots[0]) == expected.value());
     CHECK(f.solver->bodyState(f.sharedBody).transform.translation.y < bodyBefore.transform.translation.y);
     consumers[1]->Apply(f.api, f.snapshots[0]);
+    if (constrained) {
+      // Run long enough to hit the joint bound, past the free-fall result.
+      for (int i = 0; i < 40; ++i)
+        CHECK(host.Display(std::chrono::milliseconds(25)) == AR_OK);
+      const auto body = f.solver->bodyState(f.handles.at(survivor).at(constrainedBody));
+      CHECK(std::isfinite(body.transform.translation.y));
+      CHECK(std::abs(body.transform.translation.y - anchorY) <= .27);
+      CHECK(body.transform.translation.y < anchorY - .1);
+      consumers[1]->Apply(f.api, f.snapshots[0]);
+    }
     CHECK(f.pose(retained) == retainedPose);
     // Group reset must not resurrect the unloaded avatar or stale body maps.
     host.Reset(3);
@@ -296,9 +326,12 @@ void stageRunnerUnload(Assets &assets) {
     consumers[1]->Apply(f.api, f.snapshots[0]);
     host.Close();
     CHECK(f.api.destroy_instance(f.runtime, survivor) == AR_OK);
+    for (auto& [avatar, owned] : f.resources) CHECK(owned->Close());
+    f.resources.clear();
     f.solver.reset(); f.handles.clear(); f.shapes.clear();
     CHECK(f.pose(retained) == retainedPose);
     CHECK(f.api.release_snapshot(retained) == AR_OK);
   }
   for (auto& consumer : consumers) consumer->AfterProducerDestruction();
+  if (constrained) CHECK(assets.stage->RemovePrim(SdfPath("/Host")));
 }

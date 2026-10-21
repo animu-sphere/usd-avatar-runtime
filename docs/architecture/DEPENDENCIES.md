@@ -40,7 +40,12 @@ The host's optional `AVATAR_MOTION_CHECK_TOON` mode consumes installed
 or provider target links the renderer. The optional
 [MMD adapter](MMD_ADAPTER.md) consumes installed `mmdPhysicsAdapter`/`mmdControl`
 through a C++ registration boundary; its host supplies path/handle mapping and
-world snapshots. Only the opt-in test host links `physicsUsd`/`physicsJolt`.
+world snapshots. Its opt-in test host links `physicsUsd`/`physicsJolt`.
+The separate optional [USD physics resources](PHYSICS_USD_RESOURCES.md) target
+consumes installed `physicsUsd`/`physicsCore` for host-owned construction and
+teardown. It imports no backend or format dependency and changes no core or
+MMD-registration dependency. The Stage Runner smoke composes this target with
+its explicitly selected Jolt backend.
 Its separately opt-in `AVATAR_MMD_TOON_SMOKE` executable also consumes installed
 `Toon::AvatarState`; that renderer dependency is absent from the reusable MMD
 adapter and its installed component.

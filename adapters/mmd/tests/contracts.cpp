@@ -25,6 +25,12 @@
 #ifdef AVATAR_MMD_TOON_SMOKE
 #include "ToonCheck.h"
 #endif
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+#include <avatarPhysics/SceneResources.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usdPhysics/joint.h>
+#include <pxr/usd/usdPhysics/limitAPI.h>
+#endif
 
 #define CHECK(x) do { if (!(x)) { std::cerr << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while(0)
 using namespace pxr;
@@ -100,6 +106,7 @@ struct Fixture {
     std::vector<std::string> calls, diagnostics;
     int steps = 0, resets = 0; uint64_t request = 0;
     bool badSnapshot = false, failSubmit = false;
+    bool resourceJoints = false;
     ArPhysicsAdvanceResult lastAdvance{AR_HEADER(ArPhysicsAdvanceResult)};
 #ifdef AVATAR_MMD_JOLT_SMOKE
     std::unique_ptr<usd_physics::core::PhysicsWorld> solver;
@@ -107,14 +114,40 @@ struct Fixture {
     std::map<ArInstance, std::vector<usd_physics::core::ShapeHandle>> shapes;
     std::set<ArInstance> unloaded;
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+    std::map<ArInstance, std::unique_ptr<avatarPhysics::SceneResources>> resources;
     usd_physics::core::BodyHandle sharedBody;
 #endif
     void initializeSolver() {
         namespace core = usd_physics::core;
         // Reset rebuilds ALL resources and path/handle maps, never reuses stale handles.
+        // Resource sets borrow the old solver and must close before replacing it.
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+        for (auto& [avatar, owned] : resources) CHECK(owned->Close());
+        resources.clear();
+#endif
         solver = usd_physics::jolt::createWorld(); handles.clear(); shapes.clear();
-        const auto scene = usd_physics::usd::readPhysicsScene(assets.stage);
-        CHECK(scene.bodies.size() == 3 && scene.joints.empty());
+        auto scene = usd_physics::usd::readPhysicsScene(assets.stage);
+        CHECK(scene.bodies.size() == 3 && scene.joints.size() == (resourceJoints ? 1u : 0u));
+#ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+        for (auto avatar : avatars) if (!unloaded.count(avatar)) {
+            auto resourcesForAvatar = std::make_unique<avatarPhysics::SceneResources>(
+                *solver, scene, [](const auto& body, auto& descriptor) {
+                    descriptor.collisionFilter = {1,0};
+                    descriptor.damping = {0,0};
+                    if (body.motionType == core::MotionType::dynamicBody) {
+                        const auto q = GfRotation(GfVec3d(0,0,1), 60).GetQuat();
+                        descriptor.initialTransform.rotation = {q.GetReal(),0,0,q.GetImaginary()[2]};
+                    }
+                });
+            for (const auto& body : scene.bodies) {
+                const auto handle = resourcesForAvatar->Bodies().at(body.path);
+                handles[avatar][SdfPath(body.path)] = handle;
+                if (body.motionType == core::MotionType::dynamicBody)
+                    CHECK(solver->setLinearVelocity(handle, {.1,0,0}));
+            }
+            resources.emplace(avatar, std::move(resourcesForAvatar));
+        }
+#else
         for (auto avatar : avatars) if (!unloaded.count(avatar)) for (const auto& body : scene.bodies) {
             auto shape = solver->createShape(body.shape);
             shapes[avatar].push_back(shape);
@@ -131,6 +164,7 @@ struct Fixture {
             if (body.motionType == core::MotionType::dynamicBody)
                 CHECK(solver->setLinearVelocity(handles[avatar].at(SdfPath(body.path)), {.1,0,0}));
         }
+#endif
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
         // A world-owned object outside both avatars must share Step and reset.
         core::BodyDescriptor shared;
@@ -154,7 +188,8 @@ struct Fixture {
     }
     Fixture(Assets& a, bool jolt = false,
             std::function<void(avatarMmd::PhysicsAdapterConfig&)> configure = {},
-            bool registerWorld = true) : assets(a) {
+            bool registerWorld = true, bool constrainedResources = false)
+            : assets(a), resourceJoints(constrainedResources) {
         CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
         CHECK(arGetPhysicsApi(1, sizeof(physics), &physics) == AR_OK);
         CHECK(api.create_runtime(&runtime) == AR_OK);
@@ -439,6 +474,7 @@ int main(int argc, char **argv) {
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
     stageRunner(assets);
     stageRunnerUnload(assets);
+    stageRunnerUnload(assets, true);
 #else
 #ifdef AVATAR_MMD_TOON_SMOKE
     std::unique_ptr<MmdToonCheck> consumers[2];
