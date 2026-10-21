@@ -1,0 +1,43 @@
+find_package(physicsJolt 0.1 CONFIG REQUIRED)
+if(NOT TARGET python)
+    find_package(pxr CONFIG REQUIRED)
+endif()
+if(NOT physicsJolt_BACKEND_AVAILABLE OR NOT TARGET python)
+    message(FATAL_ERROR "Live MMD preview requires Jolt and Python-enabled OpenUSD")
+endif()
+set(package "${CMAKE_CURRENT_BINARY_DIR}/python/usdviewMmdPhysics")
+file(MAKE_DIRECTORY "${package}")
+foreach(file IN ITEMS __init__.py controller.py plugInfo.json)
+    configure_file("python/${file}" "${package}/${file}" COPYONLY)
+endforeach()
+add_library(usdviewMmdPhysicsPython MODULE session.cpp)
+target_compile_features(usdviewMmdPhysicsPython PRIVATE cxx_std_20)
+target_link_libraries(usdviewMmdPhysicsPython PRIVATE avatarMmdAdapter avatarUsdBinding
+    avatarStageRunnerSession avatarPhysicsUsdResources physicsJolt::physicsJolt python)
+set_target_properties(usdviewMmdPhysicsPython PROPERTIES PREFIX "" OUTPUT_NAME "_native"
+    LIBRARY_OUTPUT_DIRECTORY "${package}" RUNTIME_OUTPUT_DIRECTORY "${package}")
+foreach(config IN ITEMS DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+    set_target_properties(usdviewMmdPhysicsPython PROPERTIES
+        LIBRARY_OUTPUT_DIRECTORY_${config} "${package}" RUNTIME_OUTPUT_DIRECTORY_${config} "${package}")
+endforeach()
+if(WIN32)
+    set_target_properties(usdviewMmdPhysicsPython PROPERTIES SUFFIX ".pyd")
+    add_custom_command(TARGET usdviewMmdPhysicsPython POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:avatarRuntime> "${package}")
+    install(FILES $<TARGET_FILE:avatarRuntime> DESTINATION lib/usd-avatar-runtime/usdview/usdviewMmdPhysics)
+endif()
+install(TARGETS usdviewMmdPhysicsPython LIBRARY DESTINATION lib/usd-avatar-runtime/usdview/usdviewMmdPhysics
+    RUNTIME DESTINATION lib/usd-avatar-runtime/usdview/usdviewMmdPhysics)
+install(FILES python/__init__.py python/controller.py python/plugInfo.json
+    DESTINATION lib/usd-avatar-runtime/usdview/usdviewMmdPhysics)
+set(AVATAR_MMD_PREVIEW_PMX "" CACHE FILEPATH "Generated live-physics-pendulum.pmx for native live-host acceptance")
+if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
+    if(NOT EXISTS "${AVATAR_MMD_PREVIEW_PMX}")
+        message(FATAL_ERROR "AVATAR_MMD_PREVIEW_PMX must name an existing generated pendulum fixture")
+    endif()
+    find_package(Python3 3.13 EXACT REQUIRED COMPONENTS Interpreter)
+    add_test(NAME hosts.usdview_mmd_native COMMAND ${Python3_EXECUTABLE}
+        "${CMAKE_CURRENT_SOURCE_DIR}/test_live.py" "${AVATAR_MMD_PREVIEW_PMX}")
+    set_tests_properties(hosts.usdview_mmd_native PROPERTIES ENVIRONMENT_MODIFICATION
+        "PYTHONPATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/python;PYTHONPATH=path_list_prepend:${pxr_DIR}/lib/python;PATH=path_list_prepend:${pxr_DIR}/bin;PATH=path_list_prepend:${pxr_DIR}/lib")
+endif()

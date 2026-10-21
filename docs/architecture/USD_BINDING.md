@@ -5,6 +5,10 @@ owner: usd-avatar-runtime
 
 # Scoped USD skeleton binding
 
+The same optional target also installs the separate
+[`SkeletonPoseOutput`](USD_POSE_OUTPUT.md) consumer for live pose publication;
+reading/binding below remains independent of publication and changes no stage.
+
 The optional `avatarUsdBinding` target reads a composed `UsdSkelSkeleton` at
 default time into owned runtime baseline and motion-owner configuration values.
 It addresses the skeleton portion of RT-O4. It is not a full VRM binding

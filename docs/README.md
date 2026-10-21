@@ -29,6 +29,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | clip sampling/retarget registration, MotionPoseInputBridge, installed-owner validation delegation and owned diagnostic reports |
 | [Scoped USD motion clip binding](architecture/MOTION_USD_BINDING.md) | direct typed owner clip/source-rest integration, compatible StageClip wrapper and parity tool |
 | [Scoped USD skeleton binding](architecture/USD_BINDING.md) | current baseline/Humanoid/placement binding; planned split of motion conversion from runtime identity/layout |
+| [Live UsdSkel pose output](architecture/USD_POSE_OUTPUT.md) | pose-only final-state publication into a discardable anonymous session layer |
 | [Scoped VRM USD Humanoid binding](architecture/VRM_USD_BINDING.md) | owner schema discovery, skeleton relationship resolution, standard role mapping and local asset evidence limits |
 | [Scoped VRM USD LookAt binding](architecture/VRM_LOOKAT_USD_BINDING.md) | owner range-map extraction, explicit head/eye/rest binding, adapter configuration and real-avatar evidence limits |
 | [Scoped VRM USD Expression binding](architecture/VRM_EXPRESSION_USD_BINDING.md) | owner expression/output extraction, canonical morph/material baseline, LookAt composition and evidence limits |
@@ -57,6 +58,8 @@ is not a frozen wire/ABI representation. Adoption is gated by
 | [Current roadmap](roadmap/current.md) | boundary cleanup workstreams, Runtime Phases A–F, physics milestones/MVP gates and unresolved decisions |
 
 ## Maintenance
+
+User task: [Live MMD physics in usdview](guides/live-mmd-physics.md).
 
 [Documentation guidelines](contributing/documentation.md) define category
 ownership, metadata, cross-repository references and validation.

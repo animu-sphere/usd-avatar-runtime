@@ -705,3 +705,45 @@ The [whole-stage contract](../architecture/PHYSICS_USD_RESOURCES.md#whole-stage-
 owns factory selection and lifetime. Backend policy, application events,
 automatic avatar configuration, selective unload with cross-avatar constraints,
 resident renderer resources, Hydra agreement and representative L3 remain open.
+
+## Live UsdSkel and usdview MMD evidence (2026-10-21)
+
+Runtime base `901fc3f` plus local changes; Windows x64, MSVC 19.51 Release,
+Python 3.13.14 and OpenUSD 26.08 with Qt/usdview. Installed MMD 0.2,
+physics/Jolt and Stage Runner clock packages are the preceding stage-world
+inputs; USD binding uses installed motion owner 0.5.4. No sibling source enters
+the build. The live-host source/install configuration passes fourteen CTests.
+This is local evidence, without publication, hosted CI or representative L3 claims.
+
+`adapters.usd_pose_output`, also built/run by the separate installed USD
+consumer, validates pose-only publication with centimetre units, translated/
+rotated placement, multiple roots and nonuniform child scale. A UsdSkel query
+at an arbitrary timeline frame recovers the expected skeleton-local transforms
+within `2e-5`. Malformed transforms, narrowing overflow, changed units/topology/
+placement, layout mismatch, another instance, older output and a masking
+session-root binding reject before changing the previous live layer. Close
+restores the preceding animation, preserves foreign sublayers/offsets and leaves
+persistent layer text unchanged. Retained CPU state outlives producer/output.
+The [output contract](../architecture/USD_POSE_OUTPUT.md) owns those rules.
+
+`hosts.usdview_mmd_native` uses the generated MMD `live-physics-pendulum.pmx`:
+two bones/bodies, one pivot joint and a skinned four-vertex bar. Three 120-tick
+live replays reproduce the final joint arrays exactly on this build. Gravity
+produces a driving-bone quaternion Z magnitude over 0.1; UsdSkel skinning moves
+a bound mesh vertex by over 0.1 metres. Pause admits no simulation time, reset
+rebuilds the entire world/generation, and repeated close restores the session
+and persistent layer text. Publication contains no authored time samples.
+
+The opt-in `tools/usdviewMmdPhysics/test_usdview.py` opens an actual usdview
+window, verifies its menu, drives real Qt-timer Play/Pause/Reset/resume/Stop,
+and checks final physics-driven rotation through the composed UsdSkel query.
+Stage replacement additionally stops its timer/session and cleans the old stage.
+The [guide](../guides/live-mmd-physics.md) owns reproduction and UI behavior.
+
+This first application deliberately disables contacts/body damping and reports
+preserved filter/contact/damping/spring metadata as unapplied. Output is joints
+only, with unsupported owner morph/hidden channels refusing through the MMD
+adapter. Representative PMX/VMD intake, collision/spring semantics, multi-avatar
+application binding, seek, full material/morph/visibility output, resident Toon
+resources and Hydra/direct agreement remain open. The local application uses
+usdview's default renderer; hydra-toon rendering/pixel parity is not established.

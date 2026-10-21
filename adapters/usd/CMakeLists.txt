@@ -3,7 +3,7 @@ find_package(motionUsd 0.5.4 CONFIG REQUIRED)
 include(${PROJECT_SOURCE_DIR}/cmake/AvatarMotionUsdReading.cmake)
 avatar_require_motion_usd_reading()
 find_package(pxr CONFIG REQUIRED)
-add_library(avatarUsdBinding STATIC skeletonBinding.cpp)
+add_library(avatarUsdBinding STATIC skeletonBinding.cpp skeletonPoseOutput.cpp)
 add_library(AvatarRuntime::avatarUsdBinding ALIAS avatarUsdBinding)
 target_compile_features(avatarUsdBinding PUBLIC cxx_std_17)
 target_compile_definitions(avatarUsdBinding PRIVATE AR_MOTION_USD_VERSION="${motionUsd_VERSION}")
@@ -23,6 +23,14 @@ install(EXPORT AvatarUsdBindingTargets NAMESPACE AvatarRuntime::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
 
 if(AVATAR_BUILD_TESTS)
+    add_executable(usdPoseOutputContracts poseOutputTests.cpp)
+    target_link_libraries(usdPoseOutputContracts PRIVATE avatarUsdBinding)
+    add_test(NAME adapters.usd_pose_output COMMAND usdPoseOutputContracts)
+    if(WIN32)
+        add_custom_command(TARGET usdPoseOutputContracts POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:usdPoseOutputContracts>)
+    endif()
     add_executable(usdBindingContracts tests.cpp)
     target_link_libraries(usdBindingContracts PRIVATE avatarUsdBinding)
     if(AVATAR_BUILD_MOTION_ADAPTER)

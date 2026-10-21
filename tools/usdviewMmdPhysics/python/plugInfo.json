@@ -1,0 +1,1 @@
+{"Plugins":[{"Type":"python","Name":"usdviewMmdPhysics","Info":{"Types":{"usdviewMmdPhysics.MmdPhysicsPlugin":{"bases":["pxr.Usdviewq.plugin.PluginContainer"],"displayName":"Live MMD Physics (experimental)"}}}}]}
