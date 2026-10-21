@@ -6,12 +6,15 @@ owner: usd-avatar-runtime
 # Host-owned USD physics scene resources
 
 The optional `avatarPhysicsUsdResources` target supplies
-[`avatarPhysics::SceneResources`](../../adapters/physics-usd/include/avatarPhysics/SceneResources.h).
-It constructs and owns a resource set inside a borrowed neutral `PhysicsWorld`,
+[`avatarPhysics::SceneResources`](../../adapters/physics-usd/include/avatarPhysics/SceneResources.h)
+and [`avatarPhysics::StageWorld`](../../adapters/physics-usd/include/avatarPhysics/StageWorld.h).
+`SceneResources` owns a resource set inside a borrowed neutral `PhysicsWorld`,
 using a snapshot from the installed physics owner's
 [`readPhysicsScene`](https://github.com/animu-sphere/usd-physics-plugins/blob/main/docs/design/USD_BRIDGE_CONTRACT.md).
 The reader owns USD validation and declarations; the backend owns execution;
 this host adapter owns path/handle maps and ordered resource lifetime.
+`StageWorld` adds whole-stage discovery and world ownership through a
+caller-selected factory.
 
 ## Build and installation
 
@@ -55,8 +58,41 @@ contract, and on exclusive host access. The constructor retains no snapshot,
 stage or policy callback. `Bodies()` borrows the current path/handle map.
 
 Scene gravity/settings are not applied to an existing world. Select them when
-constructing that world. This component creates neither a solver nor runtime
+constructing that world. `SceneResources` creates neither a solver nor runtime
 instances/world registrations, and never steps or edits USD.
+
+## Whole-stage world binding
+
+`StageWorld(stage, factory, policy)` reads the complete stage through the installed
+owner reader, then passes its optional `SceneSettings` snapshot to a required
+`WorldFactory`. Owner validation failures propagate unchanged, before the factory
+is invoked. The reader admits at most one active scene; the adapter neither picks
+the first of several scenes nor filters unsupported declarations. No scene
+declaration passes an empty optional so the caller can choose world defaults.
+
+The factory chooses the backend, applies the supplied gravity/settings and returns
+an exclusively owned, empty neutral world. It must not retain borrowed settings
+references. A missing factory or null result rejects; a factory exception
+propagates. The adapter creates one complete `SceneResources` set in that world.
+Policy or construction failure rolls back resources and destroys the new world.
+No partial binding is exposed. No factory, policy or stage reference is retained;
+stage edits require explicit close and reconstruction at a synchronous boundary.
+
+`World()` and `Resources()` borrow the owned world and its complete resource set.
+`Settings()` retains the owner snapshot, including after close. `Close()` first
+closes resources and then destroys the world, is idempotent, and makes both
+borrowed pointers null on success. A teardown refusal preserves the world and
+remaining resource set for retry. Resolve refusals before destruction; as with
+`SceneResources`, destructor cleanup relies on live-handle destruction succeeding.
+
+This whole-stage scope allows joints between any admitted body paths in the
+snapshot, including different avatar roots, because every constraint and endpoint
+shares one lifetime. It exposes no selective participant/resource removal. Close
+or reconstruct the complete scope for topology changes. Hosts requiring selective
+avatar unload still use separate resource sets with no cross-set constraints.
+Detach all runtime registrations and discard external handle/command references
+before closing the world. The adapter creates no runtime instance, membership,
+clock, fixed tick, renderer resource or USD writeback. It never calls Step.
 
 ## Unload, close and reset
 
@@ -88,7 +124,9 @@ See the [session contract](STAGE_RUNNER_SESSION.md) for those separate rules.
 ## Scope
 
 The [capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-physics-scene-resource-evidence-2026-10-21)
-records failure, installed-consumer and generated MMD/Jolt evidence. Automatic
-application/stage discovery, world factory selection, PMX/avatar configuration,
-cross-avatar constraints, source-specific spring/material semantics, resident
+records resource-set failure, installed-consumer and generated MMD/Jolt evidence.
+The [stage-world evidence](../reference/CAPABILITY_MATRIX.md#scoped-stage-world-binding-evidence-2026-10-21)
+records the separate whole-stage scope. Automatic application discovery, backend
+selection, PMX/avatar configuration, selective unload with cross-avatar
+constraints, source-specific spring/material semantics, resident
 rendering, Hydra agreement and representative L3 acceptance remain open.

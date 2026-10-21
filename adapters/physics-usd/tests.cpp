@@ -1,5 +1,10 @@
 #include <avatarPhysics/SceneResources.h>
+#include <avatarPhysics/StageWorld.h>
 #include <usd_physics/core/six_dof.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdPhysics/scene.h>
+#include <pxr/usd/usdPhysics/fixedJoint.h>
+#include <pxr/usd/sdf/copyUtils.h>
 #include <cstdlib>
 #include <iostream>
 #include <set>
@@ -200,7 +205,151 @@ void validation() {
   { Resources empty(plain, {}); CHECK(empty.Bodies().empty() && empty.Close()); }
 }
 
+pxr::UsdStageRefPtr stage(bool settings = true) {
+  auto result = pxr::UsdStage::CreateInMemory();
+  CHECK(result->GetRootLayer()->ImportFromString(R"(#usda 1.0
+(
+    upAxis = "Y"
+    metersPerUnit = 1
+)
+def Cube "Body" (
+    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsCollisionAPI", "PhysicsMassAPI"]
+)
+{
+    float physics:mass = 2
+}
+def PhysicsFixedJoint "Anchor"
+{
+    rel physics:body1 = </Body>
+}
+)"));
+  if (settings) {
+    auto scene = pxr::UsdPhysicsScene::Define(result, pxr::SdfPath("/Physics"));
+    scene.CreateGravityDirectionAttr().Set(pxr::GfVec3f(0, -1, 0));
+    scene.CreateGravityMagnitudeAttr().Set(3.0f);
+  }
+  return result;
+}
+
+struct OwnedWorld : World {
+  int &destroyedWorlds;
+  explicit OwnedWorld(int &count) : destroyedWorlds(count) {}
+  ~OwnedWorld() override {
+    CHECK(constraints.empty() && bodies.empty() && shapes.empty());
+    ++destroyedWorlds;
+  }
+};
+
+void stageWorld() {
+  using StageWorld = avatarPhysics::StageWorld;
+  int created = 0, destroyed = 0;
+  auto factory = [&](const auto &settings) {
+    ++created;
+    CHECK(settings && settings->path == "/Physics");
+    CHECK(settings->gravity.x == 0 && settings->gravity.y == -3 && settings->gravity.z == 0);
+    return std::make_unique<OwnedWorld>(destroyed);
+  };
+  {
+    auto input = stage();
+    StageWorld owned(input, factory, [](const auto &, auto &body) { body.mass = 7; });
+    auto *world = dynamic_cast<OwnedWorld *>(owned.World());
+    CHECK(world && world->bodies.size() == 1 && world->constraints.size() == 1);
+    CHECK(world->bodies.begin()->second.mass == 7 && created == 1);
+    CHECK(owned.Resources()->Bodies().size() == 1);
+    // The binding is a snapshot, with no stage retention or edit subscription.
+    CHECK(input->RemovePrim(pxr::SdfPath("/Body")));
+    input.Reset();
+    CHECK(owned.Resources()->Bodies().count("/Body") && owned.Settings()->gravity.y == -3);
+    world->refuseConstraint = true;
+    CHECK(!owned.Close() && owned.World() == world && owned.Resources() && destroyed == 0);
+    world->refuseConstraint = false;
+    CHECK(owned.Close() && !owned.World() && !owned.Resources() && destroyed == 1);
+    CHECK(owned.Close() && destroyed == 1);
+    CHECK(owned.Settings()->path == "/Physics");
+  }
+  {
+    // An absent declaration is passed as absent; backend defaults are caller policy.
+    StageWorld defaults(stage(false), [&](const auto &settings) {
+      CHECK(!settings); return std::make_unique<OwnedWorld>(destroyed);
+    });
+    CHECK(!defaults.Settings());
+  }
+  CHECK(destroyed == 2);
+  {
+    // Cross-root joints belong to the whole-stage lifetime, not separate sets.
+    auto input = stage();
+    CHECK(pxr::SdfCopySpec(input->GetRootLayer(), pxr::SdfPath("/Body"),
+                           input->GetRootLayer(), pxr::SdfPath("/OtherBody")));
+    auto joint = pxr::UsdPhysicsFixedJoint::Define(input, pxr::SdfPath("/CrossRoot"));
+    CHECK(joint.CreateBody0Rel().SetTargets({pxr::SdfPath("/Body")}));
+    CHECK(joint.CreateBody1Rel().SetTargets({pxr::SdfPath("/OtherBody")}));
+    StageWorld owned(input, factory);
+    auto *world = dynamic_cast<OwnedWorld *>(owned.World());
+    CHECK(world && world->bodies.size() == 2 && world->constraints.size() == 2);
+    const auto &handles = owned.Resources()->Bodies();
+    bool mapped = false;
+    for (const auto &[id, constraint] : world->constraints)
+      if (constraint.firstBody == handles.at("/Body")) {
+        CHECK(constraint.secondBody == handles.at("/OtherBody"));
+        mapped = true;
+      }
+    CHECK(mapped && owned.Close());
+  }
+  CHECK(destroyed == 3);
+  for (int failure = 1; failure <= 3; ++failure) {
+    for (bool invalid : {false, true}) {
+      bool rejected = false;
+      try {
+        StageWorld failed(stage(), [&](const auto &) {
+          auto world = std::make_unique<OwnedWorld>(destroyed);
+          world->failAt = failure; world->invalid = invalid;
+          return world;
+        });
+      } catch (const std::runtime_error &) { rejected = true; }
+      CHECK(rejected);
+    }
+  }
+  CHECK(destroyed == 9);
+  bool rejected = false;
+  try {
+    StageWorld failed(stage(), factory, [](const auto &, auto &) {
+      throw std::runtime_error("policy refusal");
+    });
+  } catch (const std::runtime_error &) { rejected = true; }
+  CHECK(rejected && destroyed == 10);
+  for (int invalid = 0; invalid < 3; ++invalid) {
+    auto input = stage();
+    if (invalid == 0) input.Reset();
+    if (invalid == 1) pxr::UsdPhysicsScene::Define(input, pxr::SdfPath("/OtherPhysics"));
+    if (invalid == 2) pxr::UsdGeomSetStageMetersPerUnit(input, .01);
+    const auto before = created;
+    rejected = false;
+    try { StageWorld failed(input, factory); }
+    catch (const usd::ImportError &error) {
+      rejected = true;
+      if (invalid == 2) CHECK(error.code() == usd::ImportErrorCode::unsupportedUnits);
+    }
+    CHECK(rejected && created == before);
+  }
+  rejected = false;
+  try { StageWorld failed(stage(), {}); }
+  catch (const std::invalid_argument &) { rejected = true; }
+  CHECK(rejected);
+  rejected = false;
+  try {
+    StageWorld failed(stage(), [](const auto &) -> std::unique_ptr<core::PhysicsWorld> { return {}; });
+  } catch (const std::runtime_error &) { rejected = true; }
+  CHECK(rejected);
+  rejected = false;
+  try {
+    StageWorld failed(stage(), [](const auto &) -> std::unique_ptr<core::PhysicsWorld> {
+      throw std::runtime_error("factory refusal");
+    });
+  } catch (const std::runtime_error &) { rejected = true; }
+  CHECK(rejected);
+}
+
 int main() {
-  lifetime(); failures(); validation();
+  lifetime(); failures(); validation(); stageWorld();
   std::cout << "Scene resource construction, rollback and selective lifetime passed\n";
 }

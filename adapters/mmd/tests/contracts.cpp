@@ -27,9 +27,11 @@
 #endif
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
 #include <avatarPhysics/SceneResources.h>
+#include <avatarPhysics/StageWorld.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usdPhysics/joint.h>
 #include <pxr/usd/usdPhysics/limitAPI.h>
+#include <pxr/usd/usdPhysics/scene.h>
 #endif
 
 #define CHECK(x) do { if (!(x)) { std::cerr << __LINE__ << ": " << #x << '\n'; std::exit(1); } } while(0)
@@ -472,6 +474,7 @@ int main(int argc, char **argv) {
     CHECK(argc == 3);
     Assets assets(argv[1], argv[2]);
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
+    stageWorldJolt(assets);
     stageRunner(assets);
     stageRunnerUnload(assets);
     stageRunnerUnload(assets, true);
