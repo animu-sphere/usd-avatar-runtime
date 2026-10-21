@@ -169,6 +169,9 @@ its original identity.
 The optional [Stage Runner session](STAGE_RUNNER_SESSION.md) wraps this table
 with a measured host clock, playback transitions and retained display output.
 It introduces no accumulator or physics/backend dependency into core.
+Its optional owned registration permits whole-world close before external
+resource unload. This removes every member and requires explicit instance
+reset before reuse; it does not implement selective live-avatar removal.
 
 `advance_world` accepts nonnegative finite elapsed time, pause state and exactly
 one input template per participant. Runtime preserves observations and input

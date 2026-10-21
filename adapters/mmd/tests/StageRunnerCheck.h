@@ -27,7 +27,11 @@ class StageRunnerCheck {
 public:
   explicit StageRunnerCheck(Fixture &fixture)
       : fixture_(fixture),
-        session_(fixture.runtime, fixture.world, [this] { return now_; }) {}
+        session_(fixture.runtime, fixture.worldDescriptor(),
+                 [this] { return now_; }) {}
+  void Close() {
+    CHECK(session_.Close() == AR_OK && !session_.IsOpen());
+  }
   void Pause(bool paused) {
     if (paused)
       session_.Pause();
@@ -56,7 +60,7 @@ public:
 void stageRunner(Assets &assets) {
   std::unique_ptr<MmdToonCheck> consumers[2];
   {
-    Fixture f(assets, true);
+    Fixture f(assets, true, {}, false);
     StageRunnerCheck host(f);
     const auto owner = assets.config();
     uint64_t generation = 1;
@@ -204,6 +208,19 @@ void stageRunner(Assets &assets) {
     checkFinal();
     CHECK(f.input.frame_id == 0 && f.input.generation == 0 &&
           f.input.evaluation_seconds == 0);
+    CHECK(f.pose(retained) == retainedPose);
+    // Close the runtime registration before releasing instances and external
+    // body resources. Retained CPU/Toon output needs none of these resources.
+    const auto steps = f.steps, resets = f.resets;
+    const auto calls = f.calls;
+    host.Close();
+    host.Close();
+    CHECK(host.Display(std::chrono::milliseconds(10000)) == AR_INVALID_STATE);
+    CHECK(f.steps == steps && f.resets == resets && f.calls == calls);
+    for (auto avatar : f.avatars)
+      CHECK(f.api.destroy_instance(f.runtime, avatar) == AR_OK);
+    f.solver.reset();
+    f.handles.clear();
     CHECK(f.pose(retained) == retainedPose);
     CHECK(f.api.release_snapshot(retained) == AR_OK);
   }

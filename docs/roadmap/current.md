@@ -417,6 +417,9 @@ test-private clock/playback handling with an installed reusable target over
 explicit world bindings. Milestone B still requires application/stage lifecycle
 and automatic world construction; D still requires resident-avatar resources
 and Hydra agreement. No physics MVP or composed-consumer completion is implied.
+The [world-lifetime check](../reference/CAPABILITY_MATRIX.md#scoped-session-world-lifetime-evidence-2026-10-21)
+adds owned registration and whole-world close before instance/solver teardown.
+Selective live-avatar unload and automatic stage binding remain in B/E.
 
 ## Open decisions
 
