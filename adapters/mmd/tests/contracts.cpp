@@ -104,17 +104,20 @@ struct Fixture {
 #ifdef AVATAR_MMD_JOLT_SMOKE
     std::unique_ptr<usd_physics::core::PhysicsWorld> solver;
     std::map<ArInstance, std::map<SdfPath, usd_physics::core::BodyHandle>> handles;
+    std::map<ArInstance, std::vector<usd_physics::core::ShapeHandle>> shapes;
+    std::set<ArInstance> unloaded;
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
     usd_physics::core::BodyHandle sharedBody;
 #endif
     void initializeSolver() {
         namespace core = usd_physics::core;
         // Reset rebuilds ALL resources and path/handle maps, never reuses stale handles.
-        solver = usd_physics::jolt::createWorld(); handles.clear();
+        solver = usd_physics::jolt::createWorld(); handles.clear(); shapes.clear();
         const auto scene = usd_physics::usd::readPhysicsScene(assets.stage);
         CHECK(scene.bodies.size() == 3 && scene.joints.empty());
-        for (auto avatar : avatars) for (const auto& body : scene.bodies) {
+        for (auto avatar : avatars) if (!unloaded.count(avatar)) for (const auto& body : scene.bodies) {
             auto shape = solver->createShape(body.shape);
+            shapes[avatar].push_back(shape);
             // Generated fixture uses collisionMask=0; no contacts in this coupling smoke.
             auto initial = body.transform;
             // Deliberate initial rotation exercises actual body-to-bone feedback
@@ -224,7 +227,11 @@ struct Fixture {
     void release() { for (auto& s : snapshots) { if (s) CHECK(api.release_snapshot(s) == AR_OK); s = 0; } }
     static ArStatus AR_CALL step(void* p, const ArPhysicsTick* tick, const ArDiagnosticSink*) {
         auto& f = *static_cast<Fixture*>(p); f.calls.push_back("step");
-        CHECK(f.pending.size() == 2); ++f.steps; CHECK(tick->tick_id == uint64_t(f.steps));
+        size_t expectedMembers = 2;
+#ifdef AVATAR_MMD_JOLT_SMOKE
+        if (f.solver) expectedMembers = f.handles.size();
+#endif
+        CHECK(f.pending.size() == expectedMembers); ++f.steps; CHECK(tick->tick_id == uint64_t(f.steps));
 #ifdef AVATAR_MMD_JOLT_SMOKE
         if (f.solver) {
             namespace core = usd_physics::core;
@@ -431,6 +438,7 @@ int main(int argc, char **argv) {
     Assets assets(argv[1], argv[2]);
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
     stageRunner(assets);
+    stageRunnerUnload(assets);
 #else
 #ifdef AVATAR_MMD_TOON_SMOKE
     std::unique_ptr<MmdToonCheck> consumers[2];

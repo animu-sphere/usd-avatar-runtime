@@ -795,6 +795,25 @@ ArStatus AR_CALL destroyPhysicsWorld(ArRuntime h, ArPhysicsWorld id) {
     });
 }
 
+ArStatus AR_CALL removePhysicsParticipant(ArRuntime h, ArPhysicsWorld id, ArInstance member) {
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex);
+        auto& r = runtime(h); auto& world = physicsWorld(r, id);
+        auto& inst = instance(r, member);
+        if (inst.world != id) return AR_INVALID_ARGUMENT;
+        // Removing a failed participant must not bypass group recovery.
+        if (world.poisoned) return AR_INVALID_STATE;
+        for (const auto& item : world.members)
+            if (instance(r, item.id).poisoned) return AR_INVALID_STATE;
+        const auto found = std::find_if(world.members.begin(), world.members.end(),
+            [member](const auto& item) { return item.id == member; });
+        if (found == world.members.end()) return AR_INVALID_ARGUMENT;
+        world.members.erase(found);
+        inst.world = 0; inst.poisoned = true;
+        return AR_OK;
+    });
+}
+
 void worldCallback(PhysicsWorld& world, const ArPhysicsTick* tick, Diagnostics& d) {
     d.instance = 0; d.frame = tick ? tick->tick_id : 0;
     d.evaluator = world.id.c_str(); d.origin = "usd-avatar-runtime"; d.phase = 0;
@@ -991,5 +1010,14 @@ extern "C" AR_EXPORT ArStatus AR_CALL arGetPhysicsApi(uint32_t version, uint32_t
     if (!out) return AR_INVALID_ARGUMENT;
     if (version != AR_PHYSICS_API_VERSION || size < sizeof(ArPhysicsApi)) return AR_INCOMPATIBLE_ABI;
     *out = {AR_HEADER(ArPhysicsApi), createPhysicsWorld, destroyPhysicsWorld, resetPhysicsWorld, advancePhysicsWorld};
+    return AR_OK;
+}
+
+extern "C" AR_EXPORT ArStatus AR_CALL arGetPhysicsMembershipApi(uint32_t version,
+    uint32_t size, ArPhysicsMembershipApi* out) {
+    if (!out) return AR_INVALID_ARGUMENT;
+    if (version != AR_PHYSICS_MEMBERSHIP_API_VERSION || size < sizeof(ArPhysicsMembershipApi))
+        return AR_INCOMPATIBLE_ABI;
+    *out = {AR_HEADER(ArPhysicsMembershipApi), removePhysicsParticipant};
     return AR_OK;
 }

@@ -9,13 +9,14 @@ class StageRunnerCheck {
   Fixture &fixture_;
   FrameClock::Clock::time_point now_{};
   avatarStageRunner::PhysicsSession session_;
+  std::vector<ArPhysicsInput> inputs_;
 
   ArStatus Deliver(ArStatus status) {
     fixture_.release();
     fixture_.lastAdvance = session_.LastAdvance();
     if (status == AR_OK) {
-      CHECK(session_.Snapshots().size() == 2);
-      for (size_t i = 0; i < 2; ++i) {
+      CHECK(session_.Snapshots().size() == inputs_.size());
+      for (size_t i = 0; i < inputs_.size(); ++i) {
         fixture_.snapshots[i] = session_.Snapshots()[i];
         if (fixture_.snapshots[i])
           CHECK(fixture_.api.retain_snapshot(fixture_.snapshots[i]) == AR_OK);
@@ -28,7 +29,25 @@ public:
   explicit StageRunnerCheck(Fixture &fixture)
       : fixture_(fixture),
         session_(fixture.runtime, fixture.worldDescriptor(),
-                 [this] { return now_; }) {}
+                 [this] { return now_; }),
+        inputs_(fixture.inputs, fixture.inputs + 2) {}
+  void Unload(ArInstance instance) {
+    CHECK(session_.RemoveParticipant(instance) == AR_OK);
+    // Membership first; then stop all external references to the removed body
+    // set before the exclusive host driver can issue another request/reset.
+    for (const auto& [path, body] : fixture_.handles.at(instance))
+      CHECK(fixture_.solver->destroyBody(body));
+    for (auto shape : fixture_.shapes.at(instance))
+      CHECK(fixture_.solver->destroyShape(shape));
+    fixture_.handles.erase(instance);
+    fixture_.shapes.erase(instance);
+    fixture_.pending.erase(instance);
+    fixture_.results.erase(instance);
+    fixture_.unloaded.insert(instance);
+    inputs_.erase(std::remove_if(inputs_.begin(), inputs_.end(),
+        [instance](const auto& input) { return input.instance == instance; }), inputs_.end());
+    CHECK(fixture_.api.destroy_instance(fixture_.runtime, instance) == AR_OK);
+  }
   void Close() {
     CHECK(session_.Close() == AR_OK && !session_.IsOpen());
   }
@@ -41,11 +60,11 @@ public:
   ArStatus Display(std::chrono::milliseconds elapsed) {
     now_ += elapsed;
     ArDiagnosticSink sink{&fixture_, Fixture::diagnostic};
-    return Deliver(session_.Display(fixture_.inputs, 2, &sink));
+    return Deliver(session_.Display(inputs_.data(), uint32_t(inputs_.size()), &sink));
   }
   ArStatus Retry() {
     ArDiagnosticSink sink{&fixture_, Fixture::diagnostic};
-    return Deliver(session_.RetryAdvance(fixture_.inputs, 2, &sink));
+    return Deliver(session_.RetryAdvance(inputs_.data(), uint32_t(inputs_.size()), &sink));
   }
   ArSnapshot LastSnapshot() const {
     return session_.Snapshots().empty() ? 0 : session_.Snapshots()[0];
@@ -226,4 +245,60 @@ void stageRunner(Assets &assets) {
   }
   for (auto &consumer : consumers)
     consumer->AfterProducerDestruction();
+}
+
+void stageRunnerUnload(Assets &assets) {
+  std::unique_ptr<MmdToonCheck> consumers[2];
+  {
+    Fixture f(assets, true, {}, false);
+    StageRunnerCheck host(f);
+    host.Pause(false);
+    CHECK(host.Display(std::chrono::milliseconds(25)) == AR_OK);
+    publish(f, consumers);
+    host.Reset(2);
+    host.Pause(false);
+    CHECK(host.Display(std::chrono::milliseconds(25)) == AR_OK);
+    publish(f, consumers);
+    const auto removed = f.avatars[1], survivor = f.avatars[0];
+    const auto retained = f.snapshots[0];
+    CHECK(f.api.retain_snapshot(retained) == AR_OK);
+    const auto retainedPose = f.pose(retained);
+    const auto bodyBefore = f.solver->bodyState(f.sharedBody);
+    const auto survivorBefore = f.solver->bodyState(f.handles.at(survivor).begin()->second);
+    const auto calls = f.calls;
+    auto* solver = f.solver.get();
+    host.Unload(removed);
+    CHECK(f.solver.get() == solver && f.steps == 3 && f.resets == 1 && f.calls == calls);
+    CHECK(f.handles.size() == 1 && f.handles.at(survivor).size() == 3);
+    CHECK(f.solver->bodyState(f.sharedBody).transform.translation.y == bodyBefore.transform.translation.y);
+    CHECK(f.solver->bodyState(f.handles.at(survivor).begin()->second).transform.translation.y == survivorBefore.transform.translation.y);
+    f.calls.clear();
+    CHECK(host.Display(std::chrono::milliseconds(25)) == AR_OK && f.steps == 6);
+    const std::vector<std::string> tick{"pre." + std::to_string(survivor), "step", "post." + std::to_string(survivor)};
+    CHECK(f.calls.size() == 9);
+    for (size_t i = 0; i < f.calls.size(); ++i) CHECK(f.calls[i] == tick[i % 3]);
+    ArStateView view{AR_HEADER(ArStateView)};
+    CHECK(f.api.get_snapshot(f.snapshots[0], &view) == AR_OK && view.instance == survivor && view.frame_id == 6 && view.generation == 2);
+    const auto owner = assets.config();
+    auto continuation = owner.evaluator.BeginPhysics(assets.motion, view.evaluation_seconds * 30);
+    auto feedback = owner.coupling.ApplyPhysicsToPose(f.results.at(survivor), continuation.BeforePhysics());
+    CHECK(feedback);
+    auto expected = owner.evaluator.ResumePhysics(continuation, feedback.value());
+    CHECK(expected && f.pose(f.snapshots[0]) == expected.value());
+    CHECK(f.solver->bodyState(f.sharedBody).transform.translation.y < bodyBefore.transform.translation.y);
+    consumers[1]->Apply(f.api, f.snapshots[0]);
+    CHECK(f.pose(retained) == retainedPose);
+    // Group reset must not resurrect the unloaded avatar or stale body maps.
+    host.Reset(3);
+    CHECK(f.handles.size() == 1 && !f.handles.count(removed));
+    host.Pause(false);
+    CHECK(host.Display(std::chrono::milliseconds(25)) == AR_OK && f.steps == 3);
+    consumers[1]->Apply(f.api, f.snapshots[0]);
+    host.Close();
+    CHECK(f.api.destroy_instance(f.runtime, survivor) == AR_OK);
+    f.solver.reset(); f.handles.clear(); f.shapes.clear();
+    CHECK(f.pose(retained) == retainedPose);
+    CHECK(f.api.release_snapshot(retained) == AR_OK);
+  }
+  for (auto& consumer : consumers) consumer->AfterProducerDestruction();
 }

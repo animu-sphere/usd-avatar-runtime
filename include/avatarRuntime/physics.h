@@ -82,6 +82,23 @@ typedef struct ArPhysicsApi {
    explicit version here selects the independent physics table revision. */
 AR_EXPORT ArStatus AR_CALL arGetPhysicsApi(uint32_t version, uint32_t size, ArPhysicsApi* out_api);
 
+/* Independently negotiated extension; neither existing API table grows. */
+#define AR_PHYSICS_MEMBERSHIP_API_VERSION 1u
+typedef struct ArPhysicsMembershipApi {
+    uint32_t struct_size;
+    uint32_t abi_version;
+    /* Remove one participant at a synchronous call boundary. No solver or
+       provider callbacks run. The removed instance requires reset before
+       reuse; it may be destroyed immediately. Other members, clock, backlog
+       and snapshots remain intact. A poisoned group must first be reset or
+       closed. The exclusive host driver must detach external bodies/commands
+       before its next advance/reset. Provider code still outlives runtime. */
+    ArStatus (AR_CALL *remove_participant)(ArRuntime, ArPhysicsWorld, ArInstance);
+} ArPhysicsMembershipApi;
+
+AR_EXPORT ArStatus AR_CALL arGetPhysicsMembershipApi(uint32_t version, uint32_t size,
+    ArPhysicsMembershipApi* out_api);
+
 #ifdef __cplusplus
 }
 #endif

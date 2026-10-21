@@ -82,6 +82,17 @@ The clock can be injected for deterministic host tests.
   return `AR_INVALID_STATE` without reading the clock or invoking callbacks.
   Play/Pause do nothing while closed. Failed removal leaves the session paused
   and open, preserves output/history and returns the runtime status.
+- `RemoveParticipant` forwards the independently negotiated membership extension
+  at a synchronous boundary, for either owned or borrowed registrations. On
+  success it releases only that member's session snapshot reference; survivors
+  keep their previous input order, handles and `LastAdvance` metadata. It reads
+  no clock and changes neither playback nor world time/backlog. Refusal keeps
+  all output intact; closed calls return `AR_INVALID_STATE`. Subsequent requests
+  must cover exactly the remaining participants, including zero inputs when
+  only non-avatar bodies remain. The exclusive driver must finish external
+  body/constraint/command cleanup before advancing or resetting again, following
+  the [membership contract](FRAME_LIFECYCLE.md#experimental-fixed-tick-requests).
+  Instance destruction is then permitted; reuse requires explicit reset.
 
 Destruction closes the session automatically and releases its snapshot
 references. Destroy a session before its runtime. Closing an owned registration
@@ -93,17 +104,19 @@ state and bindings before resuming. The session cannot be reopened in place.
 
 Renderer delivery retries read retained output without another simulation
 request. Independently retain a handle before the next successful advance,
-reset, close or session destruction. The session never destroys the caller's
-solver, body resources or runtime.
+reset, member removal, close or session destruction. The session never destroys
+the caller's solver, body resources or runtime.
 
 ## Scope
 
 This is a reusable host session for explicitly prepared worlds, validated by
 the [session evidence](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-session-evidence-2026-10-21)
 and [world-lifetime evidence](../reference/CAPABILITY_MATRIX.md#scoped-session-world-lifetime-evidence-2026-10-21).
+The [selective-unload evidence](../reference/CAPABILITY_MATRIX.md#scoped-selective-unload-evidence-2026-10-21)
+adds member removal with explicit host-owned body teardown.
 Automatic stage/world construction, `StageSession`/usdview/standalone application
-wiring, stop/single-step UI semantics, removing one avatar while a shared world
-continues, resident renderer resource matching and Hydra/direct agreement remain
+wiring, stop/single-step UI semantics, automatic body/constraint teardown,
+resident renderer resource matching and Hydra/direct agreement remain
 open. Stop/reset policy must be selected by the application rather than silently
 translating stop into seek or
 a second fixed-step loop.

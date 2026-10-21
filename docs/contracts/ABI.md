@@ -144,6 +144,15 @@ Optional features are not inferred from ABI success. Unknown evaluator flags,
 state domains, typed material kinds and source-sample kinds/resolutions are rejected. Semantic capability
 versions are independent from `AR_ABI_VERSION` and use exact matching.
 
+The experimental `ArPhysicsMembershipApi` version 1 is negotiated through
+`arGetPhysicsMembershipApi` with its own version and table size. It adds no field
+to `ArRuntimeApi`, `ArPhysicsApi` or their descriptors. Headers retain the core
+revision in `abi_version`, as with the existing physics table; the query's
+version argument selects the extension revision. Its sole operation follows the
+[membership lifecycle](../architecture/FRAME_LIFECYCLE.md#experimental-fixed-tick-requests).
+The optional Stage Runner session requires this extension from its linked
+runtime. No frozen C++ session layout or provider-unload capability is implied.
+
 WASM-friendly representation is a design objective. It still needs decisions
 about pointer width, host memory, optional dependencies and provider loading;
 native dynamic loading cannot be presumed to work unchanged in a browser.

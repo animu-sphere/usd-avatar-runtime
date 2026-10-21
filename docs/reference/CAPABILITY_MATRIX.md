@@ -28,8 +28,8 @@ workstream B validation is recorded below; the
 | runtime architecture and layout | one reusable `avatarRuntime` target; further component split proposed | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
 | input/evaluated-state contracts | experimental revision-4 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version, active capabilities and source-sample provenance (selected inputs plus provider-reported pose samples with mapped runtime seconds); scalar/vec2/vec3/vec4 material values; configured owner clip-to-pose mapping with retained interpolated/held sample time and owned selected-motion scalar/world-gaze assembly implemented; live observation intake, multi-source composition, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
-| physics orchestration | Experimental optional C table implements exclusive world membership, existing-plan pre/Step/post boundaries, fixed-tick accumulation with retained bounded catch-up, pause, group reset and invalidation after Step begins; generated MMD/Jolt callbacks and two-avatar shared-world smoke pass. Display interpolation, dynamic unload, checkpoint restore and VRM secondary-motion integration remain unimplemented | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
-| Stage Runner host session | Optional installed `avatarStageRunnerSession` wraps a borrowed or owned runtime world registration with measured display time, play/pause, group reset, zero-elapsed simulation retry, retained last successful output and explicit/idempotent close; no second accumulator. Automatic stage/world construction, application wiring and selective live-avatar unload remain open | [host session](../architecture/STAGE_RUNNER_SESSION.md) |
+| physics orchestration | Experimental optional C tables implement exclusive world membership, selective participant removal, existing-plan pre/Step/post boundaries, fixed-tick accumulation with retained bounded catch-up, pause, group reset and invalidation after Step begins; generated MMD/Jolt callbacks and two-avatar shared-world smoke pass. Automatic body/constraint teardown, display interpolation, checkpoint restore and VRM secondary-motion integration remain unimplemented | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
+| Stage Runner host session | Optional installed `avatarStageRunnerSession` wraps a borrowed or owned runtime world registration with measured display time, play/pause, group reset, zero-elapsed simulation retry, retained last successful output, selective member removal and explicit/idempotent close; no second accumulator. Automatic stage/world construction, application wiring and body/constraint teardown remain open | [host session](../architecture/STAGE_RUNNER_SESSION.md) |
 | MMD control/coupling registration | Optional installed `avatarMmdAdapter` invokes owner BeginPhysics -> path-keyed kinematic targets -> caller-owned world snapshot -> feedback -> ResumePhysics; explicit joint/layout/root placement, scalar morph and visibility mapping; generated PMX/VMD/Jolt headless and installed-consumer tests pass. Generic retarget intake, automatic host/renderer binding and avatar L3 acceptance remain open | [MMD adapter](../architecture/MMD_ADAPTER.md) |
 | versioned C ABI | revision-4/size validation, revision-1–3 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
@@ -591,3 +591,37 @@ discovery are still supplied explicitly by this test host.
 This validates whole-world registration lifetime, not selective removal from a
 running shared world. Automatic stage binding, application/UI wiring, resident
 avatar rendering, Hydra agreement and representative L3 acceptance remain open.
+
+## Scoped selective-unload evidence (2026-10-21)
+
+Runtime base `8ee3170` plus the selective-membership/session changes. Local
+Windows x64/MSVC 19.51 Release checks use the same installed clock, MMD, physics/Jolt and ABI-4 Toon
+inputs as the world-lifetime evidence. The session-only configuration passes
+six tests and the MMD/Stage Runner configuration passes twelve. The C11 core
+installed consumer negotiates the new table; the separately compiled session
+consumer exercises removal without OpenUSD, MMD, physics or renderer targets.
+
+`contracts.physics` validates removal with pending partial time, untouched
+survivor generation/tick/request history, reset-required detached reuse,
+immediate instance destruction, retained output, exact remaining input coverage,
+zero-avatar stepping and an unaffected second world. Invalid handles, another
+world's member, repeated removal, callback reentry and poisoned-group removal
+refuse without changing membership. The session contract checks no clock read
+or playback change, survivor output ordering and retained handles, unchanged
+advance metadata, reset after instance destruction and closed-call refusal.
+
+The generated MMD host removes one participant through `RemoveParticipant`,
+then destroys its three Jolt bodies and shapes, clears its command/result/input
+rows and destroys the instance. The same solver, surviving body handles and
+non-avatar position remain intact at removal. Three subsequent ticks have one
+prefix, one shared Step and one suffix each. Final surviving pose exactly
+matches owner feedback/ResumePhysics and reaches the installed Toon oracle;
+the non-avatar body keeps falling. A group reset rebuilds only surviving body
+maps, and retained removed-avatar CPU/Toon output survives world/runtime teardown.
+
+This covers scheduler membership and explicit teardown in a contact-disabled,
+joint-free generated host. Automatic body/constraint teardown, cross-avatar
+constraint policy, provider unregister, stage discovery, interactive application
+wiring, resident renderer resources and representative L3 acceptance remain
+open. The [lifecycle](../architecture/FRAME_LIFECYCLE.md#experimental-fixed-tick-requests)
+and [session](../architecture/STAGE_RUNNER_SESSION.md) own API/ownership rules.

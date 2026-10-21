@@ -234,7 +234,8 @@ order those evaluators. No backward phase edge is admitted. MMD owners must
 split actual control calls at a valid owner boundary; this scheduler does not
 split `mmdControl::Evaluator::Evaluate` or reinterpret after-physics flags.
 
-Membership is immutable for a world binding and exclusive per instance.
+Membership is exclusive per instance. Participants are supplied at construction;
+the optional membership extension permits removal at serialized call boundaries.
 Instances must be freshly created or reset before binding. Runtime orders
 participants by instance handle, independently of descriptor/input array order.
 All prefixes complete before one Step, then all suffixes complete before any
@@ -250,11 +251,13 @@ Managed instances reject direct `evaluate_frame`, `reset_instance` and
 `AR_BUSY`. Hosts and external world users must not independently step the same
 solver; the runtime cannot detect an out-of-band backend call.
 
-For membership changes, stop requests, destroy the world binding, detach the
-relevant external bodies/adapters, reset the remaining instances and bind the
-new group to an initialized world. Unbinding requires instance reset before
-direct evaluation resumes; retained snapshots survive. Dynamic per-avatar
-unload without group reinitialization remains open. The
+For additions or plan-boundary changes, stop requests, destroy the world binding,
+detach the relevant external bodies/adapters, reset the remaining instances and
+bind the new group to an initialized world. Selective removal uses
+`ArPhysicsMembershipApi::remove_participant` and preserves surviving members and
+world time. The host still owns external body/constraint/command teardown before
+further requests. Unbinding invalidates the removed instance until reset;
+retained snapshots survive. The
 [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities)
 owns clock acceptance and post-Step recovery. RT-O3/RT-O5/RT-O6 remain open for
 real owner adapters, checkpoint recovery and broader lifecycle evidence.
