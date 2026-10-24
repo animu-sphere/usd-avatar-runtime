@@ -2,8 +2,10 @@
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/blendShape.h>
 #include <pxr/usd/usdSkel/cache.h>
 #include <pxr/usd/usdSkel/skeletonQuery.h>
 #include <pxr/base/gf/rotation.h>
@@ -31,6 +33,14 @@ int main() {
     auto previous = UsdSkelAnimation::Define(stage, SdfPath("/Previous"));
     previous.CreateJointsAttr().Set(names);
     UsdSkelBindingAPI::Apply(skeleton.GetPrim()).CreateAnimationSourceRel().SetTargets({previous.GetPath()});
+    auto mesh = UsdGeomMesh::Define(stage, SdfPath("/Avatar/Mesh"));
+    auto meshBinding = UsdSkelBindingAPI::Apply(mesh.GetPrim());
+    meshBinding.CreateSkeletonRel().SetTargets({skeleton.GetPath()});
+    const VtTokenArray shapes{TfToken("wide"), TfToken("tall")};
+    const SdfPathVector targets{SdfPath("/Avatar/Wide"), SdfPath("/Avatar/Tall")};
+    for (const auto& target : targets) UsdSkelBlendShape::Define(stage, target);
+    meshBinding.CreateBlendShapesAttr().Set(shapes);
+    meshBinding.CreateBlendShapeTargetsRel().SetTargets(targets);
     std::string original; stage->GetRootLayer()->ExportToString(&original);
     auto foreign = SdfLayer::CreateAnonymous("other-session-data.usda");
     stage->GetSessionLayer()->SetSubLayerPaths({foreign->GetIdentifier()});
@@ -40,16 +50,37 @@ int main() {
     ArRuntime runtime = 0; CHECK(api.create_runtime(&runtime) == AR_OK);
     ArInstanceDesc desc{AR_HEADER(ArInstanceDesc)};
     desc.generation = 1; desc.layout_id = "layout"; desc.layout_version = 1; desc.initial_state = binding.Baseline();
+    // Runtime order differs from the mesh; unrelated channels are permitted.
+    const ArBlendShape morphs[]{{"/Other", "wide", 99}, {"/Avatar/Mesh", "tall", .75},
+                               {"/Avatar/Mesh", "wide", .25}};
+    desc.initial_state.blend_shapes = morphs; desc.initial_state.blend_shape_count = 3;
     ArInstance instance = 0; CHECK(api.create_instance(runtime, &desc, nullptr, &instance) == AR_OK);
     ArInputFrame input{AR_HEADER(ArInputFrame)}; input.generation = 1; input.frame_id = 1;
     ArSnapshot snapshot = 0; CHECK(api.evaluate_frame(runtime, instance, &input, nullptr, &snapshot) == AR_OK);
     CHECK(api.destroy_runtime(runtime) == AR_OK); // Publication reads an independently retained CPU value.
     ArStateView view{AR_HEADER(ArStateView)}; CHECK(api.get_snapshot(snapshot, &view) == AR_OK);
-    avatarUsd::SkeletonPoseOutput output(stage, binding);
+    {
+        avatarUsd::SkeletonPoseOutput poseOnly(stage, binding);
+        poseOnly.Apply(api, snapshot);
+        CHECK(!UsdSkelAnimation::Get(stage, poseOnly.AnimationPath()).GetBlendShapesAttr().HasAuthoredValue());
+    }
+    avatarUsd::SkeletonPoseOutput output(stage, binding, mesh.GetPath());
     output.Apply(api, snapshot);
     CHECK(stage->GetEditTarget().GetLayer() == stage->GetRootLayer());
     auto query = UsdSkelCache().GetSkelQuery(skeleton);
     CHECK(query && query.GetAnimQuery());
+    auto animation = UsdSkelAnimation::Get(stage, output.AnimationPath());
+    VtTokenArray actualNames; VtFloatArray weights;
+    CHECK(animation.GetBlendShapesAttr().Get(&actualNames) && actualNames == shapes);
+    CHECK(query.GetAnimQuery().ComputeBlendShapeWeights(&weights, UsdTimeCode(123)) &&
+        weights == VtFloatArray({.25f, .75f}));
+    CHECK(animation.GetBlendShapeWeightsAttr().GetNumTimeSamples() == 0);
+    auto unclamped = view;
+    auto extrapolated = std::vector<ArBlendShape>(morphs, morphs + 3);
+    extrapolated[1].weight = 1.25; extrapolated[2].weight = -.25;
+    unclamped.blend_shapes = extrapolated.data(); output.Apply(unclamped);
+    CHECK(animation.GetBlendShapeWeightsAttr().Get(&weights) && weights == VtFloatArray({-.25f, 1.25f}));
+    output.Apply(view);
     VtMatrix4dArray actual;
     CHECK(query.ComputeJointLocalTransforms(&actual, UsdTimeCode(123)) && actual.size() == rest.size());
     for (size_t i = 0; i < rest.size(); ++i) for (int r = 0; r < 4; ++r) for (int c = 0; c < 4; ++c)
@@ -62,6 +93,21 @@ int main() {
         std::string after; output.Layer()->ExportToString(&after); CHECK(after == good);
     };
     auto bad = view; bad.layout_version = 2; refuse(bad);
+    bad = view; bad.blend_shapes = nullptr; refuse(bad);
+    bad = view; bad.blend_shape_count = 1; refuse(bad);
+    std::vector<ArBlendShape> changedMorphs(morphs, morphs + 3);
+    bad = view; bad.blend_shapes = changedMorphs.data();
+    changedMorphs[2].weight = std::numeric_limits<double>::infinity(); refuse(bad);
+    changedMorphs[2].weight = 1e100; refuse(bad);
+    changedMorphs[2] = changedMorphs[1]; refuse(bad);
+    changedMorphs[2] = morphs[2]; changedMorphs[2].target_id = nullptr; refuse(bad);
+    auto changedShapes = shapes; changedShapes[0] = TfToken("edited");
+    meshBinding.GetBlendShapesAttr().Set(changedShapes); refuse(view);
+    meshBinding.GetBlendShapesAttr().Set(shapes);
+    meshBinding.GetBlendShapeTargetsRel().SetTargets({targets[1], targets[0]}); refuse(view);
+    meshBinding.GetBlendShapeTargetsRel().SetTargets(targets);
+    meshBinding.GetSkeletonRel().SetTargets({SdfPath("/Missing")}); refuse(view);
+    meshBinding.GetSkeletonRel().SetTargets({skeleton.GetPath()});
     bad = view; ++bad.instance; refuse(bad);
     bad = view; bad.frame_id = 0; refuse(bad);
     std::vector<ArJoint> joints(view.joints, view.joints + view.joint_count);
@@ -87,8 +133,8 @@ int main() {
     CHECK(stage->GetSessionLayer()->GetSubLayerPaths().size() == 1);
     CHECK(stage->GetSessionLayer()->GetSubLayerPaths()[0] == foreign->GetIdentifier());
     CHECK(stage->GetSessionLayer()->GetSubLayerOffset(0) == SdfLayerOffset(12, 2));
-    SdfPathVector targets; CHECK(UsdSkelBindingAPI(skeleton).GetAnimationSourceRel().GetTargets(&targets));
-    CHECK(targets == SdfPathVector{previous.GetPath()});
+    SdfPathVector restoredTargets; CHECK(UsdSkelBindingAPI(skeleton).GetAnimationSourceRel().GetTargets(&restoredTargets));
+    CHECK(restoredTargets == SdfPathVector{previous.GetPath()});
     std::string after; stage->GetRootLayer()->ExportToString(&after); CHECK(after == original);
     bool closed = false; try { output.Apply(view); } catch (const std::invalid_argument&) { closed = true; } CHECK(closed);
     CHECK(api.get_snapshot(snapshot, &bad) == AR_OK && api.release_snapshot(snapshot) == AR_OK);

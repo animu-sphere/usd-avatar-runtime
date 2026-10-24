@@ -39,8 +39,12 @@ install(FILES python/__init__.py python/controller.py python/plugInfo.json
     DESTINATION lib/usd-avatar-runtime/usdview/usdviewMmdPhysics)
 set(AVATAR_MMD_PREVIEW_PMX "" CACHE FILEPATH "Generated live-physics-pendulum.pmx for native live-host acceptance")
 set(AVATAR_MMD_PREVIEW_VMD "" CACHE FILEPATH "Generated live-physics-anchor.vmd for keyed live-host acceptance")
+set(AVATAR_MMD_PREVIEW_MORPH_PMX "" CACHE FILEPATH "Generated live-physics-morph.pmx for live morph acceptance; uses the VMD fixture directory")
 if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_VMD AND NOT AVATAR_MMD_PREVIEW_PMX)
     message(FATAL_ERROR "AVATAR_MMD_PREVIEW_VMD requires AVATAR_MMD_PREVIEW_PMX")
+endif()
+if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_MORPH_PMX AND NOT AVATAR_MMD_PREVIEW_VMD)
+    message(FATAL_ERROR "AVATAR_MMD_PREVIEW_MORPH_PMX requires AVATAR_MMD_PREVIEW_VMD and its generated fixture directory")
 endif()
 if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
     if(NOT EXISTS "${AVATAR_MMD_PREVIEW_PMX}")
@@ -61,6 +65,21 @@ if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
         add_test(NAME hosts.usdview_mmd_motion COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/test_motion.py" "${AVATAR_MMD_PREVIEW_PMX}" "${AVATAR_MMD_PREVIEW_VMD}")
         list(APPEND live_tests hosts.usdview_mmd_motion)
+        if(AVATAR_MMD_PREVIEW_MORPH_PMX)
+            get_filename_component(vmd_fixtures "${AVATAR_MMD_PREVIEW_VMD}" DIRECTORY)
+            foreach(input IN ITEMS "${AVATAR_MMD_PREVIEW_MORPH_PMX}"
+                    "${vmd_fixtures}/live-physics-morph.vmd" "${vmd_fixtures}/live-physics-uv.vmd"
+                    "${vmd_fixtures}/live-physics-group.vmd")
+                if(NOT EXISTS "${input}")
+                    message(FATAL_ERROR "Live morph acceptance requires generated fixture: ${input}")
+                endif()
+            endforeach()
+            add_test(NAME hosts.usdview_mmd_morph COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/test_morph.py" "${AVATAR_MMD_PREVIEW_MORPH_PMX}"
+                "${vmd_fixtures}/live-physics-morph.vmd" "${vmd_fixtures}/live-physics-uv.vmd"
+                "${vmd_fixtures}/live-physics-group.vmd")
+            list(APPEND live_tests hosts.usdview_mmd_morph)
+        endif()
     endif()
     set_tests_properties(${live_tests} PROPERTIES ENVIRONMENT_MODIFICATION
         "PYTHONPATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/python;PYTHONPATH=path_list_prepend:${pxr_DIR}/lib/python;PATH=path_list_prepend:${pxr_DIR}/bin;PATH=path_list_prepend:${pxr_DIR}/lib")

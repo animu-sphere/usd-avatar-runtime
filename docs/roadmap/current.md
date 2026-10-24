@@ -6,9 +6,11 @@ representative PMX/VMD visual checks using owner-side property and spring semant
 
 The [keyed-input check](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)
 adds generated VMD-to-physics replay coverage. Private intake exposes the next
-requirements: bind non-bone morph outputs through the owner/runtime/publication
-boundary and select representative inputs admitted by the owner's damping
-contract. Keep source values intact and resolve those requirements before
+requirements: complete non-bone morph outputs through the owner/runtime/publication
+boundary beyond the [direct vertex slice](../reference/CAPABILITY_MATRIX.md#live-mmd-vertex-morph-evidence-2026-10-24),
+including an owner interface for resolved non-bone group weights, and select
+representative inputs admitted by the owner's damping contract.
+Keep source values intact and resolve those requirements before
 claiming full PMX/VMD or L3 acceptance.
 
 Runtime Phases A–F remain open. The adopted
