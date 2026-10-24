@@ -120,6 +120,25 @@ session without a display. The native test requires the generated pendulum path
 above; omit that cache option to build the host without this asset-specific test.
 No licensed third-party asset is needed.
 
+For the generated keyed-input check, generate VMD fixtures from the MMD
+checkout, then configure the optional paired input from the runtime checkout:
+
+```powershell
+python "$mmd/tests/fixtures/generate_vmd_fixtures.py" --out build/live-vmd-fixtures
+$anchor = (Resolve-Path build/live-vmd-fixtures/live-physics-anchor.vmd).Path
+cmake -S . -B build/usdview-mmd "-DAVATAR_MMD_PREVIEW_VMD=$anchor"
+ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_motion$' --output-on-failure
+```
+
+Keep `AVATAR_MMD_PREVIEW_PMX` set to the generated pendulum. The VMD option
+adds one native CTest; it is not a general real-asset acceptance configuration.
+`hosts.usdview_mmd_motion` moves the kinematic pivot 10 cm, returns and holds,
+checks each fixed tick against the keyed path and concrete solver-driven
+skinning, and checks exact reset replay. Contact-free generated input does not
+establish representative avatar acceptance. The
+[keyed-input evidence](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)
+also records the separate private-asset intake boundary.
+
 `hosts.usdview_mmd_properties` additionally adapts the same generated stage in
 memory to isolate admitted/rejected drops, restitution, inclined-floor friction,
 linear damping and pendulum angular damping. Source files remain untouched.
