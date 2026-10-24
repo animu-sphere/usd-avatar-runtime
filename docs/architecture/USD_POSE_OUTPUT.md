@@ -6,7 +6,8 @@ owner: usd-avatar-runtime
 # Live UsdSkel pose output
 
 `avatarUsd::SkeletonPoseOutput`, installed with the optional `avatarUsdBinding`
-target and `usd` component, transports completed runtime joints to a composed
+target and `usd` component, transports completed runtime joints and optional
+single-mesh blend-shape weights to a composed
 `UsdSkelAnimation`. It consumes a stage and an existing owner-validated
 [`SkeletonBinding`](USD_BINDING.md); it runs no motion, control or physics.
 The [live MMD host guide](../guides/live-mmd-physics.md) describes the first
@@ -17,8 +18,13 @@ application consumer. Current evidence belongs to the
 
 `Apply(state)` copies the selected skeleton's joints by exact skeleton/joint
 identity, validating layout, parent mapping and finite positive-scale transforms.
-Additional unrelated runtime joints are allowed. Non-joint channels are outside
-this consumer. `Apply(api, snapshot)` borrows a retained snapshot only during the
+Additional unrelated runtime joints are allowed. The optional third constructor
+argument names one mesh bound to this skeleton. Its standard `skel:blendShapes`
+and target relationship define the output order; runtime weights are selected by
+exact mesh-path/token identity. Every bound shape needs one finite,
+float-representable weight; values outside 0–1 remain unclamped. Unrelated
+runtime shapes are allowed. The consumer interprets no format-specific morphs.
+`Apply(api, snapshot)` borrows a retained snapshot only during the
 call; no producer or snapshot resource is retained.
 
 Root joints arrive in runtime world space, in metres. Publication removes the
@@ -35,6 +41,9 @@ position reads the current final pose. This is live display transport, not a
 recording, clip, bake or export API. Persistent layers and the current edit
 target are untouched. Existing session sublayers and their offsets are preserved.
 A session-root animation relationship would mask this output and rejects.
+When configured, the same animation carries blend-shape names and weights.
+Mesh/skeleton binding, names and targets must remain unchanged, with valid
+unique shape identities. Invalid or missing weights reject before publication.
 
 Preparation happens in a separate scratch layer before live content is replaced.
 Invalid layout, joint identity/parents, transforms, topology, units or placement
@@ -50,7 +59,7 @@ Retained CPU state remains usable after output teardown.
 
 ## Scope
 
-This is a pose-only USD publication path usable by usdview's Hydra consumer.
-It supplies no material, morph or visibility publication, resident Toon matching,
+This USD publication path supplies joints and optional single-mesh blend-shape
+weights for usdview's Hydra consumer. It supplies no material or visibility publication, resident Toon matching,
 renderer resources, complete Scene Index, Hydra/direct parity or pixel guarantee.
 Those broader [output-path gates](OUTPUT_PATHS.md) remain open.

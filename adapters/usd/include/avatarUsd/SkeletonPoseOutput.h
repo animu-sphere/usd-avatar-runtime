@@ -1,20 +1,24 @@
 #pragma once
 #include <avatarUsd/SkeletonBinding.h>
 #include <avatarRuntime/api.h>
+#include <pxr/base/vt/types.h>
 
 namespace avatarUsd {
 
-// Display-only transport of completed runtime joints into UsdSkel. Owns one
-// anonymous session sublayer; never evaluates motion/physics or saves USD.
+// Display-only transport of completed joints and optional weights into UsdSkel.
+// Owns one anonymous session sublayer; never evaluates motion/physics or saves USD.
 // Single synchronous writer. Stage structural edits require a new binding.
 class SkeletonPoseOutput {
 public:
-    SkeletonPoseOutput(pxr::UsdStageRefPtr stage, SkeletonBinding binding);
+    // Optional single mesh: copies runtime (mesh path, blend-shape token)
+    // weights using the mesh's existing standard UsdSkel bindings.
+    SkeletonPoseOutput(pxr::UsdStageRefPtr stage, SkeletonBinding binding,
+                       pxr::SdfPath blendShapeMesh = {});
     ~SkeletonPoseOutput();
     SkeletonPoseOutput(const SkeletonPoseOutput&) = delete;
     SkeletonPoseOutput& operator=(const SkeletonPoseOutput&) = delete;
 
-    // Copies joint values. Other output channels are outside this consumer.
+    // Copies joint values and, when configured, blend-shape weights.
     // Refuses changed layout/topology/placement, another instance, old frames,
     // or malformed transforms before changing the last displayable pose.
     void Apply(const ArStateView& state);
@@ -29,6 +33,9 @@ private:
     SkeletonBinding binding_;
     pxr::SdfLayerRefPtr layer_;
     pxr::SdfPath animation_;
+    pxr::SdfPath mesh_;
+    pxr::VtTokenArray shapes_;
+    pxr::SdfPathVector targets_;
     ArInstance instance_ = 0;
     uint64_t generation_ = 0, frame_ = 0;
     double units_ = 1;

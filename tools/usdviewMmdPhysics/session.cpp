@@ -14,7 +14,10 @@
 #include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usdPhysics/rigidBodyAPI.h>
 #include <pxr/usd/usdSkel/skeleton.h>
+#include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/blendShape.h>
 #include <filesystem>
+#include <algorithm>
 #include <cmath>
 #include <stdexcept>
 #include <iostream>
@@ -47,6 +50,7 @@ class Session {
     Runtime runtime_;
     UsdStageRefPtr stage_;
     avatarUsd::SkeletonBinding binding_;
+    SdfPath morphMesh_;
     std::unique_ptr<avatarPhysics::StageWorld> world_;
     std::unique_ptr<avatarStageRunner::PhysicsSession> session_;
     std::unique_ptr<avatarUsd::SkeletonPoseOutput> output_;
@@ -192,6 +196,41 @@ public:
                 throw std::invalid_argument("PMX/stage joint order mismatch");
             c.joints.push_back({base.joints[i].skeleton_id, base.joints[i].joint_id, base.joints[i].parent_index});
         }
+        // The direct-PMX host uses the owner's canonical single-mesh contract.
+        // Only vertex morphs have standard UsdSkel outputs; never map UV,
+        // material or impulse channels into a deformation weight by accident.
+        const SdfPath meshPath("/Asset/geo/Mesh");
+        const UsdSkelBindingAPI mesh(stage_->GetPrimAtPath(meshPath));
+        VtTokenArray shapes; SdfPathVector targets;
+        if (mesh) {
+            mesh.GetBlendShapesAttr().Get(&shapes);
+            mesh.GetBlendShapeTargetsRel().GetTargets(&targets);
+        }
+        size_t vertices = 0;
+        for (const auto& morph : model.morphs) {
+            if (morph.type != mmd::MorphType::Vertex) continue;
+            ++vertices;
+            const TfToken name(morph.name.stableId);
+            const auto found = std::find(shapes.begin(), shapes.end(), name);
+            const auto index = size_t(found - shapes.begin());
+            if (found == shapes.end() || shapes.size() != targets.size())
+                throw std::invalid_argument("PMX/stage vertex morph binding mismatch");
+            const auto prim = stage_->GetPrimAtPath(targets[index]);
+            const auto sourceIndex = prim.GetCustomDataByKey(TfToken("mmd:sourceIndex"));
+            TfToken type;
+            if (!prim.IsA<UsdSkelBlendShape>() ||
+                targets[index] != SdfPath("/Asset/morph").AppendChild(name) ||
+                !sourceIndex.IsHolding<int>() || sourceIndex.UncheckedGet<int>() != int(morph.sourceIndex) ||
+                !prim.GetAttribute(TfToken("mmd:morph:type")).Get(&type) || type != TfToken("vertex"))
+                throw std::invalid_argument("PMX/stage vertex morph provenance mismatch");
+            c.morphs.push_back({int32_t(morph.sourceIndex), meshPath.GetString(), name.GetString()});
+        }
+        if (vertices != shapes.size()) throw std::invalid_argument("PMX/stage vertex morph count mismatch");
+        if (vertices) morphMesh_ = meshPath;
+        std::vector<ArBlendShape> morphs;
+        // Keep string storage alive through create_instance's owned baseline copy.
+        const auto morphBindings = c.morphs;
+        for (const auto& m : morphBindings) morphs.push_back({m.mesh.c_str(), m.target.c_str(), 0});
         c.submit = [this](const auto& context, std::span<const Body> rows) {
             pending_.assign(rows.begin(), rows.end()); pendingFrame_ = context.input->frame_id; return AR_OK;
         };
@@ -207,6 +246,8 @@ public:
         ArInstanceDesc desc{AR_HEADER(ArInstanceDesc)};
         desc.generation = 1; desc.layout_id = "live-mmd"; desc.layout_version = 1;
         desc.initial_state = base; desc.evaluators = selected; desc.evaluator_count = 2;
+        desc.initial_state.blend_shapes = morphs.data();
+        desc.initial_state.blend_shape_count = uint32_t(morphs.size());
         check(runtime_.api.create_instance(runtime_.handle, &desc, nullptr, &instance_));
         buildWorld();
         ArPhysicsParticipant participant{instance_, post.id};
@@ -215,7 +256,7 @@ public:
         world.fixed_step_seconds = 1. / 120; world.max_catch_up_ticks = 8;
         world.user_data = this; world.step = step; world.reset = resetWorld;
         session_ = std::make_unique<avatarStageRunner::PhysicsSession>(runtime_.handle, world, [this] { return now_; });
-        output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_);
+        output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_);
     }
     void play() { if (!session_ || !session_->IsOpen()) throw std::runtime_error("Session closed"); session_->Play(); }
     void pause() { if (session_) session_->Pause(); }
@@ -233,7 +274,7 @@ public:
         if (!session_ || !session_->IsOpen()) throw std::runtime_error("Session closed");
         ArDiagnosticSink sink{this, diagnostic}; error_.clear();
         status(session_->Reset(++generation_, &sink));
-        output_->Close(); output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_);
+        output_->Close(); output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_);
     }
     void close() {
         if (session_) status(session_->Close());

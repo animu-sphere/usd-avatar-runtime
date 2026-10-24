@@ -820,3 +820,27 @@ changed to bypass either refusal. Private inputs, filenames and paths are
 excluded from tracked files. This is local numeric evidence; representative
 L3, live material/morph output, resident Toon rendering and Hydra/direct
 agreement remain open.
+
+## Live MMD vertex morph evidence (2026-10-24)
+
+Runtime base `038074d` plus this change consumes the preceding installed MMD,
+motion, physics/Jolt and Stage Runner packages; no owner implementation or pin
+changes. `SkeletonPoseOutput` optionally transports one skeleton-bound mesh's
+runtime blend-shape weights. Source and installed USD consumer tests cover
+identity-based reordering, unrelated channels, unclamped weights, missing,
+duplicate, nonfinite and overflowing values, changed mesh binding and atomic
+refusal preserving the preceding display. The existing pose-only path remains
+covered. The [output contract](../architecture/USD_POSE_OUTPUT.md) owns the API.
+
+`hosts.usdview_mmd_morph` combines generated direct vertex keys with a moving
+kinematic pivot and dynamic feedback. Three 240-tick runs reproduce weights,
+deformed/skinned points and body states exactly after Reset; pause holds a
+nonzero morph weight and Close restores both layer texts. Composed UsdSkel
+deformation agrees with the keyed vertex delta followed by concrete solver
+rotation within `2e-5` m. Group and UV tracks still refuse with
+`MMD_ADAPTER_MORPH`; the owner preserves raw non-bone group channels rather than
+providing resolved vertex weights. Material/impulse/visibility remain outside
+this host. The [guide](../guides/live-mmd-physics.md#validation) owns reproduction;
+the [MMD report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-24-phase8-live-vertex-morph.md)
+records generated measurements. This is native numeric evidence; representative
+L3, actual-window morph pixels, resident Toon and Hydra/direct agreement remain open.

@@ -37,8 +37,11 @@ attribute stays in that list. Malformed spring declarations refuse even when
 both opt-ins are OFF, including during Reset.
 Standard joint frames/limits come from the installed physics reader. This
 preview is not representative hair/skirt acceptance or native MMD solver
-equivalence. Unsupported non-bone morph/hidden outputs fail through the owner
-registration adapter. This host currently publishes joints only.
+equivalence. The host binds canonical vertex morphs by the owner's mesh token,
+target and source index, then publishes their direct VMD weights alongside the
+final joints. Group/flip, UV, material and impulse channels and hidden outputs
+still fail through the owner registration adapter. Non-bone group expansion
+requires an owner execution interface; raw group channels are not vertex weights.
 
 The first configuration requires a directly opened PMX root layer with
 `/Asset/skel/Skeleton`, one avatar, rigid default-time placement and a stage
@@ -138,6 +141,23 @@ skinning, and checks exact reset replay. Contact-free generated input does not
 establish representative avatar acceptance. The
 [keyed-input evidence](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)
 also records the separate private-asset intake boundary.
+
+For direct vertex morph acceptance, generate the current VMD fixture set above
+and configure the paired generated MMD model:
+
+```powershell
+$morphPmx = "$mmd/plugins/usdMmdFileFormat/tests/fixtures/live-physics-morph.pmx"
+cmake -S . -B build/usdview-mmd "-DAVATAR_MMD_PREVIEW_MORPH_PMX=$morphPmx"
+ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_morph$' --output-on-failure
+```
+
+Keep the preceding PMX/VMD options configured. The VMD fixture directory must
+contain `live-physics-morph.vmd`, `live-physics-uv.vmd` and
+`live-physics-group.vmd`. This native test checks a keyed vertex weight and its
+return to zero while the pivot moves and physics drives the final skeleton,
+composed blend-shape deformation followed by skinning, pause at a nonzero weight,
+exact reset replay and layer restoration. UV/group input refuses explicitly.
+This numeric check does not open a window or establish rendered pixel acceptance.
 
 `hosts.usdview_mmd_properties` additionally adapts the same generated stage in
 memory to isolate admitted/rejected drops, restitution, inclined-floor friction,

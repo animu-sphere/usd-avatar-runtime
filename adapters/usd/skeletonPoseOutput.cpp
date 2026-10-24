@@ -1,9 +1,11 @@
 #include <avatarUsd/SkeletonPoseOutput.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 #include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/blendShape.h>
 #include <pxr/usd/usdSkel/skeleton.h>
 #include <pxr/usd/usdSkel/utils.h>
 #include <pxr/usd/sdf/changeBlock.h>
@@ -14,6 +16,7 @@
 #include <cmath>
 #include <limits>
 #include <map>
+#include <set>
 #include <stdexcept>
 
 namespace avatarUsd {
@@ -37,10 +40,24 @@ GfMatrix4d matrix(const ArTransform& t) {
     return s*r*p;
 }
 }
-SkeletonPoseOutput::SkeletonPoseOutput(UsdStageRefPtr stage, SkeletonBinding binding)
+SkeletonPoseOutput::SkeletonPoseOutput(UsdStageRefPtr stage, SkeletonBinding binding, SdfPath blendShapeMesh)
     : stage_(std::move(stage)), binding_(std::move(binding)),
-      layer_(SdfLayer::CreateAnonymous("avatar-runtime-pose.usda")) {
+      layer_(SdfLayer::CreateAnonymous("avatar-runtime-pose.usda")), mesh_(std::move(blendShapeMesh)) {
     require(bool(stage_) && bool(stage_->GetSessionLayer()), "USD_OUTPUT_STAGE: missing stage/session layer");
+    if (!mesh_.IsEmpty()) {
+        const auto mesh = UsdGeomMesh::Get(stage_, mesh_);
+        const UsdSkelBindingAPI api(mesh);
+        require(mesh && api.GetInheritedSkeleton().GetPath() == SdfPath(binding_.SkeletonId()) &&
+            api.GetBlendShapesAttr().Get(&shapes_) && !shapes_.empty() &&
+            api.GetBlendShapeTargetsRel().GetTargets(&targets_) && shapes_.size() == targets_.size(),
+            "USD_OUTPUT_MORPHS: invalid mesh/skeleton/blend-shape binding");
+        std::set<TfToken> names;
+        std::set<SdfPath> targets;
+        for (size_t i = 0; i < shapes_.size(); ++i)
+            require(!shapes_[i].IsEmpty() && names.insert(shapes_[i]).second &&
+                targets.insert(targets_[i]).second && bool(UsdSkelBlendShape::Get(stage_, targets_[i])),
+                "USD_OUTPUT_MORPHS: invalid/duplicate blend-shape identity");
+    }
     units_ = UsdGeomGetStageMetersPerUnit(stage_);
     static std::atomic<uint64_t> next{0};
     do {
@@ -116,6 +133,33 @@ void SkeletonPoseOutput::Apply(const ArStateView& state) {
         require(std::isfinite(translations[i][c]) && std::isfinite(float(scales[i][c])) &&
             float(scales[i][c]) > 0, "USD_OUTPUT_TRANSFORM: USD narrowing overflow/underflow");
 
+    VtFloatArray weights;
+    if (!mesh_.IsEmpty()) {
+        const UsdSkelBindingAPI api(UsdGeomMesh::Get(stage_, mesh_));
+        VtTokenArray names; SdfPathVector targets;
+        require(api && api.GetInheritedSkeleton().GetPath() == skeleton.GetPath() &&
+            api.GetBlendShapesAttr().Get(&names) && names == shapes_ &&
+            api.GetBlendShapeTargetsRel().GetTargets(&targets) && targets == targets_,
+            "USD_OUTPUT_MORPHS: changed mesh binding");
+        for (const auto& target : targets_)
+            require(bool(UsdSkelBlendShape::Get(stage_, target)), "USD_OUTPUT_MORPHS: missing blend shape");
+        require(!state.blend_shape_count || state.blend_shapes, "USD_OUTPUT_MORPHS: missing runtime array");
+        std::map<std::pair<std::string, std::string>, double> values;
+        for (uint32_t i = 0; i < state.blend_shape_count; ++i) {
+            const auto& shape = state.blend_shapes[i];
+            require(shape.mesh_id && shape.target_id &&
+                values.emplace(std::make_pair(shape.mesh_id, shape.target_id), shape.weight).second,
+                "USD_OUTPUT_MORPHS: duplicate/missing runtime identity");
+        }
+        for (const auto& name : shapes_) {
+            const auto found = values.find({mesh_.GetString(), name.GetString()});
+            require(found != values.end() && std::isfinite(found->second) &&
+                std::abs(found->second) <= std::numeric_limits<float>::max(),
+                "USD_OUTPUT_MORPHS: missing/nonfinite/overflow weight");
+            weights.push_back(float(found->second));
+        }
+    }
+
     // Prepare the entire publication away from the displayed stage. Invalid
     // input never changes the live layer or its previously displayed values.
     auto scratch = UsdStage::CreateInMemory();
@@ -124,6 +168,9 @@ void SkeletonPoseOutput::Apply(const ArStateView& state) {
         animation.CreateTranslationsAttr().Set(translations) &&
         animation.CreateRotationsAttr().Set(rotations) && animation.CreateScalesAttr().Set(scales),
         "USD_OUTPUT_AUTHOR: animation authoring failed");
+    if (!mesh_.IsEmpty())
+        require(animation.CreateBlendShapesAttr().Set(shapes_) &&
+            animation.CreateBlendShapeWeightsAttr().Set(weights), "USD_OUTPUT_AUTHOR: blend-shape authoring failed");
     auto prim = scratch->OverridePrim(skeleton.GetPath());
     require(UsdSkelBindingAPI::Apply(prim).CreateAnimationSourceRel().SetTargets({animation_}),
         "USD_OUTPUT_AUTHOR: animation binding failed");
