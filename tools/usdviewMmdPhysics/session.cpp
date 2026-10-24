@@ -1,5 +1,6 @@
 #include <avatarMmd/PhysicsAdapter.h>
 #include <mmdPhysicsAdapter/BodyProperties.h>
+#include <mmdPhysicsAdapter/JointSprings.h>
 #include <avatarUsd/SkeletonPoseOutput.h>
 #include <avatarPhysics/StageWorld.h>
 #include <avatarStageRunner/PhysicsSession.h>
@@ -56,6 +57,8 @@ class Session {
     avatarStageRunner::PhysicsSession::FrameClock::Clock::time_point now_{};
     std::string error_;
     std::vector<std::string> warnings_;
+    bool translationSprings_ = false, rotationSprings_ = false;
+    size_t translationAxes_ = 0, rotationAxes_ = 0;
     static void AR_CALL diagnostic(void* data, const ArDiagnostic* d) {
         auto& self = *static_cast<Session*>(data);
         // A callback may already hold an owner refusal with a body path/code.
@@ -69,6 +72,19 @@ class Session {
     void buildWorld() {
         if (world_ && !world_->Close()) throw std::runtime_error("Physics resource close refused; retry reset");
         world_.reset(); pending_.clear(); result_.clear(); pendingFrame_ = resultFrame_ = steps_ = 0;
+        std::vector<std::string> warnings;
+        std::set<std::string> applied;
+        size_t translationAxes = 0, rotationAxes = 0;
+        // Validate owner declarations even for disabled/format-only joints;
+        // only the standard enabled joints below can receive execution.
+        for (auto prim : stage_->Traverse()) {
+            if (prim.GetAttribute(TfToken("mmd:physics:translationSpring")) ||
+                prim.GetAttribute(TfToken("mmd:physics:rotationSpring"))) {
+                (void)take(mmd::physics::ReadJointSprings(prim));
+                for (const char* name : {"translationSpring", "rotationSpring"})
+                    warnings.push_back(prim.GetPath().GetString() + ".mmd:physics:" + name);
+            }
+        }
         world_ = std::make_unique<avatarPhysics::StageWorld>(stage_, [](const auto& settings) {
             // MMD owner contract section 7.1; immutable policy for this single-format world.
             using Rule = core::ContactCombineRule;
@@ -84,9 +100,31 @@ class Session {
                 descriptor.contactMaterial = {properties.contact->friction, properties.contact->restitution};
             if (properties.damping)
                 descriptor.damping = {properties.damping->linear, properties.damping->angular};
+        }, [&](const auto& joint, auto& descriptor) {
+            const auto properties = take(mmd::physics::ReadJointSprings(
+                stage_->GetPrimAtPath(SdfPath(joint.path))));
+            if (!properties || !properties->spring6Dof) return;
+            for (bool rotation : {false, true}) {
+                if (!(rotation ? rotationSprings_ : translationSprings_)) continue;
+                const auto& values = rotation ? properties->rotation : properties->translation;
+                bool complete = true;
+                for (int axis = 0; axis < 3; ++axis) {
+                    const bool supported = values[axis] > 0 &&
+                        descriptor.limits[axis + (rotation ? 3 : 0)].motion != core::AxisMotion::locked;
+                    if (supported) {
+                        if (rotation) { descriptor.rotationSprings[axis] = {values[axis], 0}; ++rotationAxes; }
+                        else { descriptor.translationSprings[axis] = {values[axis], 0, 0}; ++translationAxes; }
+                    } else if (values[axis] != 0) complete = false;
+                }
+                if (complete) applied.insert(joint.path + ".mmd:physics:" +
+                    (rotation ? "rotationSpring" : "translationSpring"));
+            }
         });
         if (!dynamic_cast<core::KinematicMotion*>(world_->World()))
             throw std::runtime_error("Live MMD preview requires KinematicMotion");
+        warnings_.clear();
+        for (const auto& path : warnings) if (!applied.count(path)) warnings_.push_back(path);
+        translationAxes_ = translationAxes; rotationAxes_ = rotationAxes;
     }
     static ArStatus AR_CALL step(void* data, const ArPhysicsTick* tick, const ArDiagnosticSink*) {
         auto& self = *static_cast<Session*>(data);
@@ -122,9 +160,11 @@ class Session {
         catch (const std::exception& e) { self.error_ = e.what(); return AR_PROVIDER_ERROR; }
     }
 public:
-    Session(UsdStageRefPtr stage, const std::string& pmx, const std::string& vmd)
+    Session(UsdStageRefPtr stage, const std::string& pmx, const std::string& vmd,
+            bool translationSprings = false, bool rotationSprings = false)
         : stage_(std::move(stage)), binding_(stage_,
-            {SdfPath("/Asset"), SdfPath("/Asset/skel/Skeleton"), "live-mmd", 1, {}}) {
+            {SdfPath("/Asset"), SdfPath("/Asset/skel/Skeleton"), "live-mmd", 1, {}}),
+          translationSprings_(translationSprings), rotationSprings_(rotationSprings) {
         auto source = take(mmd::pmx::ReadFile(std::filesystem::u8path(pmx)));
         auto model = take(mmd::Canonicalize(source));
         auto evaluator = take(mmd::control::Evaluator::Prepare(model));
@@ -136,13 +176,6 @@ public:
         std::vector<UsdPrim> bodies;
         for (auto prim : stage_->Traverse()) {
             if (prim.HasAPI<UsdPhysicsRigidBodyAPI>()) bodies.push_back(prim);
-            for (const auto& attr : prim.GetAttributes()) {
-                const auto name = attr.GetName().GetString();
-                static const std::set<std::string> unapplied{
-                    "mmd:physics:translationSpring", "mmd:physics:rotationSpring"};
-                if (unapplied.count(name))
-                    warnings_.push_back(prim.GetPath().GetString() + "." + name);
-            }
         }
         if (bodies.empty()) throw std::invalid_argument("No MMD rigid bodies in this stage");
         auto coupling = take(mmd::physics::Adapter::Bind(UsdSkelSkeleton::Get(stage_, SdfPath(binding_.SkeletonId())), bodies));
@@ -211,6 +244,8 @@ public:
         py::dict d; d["steps"] = steps_; d["generation"] = generation_;
         d["bodies"] = world_ && world_->Resources() ? world_->Resources()->Bodies().size() : 0;
         d["paused"] = !session_ || session_->IsPaused();
+        d["approximateTranslationSpringAxes"] = translationAxes_;
+        d["approximateRotationSpringAxes"] = rotationAxes_;
         return d;
     }
     py::list warnings() const { py::list rows; for (const auto& w : warnings_) rows.append(w); return rows; }
@@ -233,7 +268,8 @@ public:
 };
 }
 PXR_BOOST_PYTHON_MODULE(_native) {
-    py::class_<Session, py::noncopyable>("Session", py::init<UsdStageRefPtr, std::string, std::string>())
+    py::class_<Session, py::noncopyable>("Session", py::init<UsdStageRefPtr, std::string, std::string,
+        py::optional<bool, bool>>())
         .def("play", &Session::play).def("pause", &Session::pause).def("advance", &Session::advance)
         .def("reset", &Session::reset).def("close", &Session::close)
         .add_property("stats", &Session::stats).add_property("unappliedMetadata", &Session::warnings)

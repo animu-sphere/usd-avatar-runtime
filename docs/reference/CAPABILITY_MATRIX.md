@@ -770,6 +770,31 @@ no solver/provider dependency into core. The MMD owner's
 [contract and report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-21-phase8-live-body-properties.md)
 record conversion domains, measured controls and approximation boundaries.
 The [guide](../guides/live-mmd-physics.md) owns build/run steps and the package
-feature-version requirement. Joint springs remain reported as unapplied;
+feature-version requirement. The spring follow-up below extends that scope;
 representative PMX/VMD, resident Toon and Hydra/direct parity gates remain open.
 This is local generated evidence, without publication, hosted CI or L3 claims.
+
+## Live MMD spring evidence (2026-10-21)
+
+Runtime base `f757535` and MMD owner base `45b3827`, plus local changes, extend
+the preceding live host using installed `mmdPhysicsAdapter::ReadJointSprings`.
+The generic scene resource adapter accepts a validated neutral joint policy
+before backend resource creation, with no source-format branch or owner
+dependency. Source and installed tests check callback count, disabled omission,
+endpoint remapping, descriptor validation and failure before mutation.
+
+The application maps owned SI coefficients to independently default-OFF Hookean
+translation and small-angle rotation approximations. Native generated checks
+cover gravity-response differences, positive free/limited activation, signed,
+locked, missing/other-type and disabled gaps, final UsdSkel/body agreement,
+pause/reset replay, changed-stiffness reconstruction, refusal with owner
+code/path and layer cleanup. Actual-window Qt playback with the rotation opt-in
+also checks final pose agreement, reset/resume/stop and stage replacement.
+The owner's [report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-21-phase8-live-springs.md)
+records measurements and the [guide](../guides/live-mmd-physics.md) owns commands.
+
+Negative/locked/format-only spring meaning remains unsupported. Applied axes
+remain explicitly approximate and do not establish native MMD or finite-angle
+equivalence. Representative PMX/VMD, resident Toon and Hydra/direct parity
+remain open. This is local generated evidence, without publication, hosted CI
+or L3 completion claims.
