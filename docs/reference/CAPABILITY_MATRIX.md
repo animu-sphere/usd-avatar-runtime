@@ -837,10 +837,35 @@ kinematic pivot and dynamic feedback. Three 240-tick runs reproduce weights,
 deformed/skinned points and body states exactly after Reset; pause holds a
 nonzero morph weight and Close restores both layer texts. Composed UsdSkel
 deformation agrees with the keyed vertex delta followed by concrete solver
-rotation within `2e-5` m. Group and UV tracks still refuse with
-`MMD_ADAPTER_MORPH`; the owner preserves raw non-bone group channels rather than
-providing resolved vertex weights. Material/impulse/visibility remain outside
-this host. The [guide](../guides/live-mmd-physics.md#validation) owns reproduction;
+rotation within `2e-5` m. The original check refused group and UV tracks;
+the [resolved-group follow-up](#live-mmd-resolved-group-evidence-2026-10-24)
+now admits vertex groups through the owner API. Material/impulse/visibility
+remain outside this host. The [guide](../guides/live-mmd-physics.md#validation) owns reproduction;
 the [MMD report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-24-phase8-live-vertex-morph.md)
 records generated measurements. This is native numeric evidence; representative
 L3, actual-window morph pixels, resident Toon and Hydra/direct agreement remain open.
+
+## Live MMD resolved group evidence (2026-10-24)
+
+Runtime base `4d0d108` plus this change consumes installed MMD
+`Evaluator::ResolveMorphChannels` after final control continuation. Raw channels
+remain owner data; only resolved leaf weights reach deformation slots. Source
+and installed MMD adapter tests cover nested groups plus direct contributions,
+negative/above-one/zero/absent weights, bone effects applied once, retained
+snapshots, pause/reset and refusal of unmapped UV/material/flip/impulse leaves
+even at zero, as well as non-finite resolved weights. Refusal publishes no
+partial snapshot and requires world reset after Step. Source and installed
+component configuration probe owner headers and linked symbols; older owner
+headers refuse with a rebuild instruction. Core-only consumers remain isolated.
+
+The live morph check now runs direct, group-only and mixed direct/group VMDs,
+each for three 240-tick replays. The mixed input combines a group weight of 2
+with a direct vertex weight of -0.5 at its peak; the resolved result is 0.5,
+without adding raw inputs again. It verifies the final UsdSkel deformation and
+skinning against the concrete body transform, exact reset replay, paused output,
+return to zero and layer restoration. UV still refuses. See the
+[MMD integration report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-24-phase8-live-resolved-morph.md)
+for measurements and the [guide](../guides/live-mmd-physics.md#validation)
+for commands. This generated numeric scope does not establish private full-motion,
+UV/material/flip/impulse execution, representative L3, actual-window morph pixels,
+resident Toon binding or Hydra/direct agreement.

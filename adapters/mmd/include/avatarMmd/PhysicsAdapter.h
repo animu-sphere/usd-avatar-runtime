@@ -12,7 +12,7 @@ struct JointBinding {
     int32_t parent = -1; // canonical joint index, not runtime array index
 };
 struct MorphBinding {
-    int32_t morph;
+    int32_t morph; // canonical leaf index; host must select compatible output types
     std::string mesh, target;
 };
 struct PhysicsAdapterConfig {
