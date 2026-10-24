@@ -1,4 +1,6 @@
 find_package(mmdPhysicsAdapter 0.2 CONFIG REQUIRED)
+include(${PROJECT_SOURCE_DIR}/cmake/AvatarMmdMorphResolution.cmake)
+avatar_require_mmd_morph_resolution()
 add_library(avatarMmdAdapter STATIC physicsAdapter.cpp)
 add_library(AvatarRuntime::avatarMmdAdapter ALIAS avatarMmdAdapter)
 target_compile_features(avatarMmdAdapter PUBLIC cxx_std_20)

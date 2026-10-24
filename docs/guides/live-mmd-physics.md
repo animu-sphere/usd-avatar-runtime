@@ -142,7 +142,7 @@ establish representative avatar acceptance. The
 [keyed-input evidence](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)
 also records the separate private-asset intake boundary.
 
-For direct vertex morph acceptance, generate the current VMD fixture set above
+For direct and owner-resolved group vertex morph acceptance, generate the current VMD fixture set above
 and configure the paired generated MMD model:
 
 ```powershell
@@ -153,10 +153,13 @@ ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_morph$' --o
 
 Keep the preceding PMX/VMD options configured. The VMD fixture directory must
 contain `live-physics-morph.vmd`, `live-physics-uv.vmd` and
-`live-physics-group.vmd`. This native test checks a keyed vertex weight and its
-return to zero while the pivot moves and physics drives the final skeleton,
+`live-physics-group.vmd` and `live-physics-mixed.vmd`. Install an MMD owner
+package providing `Evaluator::ResolveMorphChannels` before rebuilding the host;
+configuration explicitly refuses older/incomplete headers or libraries.
+This native test checks direct, group-only and mixed direct/group weights,
+including return to zero while the pivot moves and physics drives the final skeleton,
 composed blend-shape deformation followed by skinning, pause at a nonzero weight,
-exact reset replay and layer restoration. UV/group input refuses explicitly.
+exact reset replay and layer restoration. UV input refuses explicitly.
 This numeric check does not open a window or establish rendered pixel acceptance.
 
 `hosts.usdview_mmd_properties` additionally adapts the same generated stage in

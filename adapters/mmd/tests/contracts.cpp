@@ -21,6 +21,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <limits>
 #include <set>
 #ifdef AVATAR_MMD_TOON_SMOKE
 #include "ToonCheck.h"
@@ -415,6 +416,84 @@ void bindingsAndOutputs() {
     }
 }
 
+void
+resolvedMorphOutputs()
+{
+    Assets a;
+    a.model.morphs.resize(5);
+    a.model.morphs[0].type = mmd::MorphType::Vertex;
+    a.model.morphs[1].type = a.model.morphs[2].type = mmd::MorphType::Group;
+    a.model.morphs[3].type = mmd::MorphType::Bone;
+    a.model.morphs[4].type = mmd::MorphType::Uv;
+    a.model.morphs[3].boneOffsets = {{0, {.1f, 0, 0}, {0, 0, 0, 1}}};
+    a.model.morphs[1].members = {{0, .5f}, {3, 1.f}};
+    a.model.morphs[2].members = {{1, 2.f}, {0, .25f}};
+    a.motion.morphs = {{0, {{0, -.5f}}}, {1, {{0, -.25f}}}, {2, {{0, 2.f}}}};
+    auto bind = [](auto& c) { c.morphs = {{0, "mesh", "vertex"}}; };
+    {
+        Fixture f(a, false, bind);
+        for (uint64_t generation = 1; generation <= 3; ++generation) {
+            if (generation > 1)
+                CHECK(f.physics.reset_world(f.runtime, f.world, generation, nullptr) == AR_OK);
+            CHECK(f.advance(1.0 / 120) == AR_OK);
+            ArStateView view{AR_HEADER(ArStateView)};
+            CHECK(f.api.get_snapshot(f.snapshots[0], &view) == AR_OK);
+            // Nested diamond plus direct input, resolved once and unclamped.
+            CHECK(view.blend_shapes[0].weight == 1.875);
+            // Group bone effects are already in the pose and are not applied again.
+            CHECK(std::abs(view.joints[1].local.translation[0] - (4 + .375 * std::cos(3.141592653589793 / 6))) < 1e-7);
+            CHECK(std::abs(view.joints[1].local.translation[1] - (2 + .375 * .5)) < 1e-7);
+            auto retained = f.snapshots[0];
+            CHECK(f.api.retain_snapshot(retained) == AR_OK);
+            CHECK(f.advance(.1, true) == AR_OK && f.steps == 1);
+            CHECK(view.blend_shapes[0].weight == 1.875);
+            CHECK(f.api.release_snapshot(retained) == AR_OK);
+        }
+    }
+    // Negative, zero and absent channels all replace the previous slot value.
+    a.motion.morphs = {{0, {{0, -2.f}, {1, 0.f}}}};
+    {
+        Fixture f(a, false, bind);
+        CHECK(f.advance(1.0 / 120) == AR_OK);
+        ArStateView view{AR_HEADER(ArStateView)};
+        CHECK(f.api.get_snapshot(f.snapshots[0], &view) == AR_OK &&
+              view.blend_shapes[0].weight < 0);
+        CHECK(f.advance(3.0 / 120) == AR_OK);
+        CHECK(f.api.get_snapshot(f.snapshots[0], &view) == AR_OK &&
+              view.blend_shapes[0].weight == 0);
+    }
+    a.motion.morphs.clear();
+    {
+        Fixture f(a, false, bind);
+        CHECK(f.advance(1.0 / 120) == AR_OK);
+        ArStateView view{AR_HEADER(ArStateView)};
+        CHECK(f.api.get_snapshot(f.snapshots[0], &view) == AR_OK &&
+              view.blend_shapes[0].weight == 0);
+    }
+    // A reached unsupported leaf refuses even at zero and via a zero coefficient.
+    for (auto type : {mmd::MorphType::Uv,
+                      mmd::MorphType::Material,
+                      mmd::MorphType::Flip,
+                      mmd::MorphType::Impulse}) {
+        a.model.morphs[4].type = type;
+        a.model.morphs[1].members.push_back({4, 0.f});
+        a.motion.morphs = {{2, {{0, 0.f}}}};
+        Fixture f(a, false, bind);
+        CHECK(f.advance(1.0 / 120) == AR_PROVIDER_ERROR && !f.snapshots[0] && !f.snapshots[1]);
+        CHECK(std::find(f.diagnostics.begin(), f.diagnostics.end(), "MMD_ADAPTER_MORPH") != f.diagnostics.end());
+        CHECK(f.advance(0) == AR_INVALID_STATE);
+        a.model.morphs[1].members.pop_back();
+    }
+    a.model.morphs[3].boneOffsets.clear();
+    for (float weight :
+         {std::numeric_limits<float>::infinity(), std::numeric_limits<float>::quiet_NaN()}) {
+        a.motion.morphs = {{2, {{0, weight}}}};
+        Fixture f(a, false, bind);
+        CHECK(f.advance(1.0 / 120) == AR_PROVIDER_ERROR && !f.snapshots[0]);
+        CHECK(std::find(f.diagnostics.begin(), f.diagnostics.end(), "MMD_ADAPTER_MORPH") != f.diagnostics.end());
+    }
+}
+
 #ifdef AVATAR_MMD_TOON_SMOKE
 void publish(Fixture &f, std::unique_ptr<MmdToonCheck> (&consumers)[2]) {
   for (int i = 0; i < 2; ++i) {
@@ -465,6 +544,7 @@ int main(int argc, char **argv) {
   if (argc == 1) {
     constructed();
     bindingsAndOutputs();
+    resolvedMorphOutputs();
 #ifdef AVATAR_MMD_TOON_SMOKE
     toonConstructed();
 #endif

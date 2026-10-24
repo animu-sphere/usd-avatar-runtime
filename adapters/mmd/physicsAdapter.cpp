@@ -109,8 +109,12 @@ struct PhysicsAdapter::Impl {
         const auto& v = *c.working;
         // Validate every output before calling any writer/host operation.
         std::vector<uint32_t> morphIndices, visibilityIndices;
+        std::vector<mmd::control::MorphChannel> channels;
         if (final) {
-            for (const auto& channel : pose.channels) {
+            channels = config.evaluator.ResolveMorphChannels(pose.channels);
+            for (const auto& channel : channels) {
+                if (!std::isfinite(channel.weight))
+                    return failure(c, "MMD_ADAPTER_MORPH", "Owner resolved morph weight is not finite");
                 bool mapped = false;
                 for (const auto& m : config.morphs) mapped |= m.morph == channel.morph;
                 if (!mapped) return failure(c, "MMD_ADAPTER_MORPH", "Owner non-bone morph has no output binding");
@@ -152,7 +156,7 @@ struct PhysicsAdapter::Impl {
         }
         for (size_t i = 0; i < morphIndices.size(); ++i) {
             double weight = 0;
-            for (const auto& ch : pose.channels) if (ch.morph == config.morphs[i].morph) weight = ch.weight;
+            for (const auto& ch : channels) if (ch.morph == config.morphs[i].morph) weight = ch.weight;
             if ((status = w.set_blend_shape(w.context, morphIndices[i], weight)) != AR_OK) return status;
         }
         for (auto i : visibilityIndices)

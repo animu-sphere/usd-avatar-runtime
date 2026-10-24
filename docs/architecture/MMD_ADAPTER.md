@@ -17,7 +17,9 @@ evidence belong to the [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
 Enable `AVATAR_BUILD_MMD_ADAPTER` with installed `mmdPhysicsAdapter` 0.2 and
 OpenUSD 26.08 available through `CMAKE_PREFIX_PATH`. The owner package must
-provide `Evaluator::BeginPhysics`, `ResumePhysics` and `physics::Adapter`;
+provide `Evaluator::BeginPhysics`, `ResumePhysics`, `ResolveMorphChannels` and
+`physics::Adapter`; configuration probes both the morph-resolution header and
+linked symbol and refuses an older/incomplete install with a rebuild instruction;
 the local 0.2 build used for validation is not a published dependency claim.
 No sibling source is compiled into the runtime.
 
@@ -79,11 +81,16 @@ automatic PMX/avatar configuration discovery is outside this slice.
 
 Model frames are `evaluation_seconds * framesPerSecond + frameOffset`.
 The owner handles VMD interpolation, bone morphs, append, IK and visibility.
-Explicit morph bindings map already resolved non-bone scalar channels to
-runtime blend-shape slots; they do not interpret UV/material/impulse morphs.
-The host selects compatible deformation outputs. Visibility maps to named
-targets. Unmapped non-bone channels or hidden state without a visibility target
-fail. Material morph realization and retargeted-input continuation remain open.
+After `ResumePhysics`, the adapter calls owner `ResolveMorphChannels` on the raw
+pose channels and maps only that result to runtime blend-shape slots. Direct
+and nested group contributions are resolved once by the owner; bone effects
+remain in the pose. Negative and above-one weights are preserved, absent bound
+leaves write zero, and non-finite resolved weights fail before any output write.
+The host must bind canonical leaf indices with compatible deformation outputs;
+the live host binds only owner-validated vertex morphs. Reached unmapped leaves
+fail even at zero weight. The adapter does not realize UV/material/flip/impulse
+effects. Visibility maps to named targets; hidden state without a target fails.
+Material morph realization and retargeted-input continuation remain open.
 
 Register both `PreDescriptor()` and `PostDescriptor()`, select both for each
 instance, and use the post ID as `ArPhysicsParticipant.post_physics_evaluator`.
