@@ -798,3 +798,25 @@ remain explicitly approximate and do not establish native MMD or finite-angle
 equivalence. Representative PMX/VMD, resident Toon and Hydra/direct parity
 remain open. This is local generated evidence, without publication, hosted CI
 or L3 completion claims.
+
+## Live MMD keyed-input evidence (2026-10-24)
+
+Runtime base `c990824` plus generated-test changes consumes installed packages
+from the preceding live-host configuration. `hosts.usdview_mmd_motion` pairs
+the generated MMD pendulum with an owner-generated VMD. Three 240-tick runs
+check a 10 cm keyed pivot/return, finite body/bone state, a motion-free control,
+joint separation below 2 cm, and composed UsdSkel skinning against concrete
+solver rotation within `2e-5` metres. Reset reproduces body and joint arrays
+exactly; Pause and Close preserve the existing lifetime guarantees. The
+[guide](../guides/live-mmd-physics.md#validation) owns reproduction; measured
+values and anonymous private-asset intake results are in the
+[MMD report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-24-phase8-live-keyed-input.md).
+
+One private model passes a bounded rest-input finite-state/reset smoke. Its
+full VMD input refuses with `MMD_ADAPTER_MORPH` because this pose-only host
+has no non-bone morph output binding. A second private model refuses owner
+damping validation with `MMD_PHYSICS_METADATA_INVALID`. No source opinion is
+changed to bypass either refusal. Private inputs, filenames and paths are
+excluded from tracked files. This is local numeric evidence; representative
+L3, live material/morph output, resident Toon rendering and Hydra/direct
+agreement remain open.

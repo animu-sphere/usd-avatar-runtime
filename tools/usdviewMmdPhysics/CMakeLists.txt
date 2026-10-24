@@ -38,6 +38,10 @@ install(TARGETS usdviewMmdPhysicsPython LIBRARY DESTINATION lib/usd-avatar-runti
 install(FILES python/__init__.py python/controller.py python/plugInfo.json
     DESTINATION lib/usd-avatar-runtime/usdview/usdviewMmdPhysics)
 set(AVATAR_MMD_PREVIEW_PMX "" CACHE FILEPATH "Generated live-physics-pendulum.pmx for native live-host acceptance")
+set(AVATAR_MMD_PREVIEW_VMD "" CACHE FILEPATH "Generated live-physics-anchor.vmd for keyed live-host acceptance")
+if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_VMD AND NOT AVATAR_MMD_PREVIEW_PMX)
+    message(FATAL_ERROR "AVATAR_MMD_PREVIEW_VMD requires AVATAR_MMD_PREVIEW_PMX")
+endif()
 if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
     if(NOT EXISTS "${AVATAR_MMD_PREVIEW_PMX}")
         message(FATAL_ERROR "AVATAR_MMD_PREVIEW_PMX must name an existing generated pendulum fixture")
@@ -49,6 +53,15 @@ if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
         "${CMAKE_CURRENT_SOURCE_DIR}/test_properties.py" "${AVATAR_MMD_PREVIEW_PMX}")
     add_test(NAME hosts.usdview_mmd_springs COMMAND ${Python3_EXECUTABLE}
         "${CMAKE_CURRENT_SOURCE_DIR}/test_springs.py" "${AVATAR_MMD_PREVIEW_PMX}")
-    set_tests_properties(hosts.usdview_mmd_native hosts.usdview_mmd_properties hosts.usdview_mmd_springs PROPERTIES ENVIRONMENT_MODIFICATION
+    set(live_tests hosts.usdview_mmd_native hosts.usdview_mmd_properties hosts.usdview_mmd_springs)
+    if(AVATAR_MMD_PREVIEW_VMD)
+        if(NOT EXISTS "${AVATAR_MMD_PREVIEW_VMD}")
+            message(FATAL_ERROR "AVATAR_MMD_PREVIEW_VMD must name an existing generated anchor fixture")
+        endif()
+        add_test(NAME hosts.usdview_mmd_motion COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_motion.py" "${AVATAR_MMD_PREVIEW_PMX}" "${AVATAR_MMD_PREVIEW_VMD}")
+        list(APPEND live_tests hosts.usdview_mmd_motion)
+    endif()
+    set_tests_properties(${live_tests} PROPERTIES ENVIRONMENT_MODIFICATION
         "PYTHONPATH=path_list_prepend:${CMAKE_CURRENT_BINARY_DIR}/python;PYTHONPATH=path_list_prepend:${pxr_DIR}/lib/python;PATH=path_list_prepend:${pxr_DIR}/bin;PATH=path_list_prepend:${pxr_DIR}/lib")
 endif()
