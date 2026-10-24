@@ -134,6 +134,16 @@ requires that reset under the existing lifecycle contract. Direct evaluation
 without a matching host snapshot is not a physics-disabled fallback; a separate
 motion-only path uses the owner's offline evaluator.
 
+The scoped live usdview host evaluates source frame zero through the owner's
+`BeginPhysics` before constructing its world. It consumes
+[`InitialBodyTransforms`](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/design/PHYSICS_INTEGRATION.md#54-coupling-lifecycle)
+to seed every associated body, including simulated bodies, before constraints
+are created. Reset reconstructs fresh bodies from the same seed with zero
+linear/angular velocity. Unassociated bodies retain authored placement.
+No hidden Step, warm-up or motion-clock offset is introduced. Pause/resume
+continues the existing world; the per-tick callback still updates only
+kinematic targets. Pose evaluation and rest-offset math remain with MMD.
+
 This interface supplies no solver factory, checkpoint restore, arbitrary seek,
 automatic shared-world asset construction or renderer binding. The generated
 test host demonstrates installed Jolt handles; broader host integration and

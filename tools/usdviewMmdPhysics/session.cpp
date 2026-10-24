@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <set>
+#include <map>
 
 namespace {
 namespace py = PXR_BOOST_NAMESPACE::python;
@@ -57,6 +58,7 @@ class Session {
     ArInstance instance_ = 0;
     ArInputFrame input_{AR_HEADER(ArInputFrame)};
     std::vector<Body> pending_, result_;
+    std::map<std::string, mmd::control::JointTransform> initialBodies_;
     uint64_t pendingFrame_ = 0, resultFrame_ = 0, generation_ = 1, steps_ = 0;
     avatarStageRunner::PhysicsSession::FrameClock::Clock::time_point now_{};
     std::string error_;
@@ -96,6 +98,11 @@ class Session {
             if (settings) return usd_physics::jolt::createWorld(mixing, settings->gravity);
             return usd_physics::jolt::createWorld(mixing);
         }, [this](const auto& body, auto& descriptor) {
+            if (const auto found = initialBodies_.find(body.path); found != initialBodies_.end()) {
+                const auto& t = found->second;
+                descriptor.initialTransform = {{t.translation[0], t.translation[1], t.translation[2]},
+                    {t.rotation[3], t.rotation[0], t.rotation[1], t.rotation[2]}};
+            }
             const auto properties = take(mmd::physics::ReadBodyProperties(
                 stage_->GetPrimAtPath(SdfPath(body.path))));
             if (properties.filter)
@@ -183,6 +190,11 @@ public:
         }
         if (bodies.empty()) throw std::invalid_argument("No MMD rigid bodies in this stage");
         auto coupling = take(mmd::physics::Adapter::Bind(UsdSkelSkeleton::Get(stage_, SdfPath(binding_.SkeletonId())), bodies));
+        // World construction and Reset start every associated body at source
+        // frame zero, before any moveKinematic/Step. MMD owns the pose/offset math.
+        const auto initial = evaluator.BeginPhysics(motion, 0);
+        for (const auto& row : take(coupling.InitialBodyTransforms(initial.BeforePhysics())))
+            initialBodies_.emplace(row.body.GetString(), row.world);
         avatarMmd::PhysicsAdapterConfig c{evaluator, motion, coupling};
         c.preId = "live.mmd.pre"; c.postId = "live.mmd.post"; c.layoutId = "live-mmd";
         const auto& placement = binding_.RootPlacement();
