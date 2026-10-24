@@ -4,6 +4,10 @@ Immediate implementation priority is the live single-avatar usdview path under
 the [physics milestones](#physics-orchestration-milestones), followed by
 representative PMX/VMD visual checks using owner-side property and spring semantics.
 
+The [mode-1 feedback correction](../reference/CAPABILITY_MATRIX.md#mmd-mode-1-feedback-correction-2026-10-25)
+adds generated position/rotation publication and private bone/IK preview evidence.
+Representative spring/contact behavior and full-motion intake remain open.
+
 The [keyed-input check](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)
 adds generated VMD-to-physics replay coverage. Private intake exposes the next
 requirements: complete non-bone morph outputs through the owner/runtime/publication

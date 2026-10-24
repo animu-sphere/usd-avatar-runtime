@@ -176,3 +176,18 @@ original gravity-only window check.
 `session.bodyStates` returns owned copies of current world translations,
 quaternions (x,y,z,w) and linear velocities by body path for host inspection;
 these remain usable after close. It returns an empty dictionary after close.
+
+`hosts.usdview_mmd_dynamic` checks mode-1 position/rotation publication with the
+same generated pendulum/anchor inputs. It changes the composed session's
+swing mode to `dynamic` and Y translation limits to +/-0.2 m, uses both spring
+options OFF, and compares the final
+UsdSkel bone transform to the concrete body after removing its rest offset.
+Install the corrected MMD owner and rebuild the host before running it:
+
+```powershell
+ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_dynamic$' --output-on-failure
+```
+
+The test includes a nonzero joint-local translation, pause, three exact
+240-tick reset replays and persistent/session layer restoration. It does not
+establish representative spring or full-motion acceptance.

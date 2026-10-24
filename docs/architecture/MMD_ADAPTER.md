@@ -81,6 +81,12 @@ automatic PMX/avatar configuration discovery is outside this slice.
 
 Model frames are `evaluation_seconds * framesPerSecond + frameOffset`.
 The owner handles VMD interpolation, bone morphs, append, IK and visibility.
+Owner coupling feeds both position and rotation from associated mode-1
+(`dynamic`) bodies, and rotation with retained pre-step local translation from
+mode-2 (`dynamicWithBone`) bodies. Parents are resolved before child feedback.
+Use the corrected installed MMD owner described in its
+[feedback report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-25-phase8-dynamic-bone-feedback.md);
+the runtime performs no second feedback conversion or world step.
 After `ResumePhysics`, the adapter calls owner `ResolveMorphChannels` on the raw
 pose channels and maps only that result to runtime blend-shape slots. Direct
 and nested group contributions are resolved once by the owner; bone effects

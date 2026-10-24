@@ -134,11 +134,13 @@ struct Fixture {
 #ifdef AVATAR_MMD_STAGE_RUNNER_SMOKE
         for (auto avatar : avatars) if (!unloaded.count(avatar)) {
             auto resourcesForAvatar = std::make_unique<avatarPhysics::SceneResources>(
-                *solver, scene, [](const auto& body, auto& descriptor) {
+                *solver, scene, [this](const auto& body, auto& descriptor) {
                     descriptor.collisionFilter = {1,0};
                     descriptor.damping = {0,0};
                     if (body.motionType == core::MotionType::dynamicBody) {
-                        const auto q = GfRotation(GfVec3d(0,0,1), 60).GetQuat();
+                        TfToken mode;
+                        CHECK(assets.stage->GetPrimAtPath(SdfPath(body.path)).GetAttribute(TfToken("mmd:physics:mode")).Get(&mode));
+                        const auto q = GfRotation(GfVec3d(0,0,1), mode == TfToken("dynamic") ? 20 : 60).GetQuat();
                         descriptor.initialTransform.rotation = {q.GetReal(),0,0,q.GetImaginary()[2]};
                     }
                 });
@@ -159,7 +161,9 @@ struct Fixture {
             // Deliberate initial rotation exercises actual body-to-bone feedback
             // and the generated model's post-physics append without extra APIs.
             if (body.motionType == core::MotionType::dynamicBody) {
-                const auto q = GfRotation(GfVec3d(0,0,1), 60).GetQuat();
+                TfToken mode;
+                CHECK(assets.stage->GetPrimAtPath(SdfPath(body.path)).GetAttribute(TfToken("mmd:physics:mode")).Get(&mode));
+                const auto q = GfRotation(GfVec3d(0,0,1), mode == TfToken("dynamic") ? 20 : 60).GetQuat();
                 initial.rotation = {q.GetReal(),0,0,q.GetImaginary()[2]};
             }
             handles[avatar][SdfPath(body.path)] = solver->createBody(
@@ -352,10 +356,12 @@ void constructed() {
     // Renderer-independent consumer sees FINAL post append, rather than barrier pose.
     const auto a = f.pose(f.snapshots[0]), b = f.pose(f.snapshots[1]);
     CHECK(a != b);
-    CHECK(std::abs(a.joints[2].rotation[2] - std::sin(20 * 3.141592653589793 / 180)) < 1e-6);
-    CHECK(std::abs(b.joints[2].rotation[2] - std::sin(15 * 3.141592653589793 / 180)) < 1e-6);
+    CHECK(std::abs(a.joints[2].rotation[2] - std::sin(-22.5 * 3.141592653589793 / 180)) < 1e-6);
+    CHECK(std::abs(b.joints[2].rotation[2] - std::sin(-27.5 * 3.141592653589793 / 180)) < 1e-6);
     CHECK(b.joints[1].translation == (mmd::Double3{0,1,0}));
-    CHECK(b.joints[0].translation == (mmd::Double3{4,2,0}));
+    CHECK(std::abs(b.joints[0].translation[0] - (7 - std::cos(200 * 3.141592653589793 / 180))) < 1e-6);
+    CHECK(std::abs(b.joints[0].translation[1] - (8 - std::sin(200 * 3.141592653589793 / 180))) < 1e-6);
+    CHECK(b.joints[0].translation[2] == 9);
     auto retained = f.snapshots[1]; CHECK(f.api.retain_snapshot(retained) == AR_OK);
     CHECK(f.advance(.1, true) == AR_OK && f.steps == 1 && f.pose(retained) == b);
     CHECK(f.advance(2.0/120) == AR_OK && f.steps == 3);
@@ -425,7 +431,7 @@ resolvedMorphOutputs()
     a.model.morphs[1].type = a.model.morphs[2].type = mmd::MorphType::Group;
     a.model.morphs[3].type = mmd::MorphType::Bone;
     a.model.morphs[4].type = mmd::MorphType::Uv;
-    a.model.morphs[3].boneOffsets = {{0, {.1f, 0, 0}, {0, 0, 0, 1}}};
+    a.model.morphs[3].boneOffsets = {{2, {.1f, 0, 0}, {0, 0, 0, 1}}};
     a.model.morphs[1].members = {{0, .5f}, {3, 1.f}};
     a.model.morphs[2].members = {{1, 2.f}, {0, .25f}};
     a.motion.morphs = {{0, {{0, -.5f}}}, {1, {{0, -.25f}}}, {2, {{0, 2.f}}}};
@@ -441,8 +447,8 @@ resolvedMorphOutputs()
             // Nested diamond plus direct input, resolved once and unclamped.
             CHECK(view.blend_shapes[0].weight == 1.875);
             // Group bone effects are already in the pose and are not applied again.
-            CHECK(std::abs(view.joints[1].local.translation[0] - (4 + .375 * std::cos(3.141592653589793 / 6))) < 1e-7);
-            CHECK(std::abs(view.joints[1].local.translation[1] - (2 + .375 * .5)) < 1e-7);
+            CHECK(std::abs(view.joints[3].local.translation[0] - .375) < 1e-7);
+            CHECK(view.joints[3].local.translation[1] == 1);
             auto retained = f.snapshots[0];
             CHECK(f.api.retain_snapshot(retained) == AR_OK);
             CHECK(f.advance(.1, true) == AR_OK && f.steps == 1);
@@ -593,10 +599,9 @@ int main(int argc, char **argv) {
             first.push_back(pose);
           else
             CHECK(pose == first[tick]);
-          // Free body falls, but its associated root's translation remains
-          // animation-owned.
-          CHECK(pose.joints[0].translation ==
-                continuation.BeforePhysics().joints[0].translation);
+          // The associated mode-1 body drives the root position, including gravity.
+          CHECK(pose.joints[0].translation[1] <
+                continuation.BeforePhysics().joints[0].translation[1]);
         }
       }
       CHECK(f.steps == 24 && f.resets == 2);
