@@ -457,7 +457,7 @@ The seven tests in `build/mmd-physics` pass, including four core contracts and:
 | --- | --- |
 | `adapters.mmd` | Owner pre/post calls in the same constraints phase with explicit dependency; two instances, reversed selection/input order, all prefixes -> one Step -> all suffixes; separate 60/80-degree feedback, parent-local translation retention and post append in final snapshots; rotated/translated root placement and unrelated runtime joint; zero/multiple ticks, pause, retained snapshots, three reset/replays, pre failure retry and post failure invalidation; owner diagnostic identity/subject/context; layout/parent refusals, explicit scalar morph/visibility output and unmapped-output refusal |
 | `adapters.mmd_installed` | Separate installed `AvatarRuntime` `mmd` component configure/build/run repeating the constructed tests; core-only installed C lookup rejects imported MMD/physics/provider targets |
-| `adapters.mmd_jolt` | Generated `coupling-modes.pmx` + `sample.vmd` -> real owner continuation/coupling -> installed Jolt body handles -> final CPU pose; two per-instance path maps in one solver, all kinematic targets before one Step, all body snapshots after it; 24 ticks at 120 Hz, three complete solver reset/replays; every final joint matches direct owner continuation/feedback, dynamic bodies leave root translation animation-owned, final feedback and post append are nonzero; finite body/bone transforms and same-build exact pose replay |
+| `adapters.mmd_jolt` | Generated `coupling-modes.pmx` + `sample.vmd` -> real owner continuation/coupling -> installed Jolt body handles -> final CPU pose; two per-instance path maps in one solver, all kinematic targets before one Step, all body snapshots after it; 24 ticks at 120 Hz, three complete solver reset/replays; every final joint matches direct owner continuation/feedback, the associated mode-1 body now drives root position, final feedback and post append are nonzero; finite body/bone transforms and same-build exact pose replay; see the [corrected feedback evidence](#mmd-mode-1-feedback-correction-2026-10-25) |
 
 The generated Jolt scene has no joints and deliberately excludes contact pairs.
 It starts dynamic bodies at a declared 60-degree perturbation and applies a
@@ -869,3 +869,34 @@ for measurements and the [guide](../guides/live-mmd-physics.md#validation)
 for commands. This generated numeric scope does not establish private full-motion,
 UV/material/flip/impulse execution, representative L3, actual-window morph pixels,
 resident Toon binding or Hydra/direct agreement.
+
+## MMD mode-1 feedback correction (2026-10-25)
+
+Runtime base `20e2e42` consumes the corrected installed MMD owner above the
+unchanged adapter/ABI. The original no-feedback mode-1 expectation was incorrect.
+Source/installed adapter checks now verify physics-driven root translation,
+updated parent-relative rotation, post-physics append and bone-morph composition.
+The generated Jolt check retains its three 24-tick shared-world reset replays.
+
+`hosts.usdview_mmd_dynamic` overrides only the generated pendulum's composed
+swing mode to `dynamic` and Y translation limits to +/-0.2 m. Three 240-tick
+replays verify position/rotation against
+the concrete body after rest-offset removal, nonzero local translation, pause,
+exact reset replay and layer restoration, with both spring options OFF.
+The existing mode-2 generated checks remain unchanged. The live-host
+configuration passes all 19 CTests; the separate installed Jolt/Toon/Stage
+Runner configuration passes all 14 tests, including final renderer transport
+and shared-world host lifecycle checks.
+
+An anonymous local character's 123 associated mode-1 bones all change local
+rotation during the same bone/IK-only preview, including descendants of mode-2
+roots. Three 600-tick replays reproduce published pose and body state exactly;
+all exposed body values are finite and all mode-1 published transforms agree
+with concrete body/rest-offset transforms within `2e-5` m and quaternion-dot
+error `1e-5`. Original source/session layers are restored. This local preview
+omits morph tracks in a separate derived VMD; it is not full-motion or L3
+acceptance and no private source names, assets or screenshots are committed.
+Measurements and ownership are in the
+[MMD correction report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-25-phase8-dynamic-bone-feedback.md).
+Representative springs, contact/recovery behavior, full morph output, resident
+Toon resources and Hydra/direct agreement remain open.
