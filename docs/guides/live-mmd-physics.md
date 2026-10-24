@@ -73,8 +73,9 @@ cmake --build build/usdview-mmd --config Release
 ```
 
 The option is OFF by default and requires the four optional components above.
-The installed MMD package must export `mmdPhysicsAdapter_BODY_PROPERTIES_VERSION=1`
-and `mmdPhysicsAdapter_JOINT_SPRINGS_VERSION=1`;
+The installed MMD package must export `mmdPhysicsAdapter_BODY_PROPERTIES_VERSION=1`,
+`mmdPhysicsAdapter_JOINT_SPRINGS_VERSION=1` and
+`mmdPhysicsAdapter_INITIAL_POSE_VERSION=1`;
 older packages refuse at configure time with a rebuild/install instruction.
 Only this application module links Jolt/Python; reusable core and adapter package
 dependencies are unchanged. The build stages the plugin and native module under
@@ -100,6 +101,11 @@ resources, removes the display layer and restores the authored pose. Choose VMD
 stops the old session before changing motion. Replacing the stage stops and
 releases its session. An update error pauses the timer and reports the refusal;
 use Reset for simulation recovery or Stop/rebind after structural changes.
+
+Initial world construction and Reset place all associated bodies at the
+evaluated VMD frame-zero pose with zero velocity, before constraints or Step.
+This prevents a rest-to-motion teleport from injecting initial velocity.
+There is no warm-up or skipped motion time; Pause/resume retains solver state.
 
 Add `-TranslationSprings` and/or `-RotationSprings` to the launcher for explicit
 experimental opt-in. Both are OFF when omitted; the generated fixture has zero
@@ -134,7 +140,8 @@ ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_motion$' --
 ```
 
 Keep `AVATAR_MMD_PREVIEW_PMX` set to the generated pendulum. The VMD option
-adds one native CTest; it is not a general real-asset acceptance configuration.
+adds keyed-input, dynamic-feedback and startup native checks; it is not a
+general real-asset acceptance configuration.
 `hosts.usdview_mmd_motion` moves the kinematic pivot 10 cm, returns and holds,
 checks each fixed tick against the keyed path and concrete solver-driven
 skinning, and checks exact reset replay. Contact-free generated input does not
@@ -191,3 +198,19 @@ ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_dynamic$' -
 The test includes a nonzero joint-local translation, pause, three exact
 240-tick reset replays and persistent/session layer restoration. It does not
 establish representative spring or full-motion acceptance.
+
+Regenerate the VMD fixtures with the current MMD owner before configuring the
+keyed-input tests. The directory must also contain
+`live-physics-start-offset.vmd`, `live-physics-start-turn.vmd` and
+`live-physics-start-bone.vmd`. Run the startup regression with:
+
+```powershell
+ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_startup$' --output-on-failure
+```
+
+It checks non-rest frame-zero translation, root rotation and child pose before
+any Step, zero linear velocity, translation-invariant trajectories, Pause,
+three exact reset replays per input and source/session layer restoration.
+The [MMD report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-25-phase8-start-pose-initialization.md)
+owns measurements and the private-preview boundary. Initial contact overlap,
+representative skirt recovery and spring tuning remain separate acceptance work.

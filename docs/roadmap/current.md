@@ -6,6 +6,8 @@ representative PMX/VMD visual checks using owner-side property and spring semant
 
 The [mode-1 feedback correction](../reference/CAPABILITY_MATRIX.md#mmd-mode-1-feedback-correction-2026-10-25)
 adds generated position/rotation publication and private bone/IK preview evidence.
+The [start-pose correction](../reference/CAPABILITY_MATRIX.md#mmd-start-pose-initialization-2026-10-25)
+adds frame-zero world initialization and matching Reset coverage.
 Representative spring/contact behavior and full-motion intake remain open.
 
 The [keyed-input check](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)

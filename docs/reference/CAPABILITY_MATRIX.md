@@ -900,3 +900,24 @@ Measurements and ownership are in the
 [MMD correction report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-25-phase8-dynamic-bone-feedback.md).
 Representative springs, contact/recovery behavior, full morph output, resident
 Toon resources and Hydra/direct agreement remain open.
+
+## MMD start-pose initialization (2026-10-25)
+
+The live usdview host consumes the installed MMD owner's initial-pose query
+before constructing the world and constraints. All associated modes start at
+evaluated source frame zero; Reset recreates the same seed with fresh zero
+velocity. Unassociated bodies retain authored placement. There is no hidden
+Step, warm-up or clock shift; Pause/resume retains the current solver state.
+The reusable provider/core ABI and solver interfaces are unchanged.
+
+`hosts.usdview_mmd_startup` covers generated translation, root rotation and
+child-pose starts, pre-Step world transforms and zero linear velocities,
+translation-invariant trajectories, three exact 240-tick reset replays per
+input, pause and persistent/session layer restoration. All 20 live-host CTests
+pass. An anonymous bone/IK-only local preview retains exact 600-tick reset
+replays and mode-1 output agreement; its derived motion omits morph tracks.
+The [MMD report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-25-phase8-start-pose-initialization.md)
+owns measurements and environment, and the
+[guide](../guides/live-mmd-physics.md#validation) owns reproduction.
+Initial overlap/contact recovery, representative springs, arbitrary seeking,
+full-motion and L3 acceptance remain open.
