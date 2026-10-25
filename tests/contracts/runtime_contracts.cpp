@@ -66,6 +66,7 @@ void negotiation() {
     CHECK(arGetApi(1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(2, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(3, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
+    CHECK(arGetApi(4, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(AR_ABI_VERSION + 1, sizeof(invalid), &invalid) == AR_INCOMPATIBLE_ABI);
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(invalid) - 1, &invalid) == AR_INCOMPATIBLE_ABI);
     struct Extended { ArRuntimeApi table; uint64_t tail; } extended{};
@@ -706,10 +707,70 @@ void validation() {
     CHECK(api.evaluate_frame(f.runtime, id, &input, nullptr, &s) == AR_INVALID_ARGUMENT);
 }
 
+struct UvProvider {
+    int mode = 0;
+    static ArStatus AR_CALL evaluate(void* p, void*, const ArEvaluationContext* c, const ArStateWriter* w) {
+        const int mode = static_cast<UvProvider*>(p)->mode;
+        if (!mode) return AR_OK; // unwritten values return to baseline
+        CHECK(c->working->vertex_uv_count == 2);
+        const double value[]{mode == 2 ? std::numeric_limits<double>::infinity() : -2.0, 3.5};
+        w->set_vertex_uv(w->context, mode == 3 ? 2 : 0, mode == 4 ? nullptr : value);
+        return AR_OK; // invalid writers must latch failure
+    }
+};
+void vertexUvs() {
+    Fixture f; UvProvider provider;
+    auto e = evaluator("uv", AR_PHASE_APPEARANCE, AR_DOMAIN_DEFORMATION);
+    e.reads = AR_DOMAIN_DEFORMATION; e.user_data = &provider; e.evaluate = UvProvider::evaluate; add(f, e);
+    std::string mesh = "uv.mesh";
+    ArVertexUv uvs[]{{mesh.c_str(), 1, {.25, .75}}, {mesh.c_str(), 0, {0, 1}}};
+    const std::vector<const char*> selected{"uv"}; auto d = f.desc(selected);
+    d.initial_state.vertex_uvs = uvs; d.initial_state.vertex_uv_count = 2;
+    ArInstance instance = 0;
+    auto bad = d; bad.initial_state.vertex_uvs = nullptr;
+    CHECK(api.create_instance(f.runtime, &bad, nullptr, &instance) == AR_INVALID_ARGUMENT);
+    uvs[1].vertex_index = 1;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &instance) == AR_DUPLICATE_ID);
+    uvs[1].vertex_index = 0; uvs[0].value[0] = std::numeric_limits<double>::quiet_NaN();
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &instance) == AR_INVALID_STATE);
+    uvs[0].value[0] = .25;
+    CHECK(api.create_instance(f.runtime, &d, nullptr, &instance) == AR_OK);
+    mesh.assign("changed"); uvs[0].value[0] = 999; // runtime owns identities and bases
+    provider.mode = 1;
+    auto input = frame(1); ArSnapshot retained = 0;
+    CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &retained) == AR_OK);
+    const auto old = view(retained);
+    CHECK(old.vertex_uv_count == 2 && std::string(old.vertex_uvs[0].mesh_id) == "uv.mesh" &&
+        old.vertex_uvs[0].vertex_index == 1 && old.vertex_uvs[0].value[0] == -2 && old.vertex_uvs[0].value[1] == 3.5);
+    provider.mode = 0; input = frame(2); ArSnapshot s = 0;
+    CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &s) == AR_OK);
+    CHECK(view(s).vertex_uvs[0].value[0] == .25 && old.vertex_uvs[0].value[0] == -2);
+    CHECK(api.release_snapshot(s) == AR_OK);
+    for (provider.mode = 2; provider.mode <= 4; ++provider.mode) {
+        ++input.frame_id;
+        CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &s) != AR_OK && !s);
+    }
+    CHECK(api.reset_instance(f.runtime, instance, 2) == AR_OK);
+    provider.mode = 0; input = frame(1, 0, 2);
+    CHECK(api.evaluate_frame(f.runtime, instance, &input, nullptr, &s) == AR_OK);
+    CHECK(view(s).vertex_uvs[0].value[0] == .25); CHECK(api.release_snapshot(s) == AR_OK);
+    CHECK(api.destroy_runtime(f.runtime) == AR_OK); f.runtime = 0;
+    CHECK(std::string(view(retained).vertex_uvs[0].mesh_id) == "uv.mesh" && old.vertex_uvs[0].value[0] == -2);
+    CHECK(api.release_snapshot(retained) == AR_OK);
+    // A provider may read the deformation layout without permission to write.
+    Fixture reader; e.id = "read.uv"; e.writes = 0; add(reader, e);
+    mesh = "uv.mesh"; uvs[0].mesh_id = uvs[1].mesh_id = mesh.c_str();
+    const std::vector<const char*> readSelected{"read.uv"}; d = reader.desc(readSelected);
+    d.initial_state.vertex_uvs = uvs; d.initial_state.vertex_uv_count = 2;
+    CHECK(api.create_instance(reader.runtime, &d, nullptr, &instance) == AR_OK);
+    provider.mode = 1; input = frame(1);
+    CHECK(api.evaluate_frame(reader.runtime, instance, &input, nullptr, &s) == AR_INVALID_ARGUMENT && !s);
+}
+
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     negotiation(); planning(); capabilities(); transactions(); orderedRollbackAndPoisoning();
     inputsAndSnapshots(); deterministicFrames(); gazeInputs(); gazeValidation(); snapshotIdentity(); validation();
-    vec2Materials(); sourceSamples();
+    vec2Materials(); sourceSamples(); vertexUvs();
     std::cout << "Runtime contract checks passed\n";
 }

@@ -14,7 +14,7 @@ frame identity/generation, evaluation seconds, optional USD time mapping,
 source-attributed scalar channels, typed gaze observations and host input
 revision. This subset is not a second motion model:
 motion pose/clip values are still unimplemented; gaze descriptors have scoped
-revision-4 rules below, awaiting real-provider integration.
+revision-5 rules below, awaiting real-provider integration.
 The full logical contract and RT-O1/RT-O2 remain open.
 
 The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now selects scalar
@@ -23,7 +23,7 @@ owner's `MotionChannelSet`. Both LookAt types accept valid world/joint-local
 points and directions using current working rig transforms and the owner's
 point/direction entry points; scaled ancestry fails visibly, and stale/unavailable
 gaze contributes nothing. This does not establish connector/motion mappings
-or narrow the revision-4 input transport contract.
+or narrow the revision-5 input transport contract.
 
 ## 1. Logical contents
 
@@ -223,4 +223,4 @@ triples and non-finite values are rejected. Different sources may report the
 same channel: arbitration belongs in explicit provider binding configuration,
 not array/arrival order. Inputs are already-selected immutable observations;
 there is no separate invalid/stale-observation flag for scalars. Gaze validity
-is explicit under the revision-4 rules above.
+is explicit under the revision-5 rules above.

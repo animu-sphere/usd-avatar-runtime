@@ -3,6 +3,7 @@
 #include <cmath>
 #include <map>
 #include <optional>
+#include <limits>
 #include <set>
 #include <stdexcept>
 
@@ -73,6 +74,15 @@ struct PhysicsAdapter::Impl {
             if (m.morph < 0 || m.mesh.empty() || m.target.empty() ||
                 !morphIndices.insert(m.morph).second || !morphs.emplace(m.mesh, m.target).second)
                 throw std::invalid_argument("MMD morph binding is incomplete or ambiguous");
+        if (config.uvMesh.empty() != config.baseUvs.empty() ||
+            (!config.uvMorphs.empty() && config.baseUvs.empty()))
+            throw std::invalid_argument("Incomplete MMD UV binding");
+        for (auto id : config.uvMorphs)
+            if (id < 0 || !morphIndices.insert(id).second)
+                throw std::invalid_argument("Ambiguous MMD UV morph binding");
+        for (const auto& uv : config.baseUvs) for (double x : uv)
+            if (!std::isfinite(x) || std::abs(x) > std::numeric_limits<float>::max())
+                throw std::invalid_argument("Invalid MMD base UV");
         std::set<std::string> visibility;
         for (const auto& id : config.visibilityTargets)
             if (id.empty() || !visibility.insert(id).second)
@@ -110,6 +120,8 @@ struct PhysicsAdapter::Impl {
         // Validate every output before calling any writer/host operation.
         std::vector<uint32_t> morphIndices, visibilityIndices;
         std::vector<mmd::control::MorphChannel> channels;
+        std::vector<uint32_t> uvIndices;
+        auto uvs = config.baseUvs;
         if (final) {
             channels = config.evaluator.ResolveMorphChannels(pose.channels);
             for (const auto& channel : channels) {
@@ -117,7 +129,31 @@ struct PhysicsAdapter::Impl {
                     return failure(c, "MMD_ADAPTER_MORPH", "Owner resolved morph weight is not finite");
                 bool mapped = false;
                 for (const auto& m : config.morphs) mapped |= m.morph == channel.morph;
+                for (auto id : config.uvMorphs) mapped |= id == channel.morph;
                 if (!mapped) return failure(c, "MMD_ADAPTER_MORPH", "Owner non-bone morph has no output binding");
+            }
+            if (!config.baseUvs.empty()) {
+                auto deltas = config.evaluator.EvaluateUvMorphs(pose.channels);
+                if (!forward(c, deltas)) return AR_PROVIDER_ERROR;
+                for (const auto& delta : deltas.value()) {
+                    if (delta.channel || delta.vertex < 0 || size_t(delta.vertex) >= uvs.size())
+                        return failure(c, "MMD_ADAPTER_UV", "Unsupported UV channel or vertex");
+                    for (int a = 0; a < 2; ++a) uvs[delta.vertex][a] += delta.delta[a];
+                }
+                uvIndices.assign(uvs.size(), UINT32_MAX);
+                for (uint32_t i = 0; i < v.vertex_uv_count; ++i) {
+                    const auto& uv = v.vertex_uvs[i];
+                    if (config.uvMesh != uv.mesh_id) continue;
+                    if (uv.vertex_index >= uvs.size() || uvIndices[uv.vertex_index] != UINT32_MAX)
+                        return failure(c, "MMD_ADAPTER_UV", "Changed UV vertex layout");
+                    uvIndices[uv.vertex_index] = i;
+                }
+                for (size_t i = 0; i < uvs.size(); ++i) {
+                    if (uvIndices[i] == UINT32_MAX)
+                        return failure(c, "MMD_ADAPTER_UV", "Bound UV output is absent");
+                    for (double x : uvs[i]) if (!std::isfinite(x) || std::abs(x) > std::numeric_limits<float>::max())
+                        return failure(c, "MMD_ADAPTER_UV", "Final UV is nonfinite or exceeds float range");
+                }
             }
             for (const auto& m : config.morphs) {
                 uint32_t i = 0;
@@ -159,6 +195,8 @@ struct PhysicsAdapter::Impl {
             for (const auto& ch : channels) if (ch.morph == config.morphs[i].morph) weight = ch.weight;
             if ((status = w.set_blend_shape(w.context, morphIndices[i], weight)) != AR_OK) return status;
         }
+        for (size_t i = 0; i < uvIndices.size(); ++i)
+            if ((status = w.set_vertex_uv(w.context, uvIndices[i], uvs[i].data())) != AR_OK) return status;
         for (auto i : visibilityIndices)
             if ((status = w.set_visibility(w.context, i, pose.visible)) != AR_OK) return status;
         return AR_OK;
@@ -226,7 +264,7 @@ ArEvaluatorDesc PhysicsAdapter::PostDescriptor() const {
     d.id = impl_->config.postId.c_str(); d.provider_id = "usd-mmd-plugins.mmdControl";
     d.provider_version = AR_MMD_PROVIDER_VERSION; d.phase = AR_PHASE_CONSTRAINTS;
     d.reads = d.writes = AR_DOMAIN_POSE;
-    if (!impl_->config.morphs.empty()) d.writes |= AR_DOMAIN_DEFORMATION;
+    if (!impl_->config.morphs.empty() || !impl_->config.baseUvs.empty()) d.writes |= AR_DOMAIN_DEFORMATION;
     if (!impl_->config.visibilityTargets.empty()) d.writes |= AR_DOMAIN_VISIBILITY;
     d.user_data = impl_.get(); d.after = &impl_->postAfter; d.after_count = 1;
     d.evaluate = Impl::post; return d;

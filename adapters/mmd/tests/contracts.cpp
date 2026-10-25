@@ -242,6 +242,11 @@ struct Fixture {
         ArBlendShape morph{"mesh", "vertex", 0}; ArVisibility visible{"avatar", 1};
         d.initial_state.blend_shapes = &morph; d.initial_state.blend_shape_count = 1;
         d.initial_state.visibility = &visible; d.initial_state.visibility_count = 1;
+        std::vector<ArVertexUv> uvs;
+        for (uint32_t i = 0; i < config.baseUvs.size(); ++i)
+            uvs.push_back({config.uvMesh.c_str(), i, {config.baseUvs[i][0], config.baseUvs[i][1]}});
+        std::reverse(uvs.begin(), uvs.end()); // identity mapping, not array position
+        d.initial_state.vertex_uvs = uvs.data(); d.initial_state.vertex_uv_count = uint32_t(uvs.size());
         d.evaluators = selected; d.evaluator_count = 2;
         for (auto& avatar : avatars) CHECK(api.create_instance(runtime, &d, nullptr, &avatar) == AR_OK);
 #ifdef AVATAR_MMD_JOLT_SMOKE
@@ -500,6 +505,61 @@ resolvedMorphOutputs()
     }
 }
 
+void uvMorphOutputs() {
+    Assets a;
+    a.model.mesh.points.resize(2); a.model.mesh.st = {{{.25f,.75f}}, {{0,1}}};
+    a.model.morphs.resize(3);
+    a.model.morphs[0].type = mmd::MorphType::Uv;
+    a.model.morphs[0].uvOffsets = {{1, {.25f, .5f, 4, 8}}};
+    a.model.morphs[1].members = {{0, .5f}};
+    a.model.morphs[2].members = {{1, 2.f}, {0, .25f}};
+    a.motion.morphs = {{0, {{0, -.5f}}}, {1, {{0, -.25f}}}, {2, {{0, 2.f}}}};
+    const auto bind = [](auto& c) { c.uvMorphs = {0}; c.uvMesh = "mesh"; c.baseUvs = {{.25,.75},{0,1}}; };
+    {
+        Fixture f(a, false, bind);
+        ArSnapshot retained = 0;
+        for (uint64_t generation = 1; generation <= 3; ++generation) {
+            if (generation > 1) CHECK(f.physics.reset_world(f.runtime, f.world, generation, nullptr) == AR_OK);
+            CHECK(f.advance(1. / 120) == AR_OK);
+            ArStateView v{AR_HEADER(ArStateView)}; CHECK(f.api.get_snapshot(f.snapshots[0], &v) == AR_OK);
+            CHECK(v.vertex_uv_count == 2 && v.vertex_uvs[0].vertex_index == 1);
+            CHECK(v.vertex_uvs[0].value[0] == .25 * 1.875 && v.vertex_uvs[0].value[1] == 1 - .5 * 1.875);
+            CHECK(v.vertex_uvs[1].value[0] == .25 && v.vertex_uvs[1].value[1] == .75);
+            if (!retained) { retained = f.snapshots[0]; CHECK(f.api.retain_snapshot(retained) == AR_OK); }
+        }
+        ArStateView old{AR_HEADER(ArStateView)}; CHECK(f.api.get_snapshot(retained, &old) == AR_OK);
+        CHECK(old.generation == 1 && old.vertex_uvs[0].value[0] == .25 * 1.875);
+        CHECK(f.api.release_snapshot(retained) == AR_OK);
+    }
+    a.motion.morphs = {{0, {{0, -2.f}, {1, 0.f}}}};
+    {
+        Fixture f(a, false, bind); CHECK(f.advance(1. / 120) == AR_OK);
+        CHECK(f.advance(3. / 120) == AR_OK);
+        ArStateView v{AR_HEADER(ArStateView)}; CHECK(f.api.get_snapshot(f.snapshots[0], &v) == AR_OK);
+        CHECK(v.vertex_uvs[0].value[0] == 0 && v.vertex_uvs[0].value[1] == 1);
+    }
+    // Owner validation still runs on reached zero-weight UV offsets.
+    a.model.morphs[0].uvOffsets[0].delta[0] = std::numeric_limits<float>::infinity();
+    a.motion.morphs = {{0, {{0, 0.f}}}};
+    {
+        Fixture f(a, false, bind); CHECK(f.advance(1. / 120) == AR_PROVIDER_ERROR && !f.snapshots[0]);
+        CHECK(std::find(f.diagnostics.begin(), f.diagnostics.end(), "MMD_MOTION_UV_MORPH_INVALID") != f.diagnostics.end());
+    }
+    a.model.morphs[0].uvOffsets[0].delta[0] = .25f;
+    // Owner double deltas may be valid while final renderer float values overflow.
+    a.model.morphs[0].uvOffsets[0].delta[0] = std::numeric_limits<float>::max();
+    a.motion.morphs = {{0, {{0, 2.f}}}};
+    {
+        Fixture f(a, false, bind); CHECK(f.advance(1. / 120) == AR_PROVIDER_ERROR && !f.snapshots[0]);
+        CHECK(std::find(f.diagnostics.begin(), f.diagnostics.end(), "MMD_ADAPTER_UV") != f.diagnostics.end());
+    }
+    a.model.morphs[0].uvOffsets[0].delta[0] = .25f;
+    a.motion.morphs = {{0, {{0, 0.f}}}};
+    a.model.mesh.additionalUvCount = 1; a.model.mesh.additionalUv[0].resize(2);
+    a.model.morphs[0].type = mmd::MorphType::AdditionalUv1;
+    { Fixture f(a, false, bind); CHECK(f.advance(1. / 120) == AR_PROVIDER_ERROR && !f.snapshots[0]); }
+}
+
 #ifdef AVATAR_MMD_TOON_SMOKE
 void publish(Fixture &f, std::unique_ptr<MmdToonCheck> (&consumers)[2]) {
   for (int i = 0; i < 2; ++i) {
@@ -551,6 +611,7 @@ int main(int argc, char **argv) {
     constructed();
     bindingsAndOutputs();
     resolvedMorphOutputs();
+    uvMorphOutputs();
 #ifdef AVATAR_MMD_TOON_SMOKE
     toonConstructed();
 #endif

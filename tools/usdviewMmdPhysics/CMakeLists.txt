@@ -83,6 +83,7 @@ if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
             get_filename_component(vmd_fixtures "${AVATAR_MMD_PREVIEW_VMD}" DIRECTORY)
             foreach(input IN ITEMS "${AVATAR_MMD_PREVIEW_MORPH_PMX}"
                     "${vmd_fixtures}/live-physics-morph.vmd" "${vmd_fixtures}/live-physics-uv.vmd"
+                    "${vmd_fixtures}/live-physics-uv-mixed.vmd" "${vmd_fixtures}/live-physics-material.vmd"
                     "${vmd_fixtures}/live-physics-group.vmd" "${vmd_fixtures}/live-physics-mixed.vmd")
                 if(NOT EXISTS "${input}")
                     message(FATAL_ERROR "Live morph acceptance requires generated fixture: ${input}")
@@ -91,8 +92,12 @@ if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
             add_test(NAME hosts.usdview_mmd_morph COMMAND ${Python3_EXECUTABLE}
                 "${CMAKE_CURRENT_SOURCE_DIR}/test_morph.py" "${AVATAR_MMD_PREVIEW_MORPH_PMX}"
                 "${vmd_fixtures}/live-physics-morph.vmd" "${vmd_fixtures}/live-physics-group.vmd"
-                "${vmd_fixtures}/live-physics-mixed.vmd" "${vmd_fixtures}/live-physics-uv.vmd")
+                "${vmd_fixtures}/live-physics-mixed.vmd" "${vmd_fixtures}/live-physics-material.vmd")
             list(APPEND live_tests hosts.usdview_mmd_morph)
+            add_test(NAME hosts.usdview_mmd_uv COMMAND ${Python3_EXECUTABLE}
+                "${CMAKE_CURRENT_SOURCE_DIR}/test_uv.py" "${AVATAR_MMD_PREVIEW_MORPH_PMX}"
+                "${vmd_fixtures}/live-physics-uv.vmd" "${vmd_fixtures}/live-physics-uv-mixed.vmd")
+            list(APPEND live_tests hosts.usdview_mmd_uv)
         endif()
     endif()
     set_tests_properties(${live_tests} PROPERTIES ENVIRONMENT_MODIFICATION

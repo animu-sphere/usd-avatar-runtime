@@ -196,7 +196,7 @@ Hydra/direct parity remain workstream C/E and RT-O9 work. Probe transport does
 not complete milestone B. See [output paths](../architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
 Runtime-to-resident target matching belongs to a renderer-side host rather than
 a runtime bridge ([resident target matching](../architecture/OUTPUT_PATHS.md#resident-target-matching)).
-Renderer installations pinning ABI revision 3 must be rebuilt for revision 4,
+Renderer installations pinning ABI revisions 1–4 must be rebuilt for revision 5,
 including two-component texture inputs, before `--toon` runs against this tree.
 The optional host's header probe checks ABI compatibility; installed-consumer
 evidence belongs to the capability matrix.
@@ -491,3 +491,8 @@ bugs or requests already sent to another project.
 | RT-O7 | C layout/calling convention, strings, allocator ownership, handles, provider lifetime and ABI negotiation | [ABI](../contracts/ABI.md) | A |
 | RT-O8 | capture envelope/checkpoint encoding and motion-recording reuse | [recording/replay](../design/RECORDING_AND_REPLAY.md) | E; lifetime prerequisites in A |
 | RT-O9 | direct-consumer binding/update costs, later Hydra locators/dirtiness and output parity tolerances | [output paths](../architecture/OUTPUT_PATHS.md) | early C feedback in A/B; full parity in C |
+
+Primary UV transport now has a scoped generated live USD check in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md#live-primary-uv-evidence-2026-10-25).
+Continue with additional UV/material realization and renderer binding/pixel
+agreement; this does not close physics milestone D or Runtime Phase A/C.

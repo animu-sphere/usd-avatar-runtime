@@ -1,6 +1,7 @@
 #pragma once
 #include <avatarRuntime/api.h>
 #include <mmdPhysicsAdapter/Adapter.h>
+#include <array>
 #include <functional>
 #include <memory>
 #include <string>
@@ -24,6 +25,11 @@ struct PhysicsAdapterConfig {
     // Exact canonical joint order/rest space of evaluator AND coupling.
     std::vector<JointBinding> joints;
     std::vector<MorphBinding> morphs;
+    // Host-admitted primary UV leaf indices, and immutable canonical st for
+    // one mesh in canonical vertex order. Additional UVs remain unsupported.
+    std::vector<int32_t> uvMorphs;
+    std::string uvMesh;
+    std::vector<std::array<double, 2>> baseUvs;
     std::vector<std::string> visibilityTargets;
     std::vector<std::string> after;
     // MMD frame = evaluation_seconds * framesPerSecond + frameOffset.

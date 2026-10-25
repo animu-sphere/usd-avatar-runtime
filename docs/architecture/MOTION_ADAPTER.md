@@ -6,7 +6,7 @@ owner: usd-avatar-runtime
 # Scoped motion adapters
 
 The optional `avatarMotionAdapter` connects installed `motionSampling` and
-`motionRetarget` owner libraries to the revision-4 runtime. It validates a
+`motionRetarget` owner libraries to the revision-5 runtime. It validates a
 scoped RT-O3/RT-O4 path: immutable clip -> owner sampling -> explicit humanoid
 retarget map -> dense runtime rig pose -> ordered VRM LookAt/Expression.
 Constructed bindings do not establish real-avatar or milestone acceptance.
@@ -171,7 +171,7 @@ supplied clock mappings do not implement external identity tracking, device
 clock normalization, network synchronization or generic channel normalization.
 
 [`MotionPoseInputBridge`](../../adapters/motion/include/avatarMotion/MotionPoseInputBridge.h)
-maps an already selected owner `MotionPose` into an owned revision-4 input
+maps an already selected owner `MotionPose` into an owned revision-5 input
 frame. It does not sample, poll a connector, retarget or perform format
 arbitration. Supply explicit source/actor identity, positive affine clock
 mapping, native-channel-to-namespaced-runtime-channel bindings and an optional

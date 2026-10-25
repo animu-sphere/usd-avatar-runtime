@@ -2,6 +2,7 @@
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdGeom/xformCache.h>
 #include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdSkel/bindingAPI.h>
@@ -40,9 +41,11 @@ GfMatrix4d matrix(const ArTransform& t) {
     return s*r*p;
 }
 }
-SkeletonPoseOutput::SkeletonPoseOutput(UsdStageRefPtr stage, SkeletonBinding binding, SdfPath blendShapeMesh)
+SkeletonPoseOutput::SkeletonPoseOutput(UsdStageRefPtr stage, SkeletonBinding binding,
+                                     SdfPath blendShapeMesh, SdfPath uvMesh)
     : stage_(std::move(stage)), binding_(std::move(binding)),
-      layer_(SdfLayer::CreateAnonymous("avatar-runtime-pose.usda")), mesh_(std::move(blendShapeMesh)) {
+      layer_(SdfLayer::CreateAnonymous("avatar-runtime-pose.usda")), mesh_(std::move(blendShapeMesh)),
+      uvMesh_(std::move(uvMesh)) {
     require(bool(stage_) && bool(stage_->GetSessionLayer()), "USD_OUTPUT_STAGE: missing stage/session layer");
     if (!mesh_.IsEmpty()) {
         const auto mesh = UsdGeomMesh::Get(stage_, mesh_);
@@ -57,6 +60,21 @@ SkeletonPoseOutput::SkeletonPoseOutput(UsdStageRefPtr stage, SkeletonBinding bin
             require(!shapes_[i].IsEmpty() && names.insert(shapes_[i]).second &&
                 targets.insert(targets_[i]).second && bool(UsdSkelBlendShape::Get(stage_, targets_[i])),
                 "USD_OUTPUT_MORPHS: invalid/duplicate blend-shape identity");
+    }
+    if (!uvMesh_.IsEmpty()) {
+        const auto mesh = UsdGeomMesh::Get(stage_, uvMesh_);
+        const auto st = UsdGeomPrimvarsAPI(mesh).GetPrimvar(TfToken("st"));
+        VtVec3fArray points; VtVec2fArray uvs;
+        require(mesh && st && st.GetTypeName() == SdfValueTypeNames->TexCoord2fArray &&
+            st.GetInterpolation() == UsdGeomTokens->vertex && !st.IsIndexed() &&
+            st.GetElementSize() == 1 && mesh.GetPointsAttr().Get(&points) &&
+            st.Get(&uvs) && !uvs.empty() && uvs.size() == points.size() &&
+            mesh.GetFaceVertexIndicesAttr().Get(&uvFaces_) &&
+            mesh.GetFaceVertexCountsAttr().Get(&uvFaceCounts_),
+            "USD_OUTPUT_UV: requires unindexed vertex st matching mesh points");
+        for (const auto& uv : uvs) for (int a = 0; a < 2; ++a)
+            require(std::isfinite(uv[a]), "USD_OUTPUT_UV: nonfinite base st");
+        uvCount_ = uvs.size();
     }
     units_ = UsdGeomGetStageMetersPerUnit(stage_);
     static std::atomic<uint64_t> next{0};
@@ -160,6 +178,39 @@ void SkeletonPoseOutput::Apply(const ArStateView& state) {
         }
     }
 
+    VtVec2fArray uvs;
+    if (!uvMesh_.IsEmpty()) {
+        const auto mesh = UsdGeomMesh::Get(stage_, uvMesh_);
+        const auto st = UsdGeomPrimvarsAPI(mesh).GetPrimvar(TfToken("st"));
+        VtVec3fArray points; VtIntArray faces, counts;
+        require(mesh && st && st.GetTypeName() == SdfValueTypeNames->TexCoord2fArray &&
+            st.GetInterpolation() == UsdGeomTokens->vertex && !st.IsIndexed() && st.GetElementSize() == 1 &&
+            mesh.GetPointsAttr().Get(&points) && points.size() == uvCount_ &&
+            mesh.GetFaceVertexIndicesAttr().Get(&faces) && faces == uvFaces_ &&
+            mesh.GetFaceVertexCountsAttr().Get(&counts) && counts == uvFaceCounts_,
+            "USD_OUTPUT_UV: changed mesh/primvar binding");
+        require(!stage_->GetSessionLayer()->GetAttributeAtPath(st.GetAttr().GetPath()) &&
+            !stage_->GetSessionLayer()->GetAttributeAtPath(uvMesh_.AppendProperty(TfToken("primvars:st:indices"))),
+            "USD_OUTPUT_UV: session-root st would mask live output");
+        require(!state.vertex_uv_count || state.vertex_uvs, "USD_OUTPUT_UV: missing runtime array");
+        uvs.resize(uvCount_); std::vector<bool> found(uvCount_, false);
+        for (uint32_t i = 0; i < state.vertex_uv_count; ++i) {
+            const auto& uv = state.vertex_uvs[i];
+            require(uv.mesh_id != nullptr, "USD_OUTPUT_UV: missing mesh identity");
+            if (uvMesh_.GetString() != uv.mesh_id) continue;
+            require(uv.vertex_index < uvCount_ && !found[uv.vertex_index],
+                "USD_OUTPUT_UV: duplicate/invalid vertex");
+            found[uv.vertex_index] = true;
+            for (int a = 0; a < 2; ++a) {
+                require(std::isfinite(uv.value[a]) && std::abs(uv.value[a]) <= std::numeric_limits<float>::max(),
+                    "USD_OUTPUT_UV: nonfinite/overflow UV");
+                uvs[uv.vertex_index][a] = float(uv.value[a]);
+            }
+        }
+        require(std::all_of(found.begin(), found.end(), [](bool x) { return x; }),
+            "USD_OUTPUT_UV: incomplete vertex stream");
+    }
+
     // Prepare the entire publication away from the displayed stage. Invalid
     // input never changes the live layer or its previously displayed values.
     auto scratch = UsdStage::CreateInMemory();
@@ -174,6 +225,10 @@ void SkeletonPoseOutput::Apply(const ArStateView& state) {
     auto prim = scratch->OverridePrim(skeleton.GetPath());
     require(UsdSkelBindingAPI::Apply(prim).CreateAnimationSourceRel().SetTargets({animation_}),
         "USD_OUTPUT_AUTHOR: animation binding failed");
+    if (!uvMesh_.IsEmpty())
+        require(UsdGeomPrimvarsAPI(scratch->OverridePrim(uvMesh_)).CreatePrimvar(TfToken("st"),
+            SdfValueTypeNames->TexCoord2fArray, UsdGeomTokens->vertex).Set(uvs),
+            "USD_OUTPUT_AUTHOR: UV authoring failed");
     auto paths = stage_->GetSessionLayer()->GetSubLayerPaths();
     std::vector<std::string> ordered(paths.begin(), paths.end());
     const auto id = layer_->GetIdentifier();

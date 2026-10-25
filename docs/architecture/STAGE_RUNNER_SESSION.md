@@ -17,7 +17,7 @@ The adapter adds no format, physics backend, renderer or OpenUSD dependency.
 
 Enable `AVATAR_BUILD_STAGE_RUNNER_SESSION=ON` with installed `runtimeCore` 0.1
 available through `CMAKE_PREFIX_PATH` or `runtimeCore_DIR`. This optional C++20
-target sits above the unchanged revision-4 core and experimental physics table.
+target sits above the unchanged revision-5 core and experimental physics table.
 It does not freeze a cross-toolchain C++ ABI or publish a dependency pin.
 
 ```cmake

@@ -170,6 +170,7 @@ struct State {
     std::vector<std::string> strings;
     std::vector<ArJoint> joints;
     std::vector<ArBlendShape> shapes;
+    std::vector<ArVertexUv> uvs;
     std::vector<ArMaterialInput> materials;
     std::vector<ArVisibility> visibility;
     /* Appended during evaluation; deque keeps copied identities stable. */
@@ -179,7 +180,7 @@ struct State {
     explicit State(const ArStateView& v) : instance(v.instance), frame(v.frame_id),
         generation(v.generation), seconds(v.evaluation_seconds) {
         strings.reserve(size_t(v.joint_count) * 2 + size_t(v.blend_shape_count) * 2 +
-            size_t(v.material_count) * 2 + v.visibility_count);
+            size_t(v.material_count) * 2 + v.visibility_count + v.vertex_uv_count);
         auto copyId = [&](const char* p) { strings.emplace_back(p); return strings.back().c_str(); };
         for (uint32_t i = 0; i < v.joint_count; ++i) {
             auto j = v.joints[i]; j.skeleton_id = copyId(j.skeleton_id); j.joint_id = copyId(j.joint_id); joints.push_back(j);
@@ -189,6 +190,9 @@ struct State {
         }
         for (uint32_t i = 0; i < v.material_count; ++i) {
             auto m = v.materials[i]; m.material_id = copyId(m.material_id); m.input_id = copyId(m.input_id); materials.push_back(m);
+        }
+        for (uint32_t i = 0; i < v.vertex_uv_count; ++i) {
+            auto uv = v.vertex_uvs[i]; uv.mesh_id = copyId(uv.mesh_id); uvs.push_back(uv);
         }
         for (uint32_t i = 0; i < v.visibility_count; ++i) {
             auto x = v.visibility[i]; x.target_id = copyId(x.target_id); visibility.push_back(x);
@@ -225,6 +229,7 @@ struct State {
         }
         if (domains & AR_DOMAIN_POSE) { v.joints = joints.data(); v.joint_count = uint32_t(joints.size()); }
         if (domains & AR_DOMAIN_DEFORMATION) { v.blend_shapes = shapes.data(); v.blend_shape_count = uint32_t(shapes.size()); }
+        if (domains & AR_DOMAIN_DEFORMATION) { v.vertex_uvs = uvs.data(); v.vertex_uv_count = uint32_t(uvs.size()); }
         if (domains & AR_DOMAIN_MATERIAL) { v.materials = materials.data(); v.material_count = uint32_t(materials.size()); }
         if (domains & AR_DOMAIN_VISIBILITY) { v.visibility = visibility.data(); v.visibility_count = uint32_t(visibility.size()); }
         if (provenance) { v.samples = samples.data(); v.sample_count = uint32_t(samples.size()); }
@@ -236,6 +241,15 @@ void validateState(const ArStateView& v, Diagnostics& d) {
     requireHeader(&v, d);
     requireSpan(v.joints, v.joint_count, d); requireSpan(v.blend_shapes, v.blend_shape_count, d);
     requireSpan(v.materials, v.material_count, d); requireSpan(v.visibility, v.visibility_count, d);
+    requireSpan(v.vertex_uvs, v.vertex_uv_count, d);
+    std::set<std::pair<std::string, uint32_t>> uvIds;
+    for (uint32_t i = 0; i < v.vertex_uv_count; ++i) {
+        const auto& uv = v.vertex_uvs[i]; requireId(uv.mesh_id, d);
+        if (!uvIds.emplace(uv.mesh_id, uv.vertex_index).second)
+            d.fail(AR_DUPLICATE_ID, "runtime.layout.duplicate", "Duplicate vertex UV identity", uv.mesh_id);
+        for (double x : uv.value) if (!std::isfinite(x))
+            d.fail(AR_INVALID_STATE, "runtime.state.uv", "Non-finite vertex UV", uv.mesh_id);
+    }
     std::set<std::pair<std::string, std::string>> ids;
     for (uint32_t i = 0; i < v.joint_count; ++i) {
         const auto& j = v.joints[i]; requireId(j.skeleton_id, d); requireId(j.joint_id, d);
@@ -486,7 +500,14 @@ struct Writer {
         catch (...) { return w.reject(AR_OUT_OF_MEMORY); }
         return AR_OK;
     }
-    ArStateWriter api() { return {this, joint, shape, material, visibility, sample}; }
+    static ArStatus AR_CALL uv(void* ptr, uint32_t n, const double* v) {
+        auto& w = *static_cast<Writer*>(ptr);
+        if (!(w.domains & AR_DOMAIN_DEFORMATION) || n >= w.state.uvs.size() || !v)
+            return w.reject(AR_INVALID_ARGUMENT);
+        if (!std::isfinite(v[0]) || !std::isfinite(v[1])) return w.reject(AR_INVALID_STATE);
+        std::copy(v, v + 2, w.state.uvs[n].value); return AR_OK;
+    }
+    ArStateWriter api() { return {this, joint, shape, material, visibility, sample, uv}; }
 };
 
 void validateInput(const ArInputFrame* input, const Instance& inst, Diagnostics& d) {

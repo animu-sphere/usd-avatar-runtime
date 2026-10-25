@@ -6,11 +6,11 @@ owner: usd-avatar-runtime
 # Cross-package ABI
 
 This document develops [design policy section 9](../design/DESIGN_POLICY.md).
-The direct implementation exposes experimental revision 4 through
+The direct implementation exposes experimental revision 5 through
 [`api.h`](../../include/avatarRuntime/api.h). `arGetApi` fills the caller's
 `ArRuntimeApi` core table. The additive `arGetPhysicsApi` entry point supplies
 the separate experimental [`physics.h`](../../include/avatarRuntime/physics.h)
-table; the revision-4 core table and provider layouts are unchanged.
+table; both tables require current core descriptor headers.
 This is a tested prototype, not an ecosystem ABI freeze. Owner motion/gaze mapping,
 checkpoint restore and real-provider conformance remain Runtime Phase A gates.
 Under the [near-term direction](../design/NEAR_TERM_PLAN.md#2-contract-validation-before-freeze),
@@ -20,7 +20,7 @@ lifecycle. Separately compiled synthetic providers alone do not establish
 a freeze candidate.
 
 The optional physics table has its own query version, currently
-`AR_PHYSICS_API_VERSION == 1`; its descriptors/results use core revision-4
+`AR_PHYSICS_API_VERSION == 1`; its descriptors/results use core revision-5
 headers. `ArPhysicsWorld` is a scoped non-recycled handle. No provider, USD or
 backend types cross this table. The existing installed C consumer also checks
 the installed physics header and query symbol. Pre/post boundaries select
@@ -30,12 +30,12 @@ RT-O3/RT-O4/RT-O5/RT-O6 work, and neither table is frozen.
 
 ## 1. Representation
 
-Implemented revision-4 rules:
+Implemented revision-5 rules:
 
 - Windows uses `__cdecl` and default compiler packing. Descriptors/views begin
   with `uint32_t struct_size` and `abi_version`; fixed value records and writer
   tables are versioned by their enclosing contract. All required fields of
-  revision 4 must fit. Unknown larger tails are ignored/left untouched; any
+  revision 5 must fit. Unknown larger tails are ignored/left untouched; any
   different revision is rejected before reading the descriptor body.
 - Initialize descriptors to zero, then set `AR_HEADER(Type)`. `arGetApi` takes
   an explicit revision and output capacity. No packed structs, STL, USD types,
@@ -59,12 +59,17 @@ active capabilities. Revision 3 appended typed gaze observations to `ArInputFram
 Revision 4 appends retained `ArSourceSample` provenance to `ArStateView`
 (which also grows the embedded `ArInstanceDesc.initial_state`), appends
 `report_sample` to `ArStateWriter` and accepts `AR_VALUE_VEC2` material values.
-Revisions 1–3 are rejected at table and descriptor/view negotiation before
+Revision 5 appends primary per-vertex `ArVertexUv` values to `ArStateView`
+(also growing embedded initial state) and `set_vertex_uv` to `ArStateWriter`.
+The [state contract](EVALUATED_STATE.md#primary-vertex-uvs) defines fixed
+layout, absolute values and consumer admission. Revisions 1–4 are rejected at
+table and descriptor/view negotiation before
 reading their bodies. This is an experimental breaking change, not a compatible
 tail extension or an ABI freeze. Providers/consumers must rebuild with
-revision-4 headers and supply nonempty layout ID/nonzero version on instance
-creation. A consumer that pins revision 3 at compile time, such as an installed
-renderer adapter, must be rebuilt before it can read revision-4 snapshots.
+revision-5 headers and supply nonempty layout ID/nonzero version on instance
+creation. Installed providers and consumers, including renderer adapters,
+must rebuild together before reading revision-5 snapshots. Rebuilding alone
+does not admit UV outputs: a consumer must implement or explicitly refuse them.
 The function table has the same operations. ABI revision is independent of
 the experimental CMake package version.
 
@@ -75,7 +80,7 @@ above this table, never an exported binary class boundary.
 `ArGazeInput` is a fixed value record versioned by its enclosing input frame,
 like `ArScalarInput`; it has no nested header. Its array, identity/reference
 strings and values are borrowed for the same synchronous evaluation lifetime.
-All known revision-4 fields must fit even when `gaze_count` is zero. No gaze
+All known revision-5 fields must fit even when `gaze_count` is zero. No gaze
 input pointer is retained by the runtime or snapshot. The
 [input contract](INPUT_FRAME.md#revision-3-gaze-observations) owns its space,
 validity, direction and absence rules.

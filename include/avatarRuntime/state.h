@@ -15,6 +15,14 @@ typedef struct ArBlendShape {
     double weight;
 } ArBlendShape;
 
+/* Resolved primary texture coordinates (st), per mesh vertex. Complete values,
+   never deltas; fixed (mesh_id, vertex_index) layout in DEFORMATION domain. */
+typedef struct ArVertexUv {
+    const char* mesh_id;
+    uint32_t vertex_index;
+    double value[2];
+} ArVertexUv;
+
 #define AR_VALUE_SCALAR 1u
 #define AR_VALUE_VEC2 2u
 #define AR_VALUE_VEC3 3u
@@ -80,6 +88,8 @@ typedef struct ArStateView {
     uint32_t capability_count;
     const ArSourceSample* samples; /* selected inputs, then provider reports in plan order */
     uint32_t sample_count;         /* published/prior views only; working views are empty */
+    const ArVertexUv* vertex_uvs;
+    uint32_t vertex_uv_count;
 } ArStateView;
 
 /* All writer operations are scoped to one callback. Errors also latch a frame
@@ -93,5 +103,6 @@ typedef struct ArStateWriter {
     ArStatus (AR_CALL *set_material)(void*, uint32_t, uint32_t, const double*);
     ArStatus (AR_CALL *set_visibility)(void*, uint32_t, uint32_t);
     ArStatus (AR_CALL *report_sample)(void*, const ArSourceSample*);
+    ArStatus (AR_CALL *set_vertex_uv)(void*, uint32_t, const double*); /* two components */
 } ArStateWriter;
 #endif

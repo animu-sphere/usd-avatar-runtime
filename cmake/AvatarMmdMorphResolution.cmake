@@ -13,10 +13,11 @@ function(avatar_require_mmd_morph_resolution)
         #include <mmdControl/Evaluator.h>
         int main() {
             auto evaluator = mmd::control::Evaluator::Prepare(mmd::CanonicalDocument{});
-            return int(evaluator.value().ResolveMorphChannels({}).size());
+            return int(evaluator.value().ResolveMorphChannels({}).size()) +
+                int(evaluator.value().EvaluateUvMorphs({}).value().size());
         }
     ]] AR_MMD_OWNER_MORPH_RESOLUTION)
     if(NOT AR_MMD_OWNER_MORPH_RESOLUTION)
-        message(FATAL_ERROR "The MMD adapter requires installed mmdControl Evaluator::ResolveMorphChannels headers and linked symbols; rebuild/install a compatible MMD owner package")
+        message(FATAL_ERROR "The MMD adapter requires installed mmdControl ResolveMorphChannels and EvaluateUvMorphs headers and linked symbols; rebuild/install a compatible MMD owner package")
     endif()
 endfunction()

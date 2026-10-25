@@ -136,7 +136,7 @@ request can require zero, one or several fixed ticks. Interpolation/publication
 reads committed simulation results and produces an immutable display snapshot;
 it must not mutate solver state or advance a world to satisfy a renderer retry.
 Interpolation method and tick/display provenance representation require
-contract review under RT-O4/RT-O6; no new revision-4 fields are implied.
+contract review under RT-O4/RT-O6; no new revision-5 fields are implied.
 
 Required discontinuity behavior before physics integration:
 
