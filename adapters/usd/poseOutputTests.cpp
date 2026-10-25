@@ -3,6 +3,7 @@
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdSkel/bindingAPI.h>
 #include <pxr/usd/usdSkel/blendShape.h>
@@ -34,6 +35,12 @@ int main() {
     previous.CreateJointsAttr().Set(names);
     UsdSkelBindingAPI::Apply(skeleton.GetPrim()).CreateAnimationSourceRel().SetTargets({previous.GetPath()});
     auto mesh = UsdGeomMesh::Define(stage, SdfPath("/Avatar/Mesh"));
+    mesh.CreatePointsAttr().Set(VtVec3fArray{{0,0,0},{1,0,0},{0,1,0}});
+    mesh.CreateFaceVertexCountsAttr().Set(VtIntArray{3});
+    mesh.CreateFaceVertexIndicesAttr().Set(VtIntArray{0,1,2});
+    auto st = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(TfToken("st"), SdfValueTypeNames->TexCoord2fArray,
+        UsdGeomTokens->vertex);
+    const VtVec2fArray baseUvs{{0,0},{1,0},{0,1}}; st.Set(baseUvs);
     auto meshBinding = UsdSkelBindingAPI::Apply(mesh.GetPrim());
     meshBinding.CreateSkeletonRel().SetTargets({skeleton.GetPath()});
     const VtTokenArray shapes{TfToken("wide"), TfToken("tall")};
@@ -54,6 +61,8 @@ int main() {
     const ArBlendShape morphs[]{{"/Other", "wide", 99}, {"/Avatar/Mesh", "tall", .75},
                                {"/Avatar/Mesh", "wide", .25}};
     desc.initial_state.blend_shapes = morphs; desc.initial_state.blend_shape_count = 3;
+    ArVertexUv uvs[]{{"/Avatar/Mesh",2,{-.25,1.5}}, {"/Avatar/Mesh",0,{.5,.25}}, {"/Avatar/Mesh",1,{1,0}}};
+    desc.initial_state.vertex_uvs = uvs; desc.initial_state.vertex_uv_count = 3;
     ArInstance instance = 0; CHECK(api.create_instance(runtime, &desc, nullptr, &instance) == AR_OK);
     ArInputFrame input{AR_HEADER(ArInputFrame)}; input.generation = 1; input.frame_id = 1;
     ArSnapshot snapshot = 0; CHECK(api.evaluate_frame(runtime, instance, &input, nullptr, &snapshot) == AR_OK);
@@ -64,8 +73,10 @@ int main() {
         poseOnly.Apply(api, snapshot);
         CHECK(!UsdSkelAnimation::Get(stage, poseOnly.AnimationPath()).GetBlendShapesAttr().HasAuthoredValue());
     }
-    avatarUsd::SkeletonPoseOutput output(stage, binding, mesh.GetPath());
+    avatarUsd::SkeletonPoseOutput output(stage, binding, mesh.GetPath(), mesh.GetPath());
     output.Apply(api, snapshot);
+    VtVec2fArray actualUvs; CHECK(st.Get(&actualUvs) && actualUvs == VtVec2fArray({{.5,.25},{1,0},{-.25,1.5}}));
+    CHECK(st.GetAttr().GetNumTimeSamples() == 0);
     CHECK(stage->GetEditTarget().GetLayer() == stage->GetRootLayer());
     auto query = UsdSkelCache().GetSkelQuery(skeleton);
     CHECK(query && query.GetAnimQuery());
@@ -93,6 +104,25 @@ int main() {
         std::string after; output.Layer()->ExportToString(&after); CHECK(after == good);
     };
     auto bad = view; bad.layout_version = 2; refuse(bad);
+    bad = view; bad.vertex_uvs = nullptr; refuse(bad);
+    bad = view; bad.vertex_uv_count = 2; refuse(bad);
+    auto changedUvs = std::vector<ArVertexUv>(uvs, uvs + 3);
+    bad = view; bad.vertex_uvs = changedUvs.data();
+    changedUvs[0].value[0] = std::numeric_limits<double>::infinity(); refuse(bad);
+    changedUvs[0].value[0] = 1e100; refuse(bad);
+    changedUvs[0] = uvs[0]; changedUvs[0].vertex_index = 0; refuse(bad);
+    changedUvs[0].vertex_index = 3; refuse(bad);
+    changedUvs[0] = uvs[0]; changedUvs[0].mesh_id = "/Other"; refuse(bad);
+    mesh.GetFaceVertexIndicesAttr().Set(VtIntArray{1,0,2}); refuse(view);
+    mesh.GetFaceVertexIndicesAttr().Set(VtIntArray{0,1,2});
+    // Bind-time layout is rechecked even while live values override the base.
+    {
+        UsdEditContext edit(stage, stage->GetSessionLayer());
+        st.SetInterpolation(UsdGeomTokens->faceVarying); refuse(view);
+        st.GetAttr().ClearMetadata(TfToken("interpolation"));
+        st.Set(baseUvs); refuse(view);
+        mesh.GetPrim().RemoveProperty(TfToken("primvars:st"));
+    }
     bad = view; bad.blend_shapes = nullptr; refuse(bad);
     bad = view; bad.blend_shape_count = 1; refuse(bad);
     std::vector<ArBlendShape> changedMorphs(morphs, morphs + 3);
@@ -130,6 +160,7 @@ int main() {
         skeleton.GetPrim().RemoveProperty(TfToken("skel:animationSource"));
     }
     output.Close(); output.Close();
+    CHECK(st.Get(&actualUvs) && actualUvs == baseUvs);
     CHECK(stage->GetSessionLayer()->GetSubLayerPaths().size() == 1);
     CHECK(stage->GetSessionLayer()->GetSubLayerPaths()[0] == foreign->GetIdentifier());
     CHECK(stage->GetSessionLayer()->GetSubLayerOffset(0) == SdfLayerOffset(12, 2));

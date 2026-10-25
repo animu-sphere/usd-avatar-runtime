@@ -7,7 +7,7 @@ owner: usd-avatar-runtime
 
 `avatarUsd::SkeletonPoseOutput`, installed with the optional `avatarUsdBinding`
 target and `usd` component, transports completed runtime joints and optional
-single-mesh blend-shape weights to a composed
+single-mesh blend-shape weights and primary UV values to a composed
 `UsdSkelAnimation`. It consumes a stage and an existing owner-validated
 [`SkeletonBinding`](USD_BINDING.md); it runs no motion, control or physics.
 The [live MMD host guide](../guides/live-mmd-physics.md) describes the first
@@ -27,6 +27,15 @@ runtime shapes are allowed. The consumer interprets no format-specific morphs.
 `Apply(api, snapshot)` borrows a retained snapshot only during the
 call; no producer or snapshot resource is retained.
 
+The optional fourth constructor argument selects one mesh's primary `st`.
+It requires unindexed vertex-interpolated `texCoord2f[]`, element size one,
+with one entry per point. Apply maps complete `ArVertexUv` values by mesh/vertex
+identity; unrelated meshes are ignored. Missing/duplicate/extra vertices,
+nonfinite values and float overflow refuse. Face indices/counts, point count,
+primvar type/interpolation/indexing and stronger session-root opinions are
+rechecked before publication. The consumer performs no UV morph evaluation or
+source-basis conversion.
+
 Root joints arrive in runtime world space, in metres. Publication removes the
 binding's rigid skeleton placement once, converts translations to stage units,
 and delegates decomposition into USD's translation/quaternion/half-scale arrays
@@ -41,7 +50,8 @@ position reads the current final pose. This is live display transport, not a
 recording, clip, bake or export API. Persistent layers and the current edit
 target are untouched. Existing session sublayers and their offsets are preserved.
 A session-root animation relationship would mask this output and rejects.
-When configured, the same animation carries blend-shape names and weights.
+When configured, the same animation carries blend-shape names and weights;
+the same owned layer overrides primary `st` with default-only values.
 Mesh/skeleton binding, names and targets must remain unchanged, with valid
 unique shape identities. Invalid or missing weights reject before publication.
 
@@ -60,6 +70,7 @@ Retained CPU state remains usable after output teardown.
 ## Scope
 
 This USD publication path supplies joints and optional single-mesh blend-shape
-weights for usdview's Hydra consumer. It supplies no material or visibility publication, resident Toon matching,
+weights and primary vertex UVs for usdview's Hydra consumer. It supplies no
+additional UV, material or visibility publication, resident Toon matching,
 renderer resources, complete Scene Index, Hydra/direct parity or pixel guarantee.
 Those broader [output-path gates](OUTPUT_PATHS.md) remain open.

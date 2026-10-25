@@ -4,7 +4,7 @@ Implementation evidence below includes the 2026-10-21 MMD/Jolt callback
 slice. This is implementation status,
 not a promise about sibling repositories or a release/support declaration.
 The experimental direct runtime and CMake installation/export are implemented.
-Runtime Phase A remains open; revision 4 is not a frozen ecosystem ABI.
+Runtime Phase A remains open; revision 5 is not a frozen ecosystem ABI.
 
 The [boundary cleanup policy](../design/BOUNDARY_POLICY.md) is accepted intent.
 The motion-boundary slice is implemented: `ClipPoseAdapter` delegates generic
@@ -26,11 +26,11 @@ workstream B validation is recorded below; the
 | --- | --- | --- |
 | implementation direction | adopted documentation; real-provider/fast-path integration prioritized before freeze | [design policy](../design/DESIGN_POLICY.md), [near-term direction](../design/NEAR_TERM_PLAN.md) |
 | runtime architecture and layout | one reusable `avatarRuntime` target; further component split proposed | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
-| input/evaluated-state contracts | experimental revision-4 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version, active capabilities and source-sample provenance (selected inputs plus provider-reported pose samples with mapped runtime seconds); scalar/vec2/vec3/vec4 material values; configured owner clip-to-pose mapping with retained interpolated/held sample time and owned selected-motion scalar/world-gaze assembly implemented; live observation intake, multi-source composition, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
+| input/evaluated-state contracts | experimental revision-5 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version, active capabilities and source-sample provenance (selected inputs plus provider-reported pose samples with mapped runtime seconds); scalar/vec2/vec3/vec4 material values and primary vertex UV values; configured owner clip-to-pose mapping with retained interpolated/held sample time and owned selected-motion scalar/world-gaze assembly implemented; live observation intake, multi-source composition, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | physics orchestration | Experimental optional C tables implement exclusive world membership, selective participant removal, existing-plan pre/Step/post boundaries, fixed-tick accumulation with retained bounded catch-up, pause, group reset and invalidation after Step begins; generated MMD/Jolt callbacks and two-avatar shared-world smoke pass. Automatic body/constraint teardown, display interpolation, checkpoint restore and VRM secondary-motion integration remain unimplemented | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
 | Stage Runner host session | Optional installed `avatarStageRunnerSession` wraps a borrowed or owned runtime world registration with measured display time, play/pause, group reset, zero-elapsed simulation retry, retained last successful output, selective member removal and explicit/idempotent close; no second accumulator. Automatic stage/world construction, application wiring and body/constraint teardown remain open | [host session](../architecture/STAGE_RUNNER_SESSION.md) |
-| MMD control/coupling registration | Optional installed `avatarMmdAdapter` invokes owner BeginPhysics -> path-keyed kinematic targets -> caller-owned world snapshot -> feedback -> ResumePhysics; explicit joint/layout/root placement, scalar morph and visibility mapping; generated PMX/VMD/Jolt headless and installed-consumer tests pass. Generic retarget intake, automatic host/renderer binding and avatar L3 acceptance remain open | [MMD adapter](../architecture/MMD_ADAPTER.md) |
+| MMD control/coupling registration | Optional installed `avatarMmdAdapter` invokes owner BeginPhysics -> path-keyed kinematic targets -> caller-owned world snapshot -> feedback -> ResumePhysics; explicit joint/layout/root placement, owner-resolved vertex weights, primary UV values and visibility mapping; generated PMX/VMD/Jolt headless and installed-consumer tests pass. Generic retarget intake, automatic host/renderer binding and avatar L3 acceptance remain open | [MMD adapter](../architecture/MMD_ADAPTER.md) |
 | versioned C ABI | revision-4/size validation, revision-1–3 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion validation boundary | installed owner clip/retarget validators invoked before retargeter construction; selected timestamp/scalar/gaze validation delegated by MotionPoseInputBridge; runtime binding/clock/C-string checks retained; owned MotionValidationError and synchronous C sink forwarding preserve owner report identity/order and package version; old InputAssembler source names retained | [motion adapters](../architecture/MOTION_ADAPTER.md) |
@@ -921,3 +921,22 @@ owns measurements and environment, and the
 [guide](../guides/live-mmd-physics.md#validation) owns reproduction.
 Initial overlap/contact recovery, representative springs, arbitrary seeking,
 full-motion and L3 acceptance remain open.
+
+## Live primary UV evidence (2026-10-25)
+
+Experimental ABI revision 5 retains absolute primary vertex UV values. The MMD
+adapter consumes installed owner deltas against immutable bases, and the live
+USD output publishes unindexed vertex `st` with joints/vertex weights in one
+session layer. Generated direct and mixed group/direct scenarios each pass
+three 240-tick replays, including signed/above-one weights, base restoration,
+pause and layer cleanup. Source and installed adapter checks cover identity
+mapping, malformed reached-zero offsets, additional-channel refusal and retained
+snapshot lifetime. The live-host configuration's 21 CTests pass.
+
+See the [state contract](../contracts/EVALUATED_STATE.md#primary-vertex-uvs),
+[USD output](../architecture/USD_POSE_OUTPUT.md) and
+[MMD evidence](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-25-phase8-live-primary-uv.md).
+Additional UVs, materials, renderer pixels, resident Toon UV output and
+Hydra/direct agreement remain open. Rebuild providers and consumers for ABI 5;
+older binaries reject negotiation, and the Toon direct adapter refuses nonempty
+primary UV layouts pending renderer bindings.

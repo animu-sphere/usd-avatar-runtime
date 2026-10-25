@@ -99,4 +99,4 @@ for motion in sys.argv[5:]:
 assert stage.GetRootLayer().ExportToString() == original
 assert stage.GetSessionLayer().ExportToString() == session_layer
 print(f"live morph: direct/group/mixed each 3 x 240 ticks, resolved/zero weights, final deformation error {max_error:.6g} m, "
-      "exact reset replay, cleanup and unsupported UV refusal passed")
+      "exact reset replay, cleanup and unsupported material refusal passed")

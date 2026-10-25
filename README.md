@@ -103,7 +103,7 @@ rollback, instance isolation, retained snapshots and an external build against
 the installed `AvatarRuntime::avatarRuntime` CMake target. See
 [the ABI](docs/contracts/ABI.md) and
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) for exact coverage.
-The headers are experimental revision 4; Runtime Phase A is still open.
+The headers are experimental revision 5; Runtime Phase A is still open.
 Revision 4 retains per-sample source time with each snapshot, including the
 pose sample a provider actually used, and adds a two-component material value
 type. It preserves revision 3's typed gaze observations and revision 2's

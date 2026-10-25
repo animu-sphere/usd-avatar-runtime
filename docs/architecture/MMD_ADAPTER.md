@@ -64,7 +64,7 @@ target_link_libraries(host PRIVATE AvatarRuntime::avatarMmdAdapter)
 
 Core-only lookup imports no MMD, physics or OpenUSD target. The optional MMD
 component imports no physics/backend target. This is a C++20 configuration
-boundary above the revision-4 C ABI, not a frozen cross-toolchain C++ ABI.
+boundary above the revision-5 C ABI, not a frozen cross-toolchain C++ ABI.
 
 ## Configuration and ownership
 
@@ -92,16 +92,23 @@ pose channels and maps only that result to runtime blend-shape slots. Direct
 and nested group contributions are resolved once by the owner; bone effects
 remain in the pose. Negative and above-one weights are preserved, absent bound
 leaves write zero, and non-finite resolved weights fail before any output write.
-The host must bind canonical leaf indices with compatible deformation outputs;
-the live host binds only owner-validated vertex morphs. Reached unmapped leaves
-fail even at zero weight. The adapter does not realize UV/material/flip/impulse
-effects. Visibility maps to named targets; hidden state without a target fails.
+The host must bind canonical leaf indices with compatible deformation outputs.
+Vertex leaves use `morphs`; primary UV leaves use host-validated `uvMorphs`,
+`uvMesh` and immutable `baseUvs` in canonical vertex order. The post callback
+calls installed `EvaluateUvMorphs` on raw pose channels and adds primary XY
+deltas to those bases. Absolute `ArVertexUv` values map by mesh/vertex identity;
+the adapter never expands groups or flips V again. Missing/duplicate/invalid
+vertices, additional UV channels and nonfinite/float-overflow final values
+refuse before any output write. Reached unmapped leaves fail even at zero.
+The live host checks canonical bases against authored unindexed vertex `st`;
+material/flip/impulse effects remain unsupported.
+Visibility maps to named targets; hidden state without a target fails.
 Material morph realization and retargeted-input continuation remain open.
 
 Register both `PreDescriptor()` and `PostDescriptor()`, select both for each
 instance, and use the post ID as `ArPhysicsParticipant.post_physics_evaluator`.
 Both callbacks occupy the existing constraints phase with an explicit pre ->
-post dependency. No phase enum or core ABI change is needed. Later evaluators
+post dependency. UV transport uses core ABI revision 5 without a new phase enum. Later evaluators
 run in the suffix with their usual dependency/write declarations.
 
 The adapter and callback captures outlive registration. Per-instance

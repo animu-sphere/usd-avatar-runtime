@@ -65,7 +65,7 @@ target_link_libraries(host PRIVATE AvatarRuntime::avatarUsdBinding
 
 `COMPONENTS usd` alone does not resolve `motionSampling` or `vrmRig`.
 A core-only package lookup resolves no owner dependency. This is a C++
-configuration API above the unchanged revision-4 C ABI, not a cross-toolchain
+configuration API above the unchanged revision-5 C ABI, not a cross-toolchain
 C++ ABI guarantee.
 
 ## Binding and ownership

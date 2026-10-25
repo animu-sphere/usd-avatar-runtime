@@ -38,10 +38,11 @@ both opt-ins are OFF, including during Reset.
 Standard joint frames/limits come from the installed physics reader. This
 preview is not representative hair/skirt acceptance or native MMD solver
 equivalence. The host binds canonical vertex morphs by the owner's mesh token,
-target and source index, then publishes their direct VMD weights alongside the
-final joints. Group/flip, UV, material and impulse channels and hidden outputs
-still fail through the owner registration adapter. Non-bone group expansion
-requires an owner execution interface; raw group channels are not vertex weights.
+target and source index, then publishes owner-resolved direct/group weights
+alongside final joints. Primary UV leaves use the installed owner UV query
+and immutable canonical bases, with absolute `st` publication in the same
+temporary layer. Additional UV, flip, material and impulse leaves and hidden
+outputs without bindings fail through the owner registration adapter.
 
 The first configuration requires a directly opened PMX root layer with
 `/Asset/skel/Skeleton`, one avatar, rigid default-time placement and a stage
@@ -155,18 +156,23 @@ and configure the paired generated MMD model:
 ```powershell
 $morphPmx = "$mmd/plugins/usdMmdFileFormat/tests/fixtures/live-physics-morph.pmx"
 cmake -S . -B build/usdview-mmd "-DAVATAR_MMD_PREVIEW_MORPH_PMX=$morphPmx"
-ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_morph$' --output-on-failure
+ctest --test-dir build/usdview-mmd -C Release -R '^hosts.usdview_mmd_(morph|uv)$' --output-on-failure
 ```
 
 Keep the preceding PMX/VMD options configured. The VMD fixture directory must
-contain `live-physics-morph.vmd`, `live-physics-uv.vmd` and
-`live-physics-group.vmd` and `live-physics-mixed.vmd`. Install an MMD owner
-package providing `Evaluator::ResolveMorphChannels` before rebuilding the host;
+contain `live-physics-morph.vmd`, `live-physics-uv.vmd`,
+`live-physics-group.vmd`, `live-physics-mixed.vmd`, `live-physics-uv-mixed.vmd`
+and `live-physics-material.vmd`. Install an MMD owner
+package providing `Evaluator::ResolveMorphChannels` and `EvaluateUvMorphs` before rebuilding the host;
 configuration explicitly refuses older/incomplete headers or libraries.
 This native test checks direct, group-only and mixed direct/group weights,
 including return to zero while the pivot moves and physics drives the final skeleton,
 composed blend-shape deformation followed by skinning, pause at a nonzero weight,
-exact reset replay and layer restoration. UV input refuses explicitly.
+exact reset replay and layer restoration. Material input refuses even at zero.
+The UV test checks direct and mixed group/direct UV plus vertex leaves, signed
+and above-one weights, primary-V conversion, ignored primary Z/W, return to
+immutable bases, pause, three-generation replay and Reset/Close cleanup.
+Rebuild runtime providers/consumers with experimental ABI revision 5.
 This numeric check does not open a window or establish rendered pixel acceptance.
 
 `hosts.usdview_mmd_properties` additionally adapts the same generated stage in

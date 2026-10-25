@@ -71,7 +71,7 @@ These conventions also apply to post-physics pose. World/root placement is
 already included in root transforms; the format adapter must explicitly marshal
 owner feedback into the bound joint space and quaternion order, rather
 than publish body transforms or add placement a second time. A separate avatar
-world-transform field is not present in revision 4; any additional representation
+world-transform field is not present in revision 5; any additional representation
 must follow existing API naming and be reviewed under RT-O4.
 
 The optional [motion adapter](../architecture/MOTION_ADAPTER.md) marshals owner
@@ -105,7 +105,7 @@ requires format-independent resolved channels. Do not add core fields such as
 `vrmExpressionHappy`, `mmdBoneMorph` or `pmxMaterialMorph`; adapters convert
 those semantics into common pose, morph and material values. Namespaced format
 identity may survive as provenance without requiring consumers to evaluate it.
-Custom extensible named values are a target concept, not a revision-4 field.
+Custom extensible named values are a target concept, not a revision-5 field.
 
 ```text
 VRM expressions -> resolved blend-shape weights + material overrides
@@ -206,6 +206,31 @@ storage is shared immutably across frames; it holds no provider-private pointers
 Diagnostic records still use callback-scoped delivery and are not retained in
 the snapshot. Real-provider layout conformance, expression/gaze results and
 mapping/arbitration provenance remain RT-O4/RT-O7 work before freeze.
+
+### Primary vertex UVs
+
+Revision 5 adds `ArStateView.vertex_uvs`, a fixed layout of `ArVertexUv` records
+identified by `(mesh_id, vertex_index)`. Each contains two finite double values
+for resolved primary `st` coordinates, independent of pose spaces and length
+units. Values are absolute and unclamped; source-format conversion and morph
+accumulation belong to the provider owner. Additional UV vec4s, indexed or
+face-varying coordinates and vertex colors are outside this type.
+
+The deformation domain exposes these records alongside blend-shape weights.
+`set_vertex_uv(slot, values)` copies two components without changing identity.
+Missing pointers, out-of-layout slots, absent write permission and nonfinite
+values latch failure. Creation rejects duplicate identities, invalid arrays and
+nonfinite bases. The runtime owns identities/values with snapshot lifetime;
+unwritten slots return to immutable authored bases. Empty layout means no UV
+outputs; explicit zero remains an ordinary value.
+
+The host supplies every required vertex slot and selects a consumer accepting
+primary UVs. The runtime validates identities/values; the consumer validates
+density, topology, bindings and float narrowing against its mesh before
+publication. Unsupported output types must refuse. The scoped USD output
+accepts one unindexed vertex `st` stream. The Toon direct adapter currently
+refuses nonempty UV output; USD transport does not establish direct-renderer
+or rendered-pixel parity.
 
 ### Source-sample provenance
 

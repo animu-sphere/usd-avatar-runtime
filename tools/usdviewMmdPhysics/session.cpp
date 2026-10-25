@@ -16,6 +16,8 @@
 #include <pxr/usd/usdSkel/skeleton.h>
 #include <pxr/usd/usdSkel/bindingAPI.h>
 #include <pxr/usd/usdSkel/blendShape.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/primvarsAPI.h>
 #include <filesystem>
 #include <algorithm>
 #include <cmath>
@@ -52,6 +54,7 @@ class Session {
     UsdStageRefPtr stage_;
     avatarUsd::SkeletonBinding binding_;
     SdfPath morphMesh_;
+    SdfPath uvMesh_;
     std::unique_ptr<avatarPhysics::StageWorld> world_;
     std::unique_ptr<avatarStageRunner::PhysicsSession> session_;
     std::unique_ptr<avatarUsd::SkeletonPoseOutput> output_;
@@ -209,8 +212,7 @@ public:
             c.joints.push_back({base.joints[i].skeleton_id, base.joints[i].joint_id, base.joints[i].parent_index});
         }
         // The direct-PMX host uses the owner's canonical single-mesh contract.
-        // Only vertex morphs have standard UsdSkel outputs; never map UV,
-        // material or impulse channels into a deformation weight by accident.
+        // Vertex weights and primary st have separate typed runtime outputs.
         const SdfPath meshPath("/Asset/geo/Mesh");
         const UsdSkelBindingAPI mesh(stage_->GetPrimAtPath(meshPath));
         VtTokenArray shapes; SdfPathVector targets;
@@ -220,6 +222,7 @@ public:
         }
         size_t vertices = 0;
         for (const auto& morph : model.morphs) {
+            if (morph.type == mmd::MorphType::Uv) c.uvMorphs.push_back(int32_t(morph.sourceIndex));
             if (morph.type != mmd::MorphType::Vertex) continue;
             ++vertices;
             const TfToken name(morph.name.stableId);
@@ -239,6 +242,25 @@ public:
         }
         if (vertices != shapes.size()) throw std::invalid_argument("PMX/stage vertex morph count mismatch");
         if (vertices) morphMesh_ = meshPath;
+        std::vector<ArVertexUv> uvs;
+        if (!c.uvMorphs.empty()) {
+            const auto geometry = UsdGeomMesh::Get(stage_, meshPath);
+            const auto st = UsdGeomPrimvarsAPI(geometry).GetPrimvar(TfToken("st"));
+            VtVec2fArray values; VtVec3fArray points;
+            if (!geometry || !st || st.GetTypeName() != SdfValueTypeNames->TexCoord2fArray ||
+                st.GetInterpolation() != UsdGeomTokens->vertex || st.IsIndexed() || st.GetElementSize() != 1 ||
+                !st.Get(&values) || values.size() != model.mesh.st.size() ||
+                !geometry.GetPointsAttr().Get(&points) || points.size() != values.size() || values.empty())
+                throw std::invalid_argument("PMX/stage primary UV binding mismatch");
+            uvMesh_ = meshPath; c.uvMesh = meshPath.GetString();
+            for (uint32_t i = 0; i < values.size(); ++i) {
+                for (int a = 0; a < 2; ++a)
+                    if (!std::isfinite(values[i][a]) || values[i][a] != model.mesh.st[i][a])
+                        throw std::invalid_argument("PMX/stage primary UV base mismatch");
+                c.baseUvs.push_back({values[i][0], values[i][1]});
+                uvs.push_back({nullptr, i, {values[i][0], values[i][1]}});
+            }
+        }
         std::vector<ArBlendShape> morphs;
         // Keep string storage alive through create_instance's owned baseline copy.
         const auto morphBindings = c.morphs;
@@ -250,6 +272,9 @@ public:
             if (context.input->frame_id != resultFrame_) return AR_INVALID_STATE;
             rows = result_; return AR_OK;
         };
+        // UV string storage is borrowed only until create_instance copies it.
+        const auto uvMeshId = c.uvMesh;
+        for (auto& uv : uvs) uv.mesh_id = uvMeshId.c_str();
         adapter_ = std::make_unique<avatarMmd::PhysicsAdapter>(std::move(c));
         auto pre = adapter_->PreDescriptor(), post = adapter_->PostDescriptor();
         check(runtime_.api.register_evaluator(runtime_.handle, &pre, nullptr));
@@ -260,6 +285,7 @@ public:
         desc.initial_state = base; desc.evaluators = selected; desc.evaluator_count = 2;
         desc.initial_state.blend_shapes = morphs.data();
         desc.initial_state.blend_shape_count = uint32_t(morphs.size());
+        desc.initial_state.vertex_uvs = uvs.data(); desc.initial_state.vertex_uv_count = uint32_t(uvs.size());
         check(runtime_.api.create_instance(runtime_.handle, &desc, nullptr, &instance_));
         buildWorld();
         ArPhysicsParticipant participant{instance_, post.id};
@@ -268,7 +294,7 @@ public:
         world.fixed_step_seconds = 1. / 120; world.max_catch_up_ticks = 8;
         world.user_data = this; world.step = step; world.reset = resetWorld;
         session_ = std::make_unique<avatarStageRunner::PhysicsSession>(runtime_.handle, world, [this] { return now_; });
-        output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_);
+        output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_, uvMesh_);
     }
     void play() { if (!session_ || !session_->IsOpen()) throw std::runtime_error("Session closed"); session_->Play(); }
     void pause() { if (session_) session_->Pause(); }
@@ -286,7 +312,7 @@ public:
         if (!session_ || !session_->IsOpen()) throw std::runtime_error("Session closed");
         ArDiagnosticSink sink{this, diagnostic}; error_.clear();
         status(session_->Reset(++generation_, &sink));
-        output_->Close(); output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_);
+        output_->Close(); output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_, uvMesh_);
     }
     void close() {
         if (session_) status(session_->Close());
