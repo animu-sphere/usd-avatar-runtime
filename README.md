@@ -1,5 +1,7 @@
 # usd-avatar-runtime
 
+[![License: Apache-2.0](https://img.shields.io/github/license/animu-sphere/usd-avatar-runtime?label=license)](LICENSE)
+
 The format-independent avatar evaluation IR, lifecycle and orchestration layer
 for the animu-sphere ecosystem.
 
@@ -160,3 +162,17 @@ state-to-palette/morph/material transport. The renderer install must be built
 for this runtime's ABI revision; the configure probe refuses other revisions. This constructs probe resources;
 actual avatar rendering and Hydra/direct parity remain open. See
 [output paths](docs/architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md)
+and the [Security Policy](SECURITY.md). Bug reports and feature requests have
+[issue templates](.github/ISSUE_TEMPLATE/).
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).
+
+Third-party dependencies and avatar, texture, motion and capture assets retain
+their own licenses. Use generated fixtures when possible; third-party assets
+require explicit redistribution permission before inclusion.

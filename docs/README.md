@@ -64,6 +64,9 @@ User task: [Live MMD physics in usdview](guides/live-mmd-physics.md).
 [Documentation guidelines](contributing/documentation.md) define category
 ownership, metadata, cross-repository references and validation.
 [CONTRIBUTING.md](../CONTRIBUTING.md) is the contribution entry point.
+Community participation follows the [Code of Conduct](../CODE_OF_CONDUCT.md);
+private vulnerability reports follow the [Security Policy](../SECURITY.md).
+The project license is [Apache-2.0](../LICENSE).
 
 The adopted design policy is the architectural baseline; the near-term
 direction refines its implementation sequence, and the boundary cleanup policy
