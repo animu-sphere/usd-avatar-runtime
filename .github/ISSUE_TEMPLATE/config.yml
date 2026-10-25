@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability privately
+    url: https://github.com/animu-sphere/usd-avatar-runtime/security/advisories/new
+    about: Please do not use a public issue for a vulnerability. See SECURITY.md if private reporting is unavailable.
