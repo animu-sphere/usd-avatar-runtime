@@ -228,9 +228,10 @@ The host supplies every required vertex slot and selects a consumer accepting
 primary UVs. The runtime validates identities/values; the consumer validates
 density, topology, bindings and float narrowing against its mesh before
 publication. Unsupported output types must refuse. The scoped USD output
-accepts one unindexed vertex `st` stream. The Toon direct adapter currently
-refuses nonempty UV output; USD transport does not establish direct-renderer
-or rendered-pixel parity.
+accepts one unindexed vertex `st` stream. Direct consumers must explicitly map
+the complete stream to their resident vertex layout, including split vertices,
+and reject stale mappings atomically. The renderer owns extraction/upload and
+tangent policy; USD transport alone does not establish rendered-pixel parity.
 
 ### Source-sample provenance
 

@@ -179,6 +179,15 @@ steps the world or writes USD. Bindings explicitly map a generated triangle's
 reversed joint palette, one scalar morph and one visibility target. Unknown
 material output or a different channel layout is refused by the probe.
 
+The primary UV slice additionally maps owner-evaluated absolute UV slots onto
+explicit probe vertices through the installed consumer's `AvatarUvBinding`.
+This host checks source identity reordering, simultaneous pose/morph transport,
+duplicate arrays/revisions, two instances and retained snapshots after reset
+and producer destruction. The installed header probe requires UV bindings as
+well as the matching runtime ABI. UV changes use ordinary draw extraction;
+resident target discovery and rendered/runtime/Hydra comparisons remain
+renderer-host work.
+
 An independent USD matrix oracle composes parent-local snapshot transforms,
 converts metre translations into centimetre scene units and checks the renderer
 palette. The host also compares resolved morph weight, visibility, frame/layout

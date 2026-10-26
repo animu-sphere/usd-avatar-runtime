@@ -515,6 +515,9 @@ void uvMorphOutputs() {
     a.model.morphs[2].members = {{1, 2.f}, {0, .25f}};
     a.motion.morphs = {{0, {{0, -.5f}}}, {1, {{0, -.25f}}}, {2, {{0, 2.f}}}};
     const auto bind = [](auto& c) { c.uvMorphs = {0}; c.uvMesh = "mesh"; c.baseUvs = {{.25,.75},{0,1}}; };
+#ifdef AVATAR_MMD_TOON_SMOKE
+    std::unique_ptr<MmdToonCheck> uvConsumers[2];
+#endif
     {
         Fixture f(a, false, bind);
         ArSnapshot retained = 0;
@@ -525,12 +528,23 @@ void uvMorphOutputs() {
             CHECK(v.vertex_uv_count == 2 && v.vertex_uvs[0].vertex_index == 1);
             CHECK(v.vertex_uvs[0].value[0] == .25 * 1.875 && v.vertex_uvs[0].value[1] == 1 - .5 * 1.875);
             CHECK(v.vertex_uvs[1].value[0] == .25 && v.vertex_uvs[1].value[1] == .75);
+#ifdef AVATAR_MMD_TOON_SMOKE
+            for (int i = 0; i < 2; ++i) {
+                ArStateView state{AR_HEADER(ArStateView)};
+                CHECK(f.api.get_snapshot(f.snapshots[i], &state) == AR_OK);
+                if (!uvConsumers[i]) uvConsumers[i] = std::make_unique<MmdToonCheck>(state);
+                uvConsumers[i]->Apply(f.api, f.snapshots[i]);
+            }
+#endif
             if (!retained) { retained = f.snapshots[0]; CHECK(f.api.retain_snapshot(retained) == AR_OK); }
         }
         ArStateView old{AR_HEADER(ArStateView)}; CHECK(f.api.get_snapshot(retained, &old) == AR_OK);
         CHECK(old.generation == 1 && old.vertex_uvs[0].value[0] == .25 * 1.875);
         CHECK(f.api.release_snapshot(retained) == AR_OK);
     }
+#ifdef AVATAR_MMD_TOON_SMOKE
+    for (auto& consumer : uvConsumers) consumer->AfterProducerDestruction();
+#endif
     a.motion.morphs = {{0, {{0, -2.f}, {1, 0.f}}}};
     {
         Fixture f(a, false, bind); CHECK(f.advance(1. / 120) == AR_OK);

@@ -46,6 +46,21 @@ public:
     world.SetMeshMorphWeights(mesh, {0});
     bindings_.morphs.push_back({0, mesh, 0});
     bindings_.visibility.push_back({0, mesh});
+    if (state.vertex_uv_count) {
+      Require(state.vertex_uv_count == 2);
+      Toon::AvatarUvBinding uv;
+      uv.mesh = mesh;
+      std::vector<Toon::Float2> bases;
+      for (const uint32_t vertex : {0u, 1u, 0u}) {
+        uint32_t slot = 0;
+        while (slot < state.vertex_uv_count && state.vertex_uvs[slot].vertex_index != vertex) ++slot;
+        Require(slot < state.vertex_uv_count);
+        uv.sources.push_back(slot);
+        bases.push_back({float(state.vertex_uvs[slot].value[0]), float(state.vertex_uvs[slot].value[1])});
+      }
+      bindings_.uvs.push_back(std::move(uv));
+      world.SetMeshUVs(mesh, std::move(bases));
+    }
     scene_ = world.Commit();
     scene_.meters_per_unit = .01f;
     std::string error;
@@ -89,6 +104,13 @@ public:
     Require(mesh.morph_weights && mesh.morph_weights->size() == 1 &&
             mesh.morph_weights->front() == float(state.blend_shapes[0].weight));
     Require(mesh.visible == bool(state.visibility[0].visible));
+    for (const auto& binding : bindings_.uvs) {
+      Require(mesh.uvs && mesh.uvs->size() == binding.sources.size());
+      for (size_t i = 0; i < binding.sources.size(); ++i) {
+        const auto& value = state.vertex_uvs[binding.sources[i]];
+        Require((*mesh.uvs)[i] == Toon::Float2{float(value.value[0]), float(value.value[1])});
+      }
+    }
     Require(mesh.points == scene_.meshes[0].points &&
             mesh.indices == scene_.meshes[0].indices);
   }
@@ -118,7 +140,9 @@ public:
         output_.meshes[0].pose_revision == previous.meshes[0].pose_revision &&
         output_.meshes[0].morph_weights == previous.meshes[0].morph_weights &&
         output_.meshes[0].morph_weights_revision ==
-            previous.meshes[0].morph_weights_revision);
+            previous.meshes[0].morph_weights_revision &&
+        output_.meshes[0].uvs == previous.meshes[0].uvs &&
+        output_.meshes[0].uvs_revision == previous.meshes[0].uvs_revision);
     if (!first_.View()) {
       Require(first_.Reset(api, snapshot, error));
       firstOutput_ = output_;

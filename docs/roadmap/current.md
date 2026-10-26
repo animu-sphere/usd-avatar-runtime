@@ -494,5 +494,8 @@ bugs or requests already sent to another project.
 
 Primary UV transport now has a scoped generated live USD check in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md#live-primary-uv-evidence-2026-10-25).
-Continue with additional UV/material realization and renderer binding/pixel
-agreement; this does not close physics milestone D or Runtime Phase A/C.
+The [direct-consumer check](../reference/CAPABILITY_MATRIX.md#mmd-primary-uv-direct-consumer-evidence-2026-10-26)
+adds explicit UV transport through the installed renderer. Continue with
+automatic resident UV mapping, coherent tangent regeneration, additional
+UV/material realization and composed renderer/Hydra agreement; this does not
+close physics milestone D or Runtime Phase A/C.
