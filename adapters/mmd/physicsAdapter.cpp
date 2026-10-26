@@ -33,6 +33,14 @@ template<class T> bool forward(const ArEvaluationContext& c, const mmd::Result<T
     if (result.fatal()) send(*result.fatal(), AR_PROVIDER_ERROR);
     return bool(result);
 }
+using MaterialValues = std::array<std::array<double, 4>, 9>;
+constexpr uint32_t materialTypes[]{AR_VALUE_VEC4, AR_VALUE_VEC3, AR_VALUE_SCALAR,
+    AR_VALUE_VEC3, AR_VALUE_VEC4, AR_VALUE_SCALAR, AR_VALUE_VEC4, AR_VALUE_VEC4, AR_VALUE_VEC4};
+MaterialValues fields(const mmd::control::MaterialMorphValues& v) {
+    return {v.diffuseColor, {v.specularColor[0], v.specularColor[1], v.specularColor[2], 0},
+        {v.specularPower, 0, 0, 0}, {v.ambientColor[0], v.ambientColor[1], v.ambientColor[2], 0},
+        v.edgeColor, {v.edgeSize, 0, 0, 0}, v.textureTint, v.sphereTint, v.toonTint};
+}
 }
 struct PhysicsAdapter::Impl {
     struct State {
@@ -83,6 +91,34 @@ struct PhysicsAdapter::Impl {
         for (const auto& uv : config.baseUvs) for (double x : uv)
             if (!std::isfinite(x) || std::abs(x) > std::numeric_limits<float>::max())
                 throw std::invalid_argument("Invalid MMD base UV");
+        for (auto id : config.materialMorphs)
+            if (id < 0 || !morphIndices.insert(id).second)
+                throw std::invalid_argument("Ambiguous MMD material morph binding");
+        std::set<std::pair<std::string, std::string>> materialInputs;
+        std::map<int32_t, std::pair<std::string, uint32_t>> materialFields;
+        std::map<std::string, int32_t> materialTargets;
+        for (const auto& b : config.materials) {
+            const auto field = static_cast<uint32_t>(b.field);
+            if (b.material < 0 || field >= 9 || b.target.empty() || b.input.empty() ||
+                !materialInputs.emplace(b.target, b.input).second)
+                throw std::invalid_argument("Invalid or ambiguous MMD material input binding");
+            auto& [target, mask] = materialFields[b.material];
+            if ((!target.empty() && target != b.target) || (mask & (1u << field)))
+                throw std::invalid_argument("Ambiguous MMD material field binding");
+            target = b.target; mask |= 1u << field;
+            const auto [it, inserted] = materialTargets.emplace(b.target, b.material);
+            if (!inserted && it->second != b.material)
+                throw std::invalid_argument("MMD materials must have distinct runtime targets");
+            for (uint32_t a = 0; a < 4; ++a)
+                if (!std::isfinite(b.base[a]) || std::abs(b.base[a]) > std::numeric_limits<float>::max() ||
+                    (a >= materialTypes[field] && b.base[a] != 0))
+                    throw std::invalid_argument("Invalid MMD material base value");
+        }
+        for (const auto& [material, binding] : materialFields)
+            if (binding.second != 0x1ffu)
+                throw std::invalid_argument("MMD material binding requires all nine fields");
+        if (!config.materialMorphs.empty() && config.materials.empty())
+            throw std::invalid_argument("Missing MMD material output bindings");
         std::set<std::string> visibility;
         for (const auto& id : config.visibilityTargets)
             if (id.empty() || !visibility.insert(id).second)
@@ -122,6 +158,8 @@ struct PhysicsAdapter::Impl {
         std::vector<mmd::control::MorphChannel> channels;
         std::vector<uint32_t> uvIndices;
         auto uvs = config.baseUvs;
+        std::vector<uint32_t> materialIndices;
+        std::vector<std::array<double, 4>> materialValues;
         if (final) {
             channels = config.evaluator.ResolveMorphChannels(pose.channels);
             for (const auto& channel : channels) {
@@ -130,7 +168,36 @@ struct PhysicsAdapter::Impl {
                 bool mapped = false;
                 for (const auto& m : config.morphs) mapped |= m.morph == channel.morph;
                 for (auto id : config.uvMorphs) mapped |= id == channel.morph;
+                for (auto id : config.materialMorphs) mapped |= id == channel.morph;
                 if (!mapped) return failure(c, "MMD_ADAPTER_MORPH", "Owner non-bone morph has no output binding");
+            }
+            if (!config.materials.empty()) {
+                auto modulation = config.evaluator.EvaluateMaterialMorphs(pose.channels);
+                if (!forward(c, modulation)) return AR_PROVIDER_ERROR;
+                for (const auto& row : modulation.value()) {
+                    bool bound = false;
+                    for (const auto& b : config.materials) bound |= b.material == row.material;
+                    if (!bound)
+                        return failure(c, "MMD_ADAPTER_MATERIAL", "Reached material has no complete output binding");
+                }
+                for (const auto& b : config.materials) {
+                    const auto field = static_cast<uint32_t>(b.field);
+                    auto value = b.base;
+                    for (const auto& row : modulation.value()) if (row.material == b.material) {
+                        const auto multiply = fields(row.multiply), add = fields(row.add);
+                        for (uint32_t a = 0; a < materialTypes[field]; ++a)
+                            value[a] = b.base[a] * multiply[field][a] + add[field][a];
+                    }
+                    for (double x : value)
+                        if (!std::isfinite(x) || std::abs(x) > std::numeric_limits<float>::max())
+                            return failure(c, "MMD_ADAPTER_MATERIAL", "Final material value is nonfinite or exceeds float range");
+                    uint32_t i = 0;
+                    for (; i < v.material_count; ++i)
+                        if (b.target == v.materials[i].material_id && b.input == v.materials[i].input_id) break;
+                    if (i == v.material_count || v.materials[i].value_type != materialTypes[field])
+                        return failure(c, "MMD_ADAPTER_MATERIAL", "Material output identity or type mismatch");
+                    materialIndices.push_back(i); materialValues.push_back(value);
+                }
             }
             if (!config.baseUvs.empty()) {
                 auto deltas = config.evaluator.EvaluateUvMorphs(pose.channels);
@@ -197,6 +264,8 @@ struct PhysicsAdapter::Impl {
         }
         for (size_t i = 0; i < uvIndices.size(); ++i)
             if ((status = w.set_vertex_uv(w.context, uvIndices[i], uvs[i].data())) != AR_OK) return status;
+        for (size_t i = 0; i < materialIndices.size(); ++i)
+            if ((status = w.set_material(w.context, materialIndices[i], 1, materialValues[i].data())) != AR_OK) return status;
         for (auto i : visibilityIndices)
             if ((status = w.set_visibility(w.context, i, pose.visible)) != AR_OK) return status;
         return AR_OK;
@@ -265,6 +334,7 @@ ArEvaluatorDesc PhysicsAdapter::PostDescriptor() const {
     d.provider_version = AR_MMD_PROVIDER_VERSION; d.phase = AR_PHASE_CONSTRAINTS;
     d.reads = d.writes = AR_DOMAIN_POSE;
     if (!impl_->config.morphs.empty() || !impl_->config.baseUvs.empty()) d.writes |= AR_DOMAIN_DEFORMATION;
+    if (!impl_->config.materials.empty()) d.writes |= AR_DOMAIN_MATERIAL;
     if (!impl_->config.visibilityTargets.empty()) d.writes |= AR_DOMAIN_VISIBILITY;
     d.user_data = impl_.get(); d.after = &impl_->postAfter; d.after_count = 1;
     d.evaluate = Impl::post; return d;

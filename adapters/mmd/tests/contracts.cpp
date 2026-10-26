@@ -195,7 +195,8 @@ struct Fixture {
     }
     Fixture(Assets& a, bool jolt = false,
             std::function<void(avatarMmd::PhysicsAdapterConfig&)> configure = {},
-            bool registerWorld = true, bool constrainedResources = false)
+            bool registerWorld = true, bool constrainedResources = false,
+            std::function<void(std::vector<ArMaterialInput>&)> materialLayout = {})
             : assets(a), resourceJoints(constrainedResources) {
         CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
         CHECK(arGetPhysicsApi(1, sizeof(physics), &physics) == AR_OK);
@@ -247,6 +248,16 @@ struct Fixture {
             uvs.push_back({config.uvMesh.c_str(), i, {config.baseUvs[i][0], config.baseUvs[i][1]}});
         std::reverse(uvs.begin(), uvs.end()); // identity mapping, not array position
         d.initial_state.vertex_uvs = uvs.data(); d.initial_state.vertex_uv_count = uint32_t(uvs.size());
+        std::vector<ArMaterialInput> materials;
+        if (!config.materials.empty()) materials.push_back({"unrelated", "unchanged", AR_VALUE_SCALAR, 0, {7,0,0,0}});
+        const uint32_t types[]{4,3,1,3,4,1,4,4,4};
+        for (const auto& b : config.materials) {
+            ArMaterialInput value{b.target.c_str(), b.input.c_str(), types[static_cast<uint32_t>(b.field)], 0, {}};
+            std::copy(b.base.begin(), b.base.end(), value.value); materials.push_back(value);
+        }
+        std::reverse(materials.begin(), materials.end());
+        if (materialLayout) materialLayout(materials);
+        d.initial_state.materials = materials.data(); d.initial_state.material_count = uint32_t(materials.size());
         d.evaluators = selected; d.evaluator_count = 2;
         for (auto& avatar : avatars) CHECK(api.create_instance(runtime, &d, nullptr, &avatar) == AR_OK);
 #ifdef AVATAR_MMD_JOLT_SMOKE
@@ -574,6 +585,149 @@ void uvMorphOutputs() {
     { Fixture f(a, false, bind); CHECK(f.advance(1. / 120) == AR_PROVIDER_ERROR && !f.snapshots[0]); }
 }
 
+void materialMorphOutputs() {
+    using Field = avatarMmd::MaterialField;
+    const uint32_t sizes[]{4,3,1,3,4,1,4,4,4};
+    const char* names[]{"diffuse", "specular", "power", "ambient", "edge", "size", "texture", "sphere", "toon"};
+    Assets a;
+    a.model.materials.resize(2); a.model.morphs.resize(4);
+    a.model.morphs[0].type = a.model.morphs[1].type = mmd::MorphType::Material;
+    mmd::MorphMaterialOffset multiply, add;
+    multiply.material = mmd::kNone; multiply.operation = mmd::MaterialMorphOperation::Multiply;
+    add.material = 0; add.operation = mmd::MaterialMorphOperation::Add;
+    // Distinct binary fractions exercise all 28 components independently.
+    const auto fill = [](auto& value, float start) {
+        value.diffuseColor = {start, start+.03125f, start+.0625f, start+.09375f};
+        value.specularColor = {start+.125f, start+.15625f, start+.1875f};
+        value.specularPower = start+.21875f;
+        value.ambientColor = {start+.25f, start+.28125f, start+.3125f};
+        value.edgeColor = {start+.34375f, start+.375f, start+.40625f, start+.4375f};
+        value.edgeSize = start+.46875f;
+        value.textureTint = {start+.5f, start+.53125f, start+.5625f, start+.59375f};
+        value.sphereTint = {start+.625f, start+.65625f, start+.6875f, start+.71875f};
+        value.toonTint = {start+.75f, start+.78125f, start+.8125f, start+.84375f};
+    };
+    fill(multiply, 1.5f); fill(add, .25f);
+    a.model.morphs[0].materialOffsets = {multiply};
+    a.model.morphs[1].materialOffsets = {add};
+    a.model.morphs[2].members = {{0,.5f}};
+    a.model.morphs[3].members = {{1,.5f}};
+    a.motion.morphs = {{0, {{0,.5f},{1,.5f},{2,0}}}, {2, {{0,1},{1,1},{2,0}}},
+        {3, {{0,-1},{1,-1},{2,0}}}};
+    const auto bind = [&](auto& c) {
+        c.materialMorphs = {0,1};
+        for (int material = 0; material < 2; ++material) {
+            uint32_t component = 0;
+            for (uint32_t field = 0; field < 9; ++field) {
+                avatarMmd::MaterialInputBinding b{material, static_cast<Field>(field),
+                    "material" + std::to_string(material), names[field], {}};
+                for (uint32_t n = 0; n < sizes[field]; ++n)
+                    b.base[n] = (1 + component++ + material) / 16.;
+                c.materials.push_back(b);
+            }
+        }
+    };
+    const auto check = [&](const ArRuntimeApi& api, ArSnapshot snapshot, bool active) {
+        ArStateView v{AR_HEADER(ArStateView)}; CHECK(api.get_snapshot(snapshot, &v) == AR_OK);
+        CHECK(v.material_count == 19 && v.materials[18].value[0] == 7 && !v.materials[18].overridden);
+        for (uint32_t material = 0; material < 2; ++material) {
+            uint32_t component = 0;
+            for (uint32_t field = 0; field < 9; ++field) {
+                // Runtime order is reversed, and includes an unrelated input.
+                const auto& value = v.materials[17 - (material * 9 + field)];
+                CHECK(std::string(value.material_id) == "material" + std::to_string(material));
+                CHECK(std::string(value.input_id) == names[field] && value.value_type == sizes[field] && value.overridden);
+                for (uint32_t n = 0; n < 4; ++n) {
+                    double expected = 0;
+                    if (n < sizes[field]) {
+                        const double base = (1 + component + material) / 16.;
+                        expected = active ? base * (1.5 + component / 32.) -
+                            (material == 0 ? .5 * (.25 + component / 32.) : 0) : base;
+                        ++component;
+                    }
+                    CHECK(value.value[n] == expected);
+                }
+            }
+        }
+    };
+    ArSnapshot retained = 0; ArRuntimeApi api{};
+    {
+        Fixture f(a, false, bind); api = f.api;
+        CHECK(f.adapter->PostDescriptor().writes & AR_DOMAIN_MATERIAL);
+        for (uint64_t generation = 1; generation <= 3; ++generation) {
+            if (generation > 1) CHECK(f.physics.reset_world(f.runtime, f.world, generation, nullptr) == AR_OK);
+            CHECK(f.advance(1./120) == AR_OK);
+            for (auto snapshot : f.snapshots) check(f.api, snapshot, true);
+            if (!retained) { retained = f.snapshots[0]; CHECK(api.retain_snapshot(retained) == AR_OK); }
+            CHECK(f.advance(3./120) == AR_OK); check(f.api, f.snapshots[0], true);
+            CHECK(f.advance(4./120) == AR_OK); check(f.api, f.snapshots[0], false);
+        }
+    }
+    check(api, retained, true); CHECK(api.release_snapshot(retained) == AR_OK);
+    {
+        Fixture f(a, false, [&](auto& c) { bind(c); c.motion.morphs.clear(); });
+        CHECK(f.advance(1./120) == AR_OK); check(f.api, f.snapshots[0], false);
+    }
+    // A post-Step arithmetic refusal preserves an earlier retained frame and
+    // requires group reset; the first frame after reset uses immutable bases.
+    {
+        Fixture f(a, false, [&](auto& c) {
+            bind(c); c.materials[0].base[0] = std::numeric_limits<float>::max();
+            c.frameOffset = -.25; c.motion.morphs = {{0, {{0,0},{1,2}}}};
+        });
+        CHECK(f.advance(1./120) == AR_OK);
+        const auto previous = f.snapshots[0]; CHECK(f.api.retain_snapshot(previous) == AR_OK);
+        CHECK(f.advance(1./120) == AR_PROVIDER_ERROR && !f.snapshots[0]);
+        ArStateView v{AR_HEADER(ArStateView)}; CHECK(f.api.get_snapshot(previous, &v) == AR_OK);
+        CHECK(v.frame_id == 1 && v.materials[17].value[0] == std::numeric_limits<float>::max());
+        CHECK(f.physics.reset_world(f.runtime, f.world, 2, nullptr) == AR_OK);
+        CHECK(f.advance(1./120) == AR_OK);
+        CHECK(f.api.get_snapshot(f.snapshots[0], &v) == AR_OK && v.generation == 2);
+        CHECK(v.materials[17].value[0] == std::numeric_limits<float>::max());
+        CHECK(f.api.release_snapshot(previous) == AR_OK);
+    }
+    const auto fail = [&](auto configure, auto layout, const char* diagnostic) {
+        Fixture f(a, false, configure, true, false, layout);
+        CHECK(f.advance(1./120) == AR_PROVIDER_ERROR && !f.snapshots[0] && !f.snapshots[1]);
+        CHECK(std::find(f.diagnostics.begin(), f.diagnostics.end(), diagnostic) != f.diagnostics.end());
+    };
+    const auto unchanged = [](auto&) {};
+    // Missing/mistyped targets are refused before publishing any output.
+    fail(bind, [](auto& values) { values.erase(values.begin()); }, "MMD_ADAPTER_MATERIAL");
+    fail(bind, [](auto& values) { values[0].value_type = AR_VALUE_VEC3; values[0].value[3] = 0; }, "MMD_ADAPTER_MATERIAL");
+    fail(bind, [](auto& values) { values[0].input_id = "wrong"; }, "MMD_ADAPTER_MATERIAL");
+    a.model.materials.resize(3); // all-material reaches an unbound target, even at zero
+    a.motion.morphs = {{0, {{0,0}}}};
+    fail(bind, unchanged, "MMD_ADAPTER_MATERIAL"); a.model.materials.resize(2);
+    a.model.morphs[0].materialOffsets[0].toonTint[3] = std::numeric_limits<float>::infinity();
+    fail(bind, unchanged, "MMD_MOTION_MATERIAL_MORPH_INVALID");
+    a.model.morphs[0].materialOffsets[0] = multiply;
+    a.motion.morphs = {{0, {{0,2}}}};
+    fail([&](auto& c) { bind(c); c.materials[0].base[0] = std::numeric_limits<float>::max(); },
+        unchanged, "MMD_ADAPTER_MATERIAL");
+    // Constructor refuses incomplete/duplicate field sets and bad immutable bases.
+    const auto rejected = [&](auto change) {
+        auto c = a.config(); bind(c);
+        c.submit = [](const auto&, auto) { return AR_OK; };
+        c.snapshot = [](const auto&, auto&) { return AR_OK; };
+        change(c); bool threw = false;
+        try { avatarMmd::PhysicsAdapter adapter(std::move(c)); }
+        catch (const std::invalid_argument&) { threw = true; }
+        CHECK(threw);
+    };
+    rejected([](auto& c) { c.materials.pop_back(); });
+    rejected([](auto& c) { c.materials[1].field = Field::DiffuseColor; });
+    rejected([](auto& c) { c.materials[0].field = static_cast<Field>(99); });
+    rejected([](auto& c) { c.materials[0].target.clear(); });
+    rejected([](auto& c) { c.materials[0].material = -1; });
+    rejected([](auto& c) { for (auto& b : c.materials) b.target = "same"; });
+    rejected([](auto& c) { c.materials[1].input = c.materials[0].input; });
+    rejected([](auto& c) { c.materials[1].base[3] = 1; });
+    rejected([](auto& c) { c.materials[0].base[0] = std::numeric_limits<double>::quiet_NaN(); });
+    rejected([](auto& c) { c.materialMorphs.push_back(0); });
+    rejected([](auto& c) { c.materials.clear(); });
+}
+
 #ifdef AVATAR_MMD_TOON_SMOKE
 void publish(Fixture &f, std::unique_ptr<MmdToonCheck> (&consumers)[2]) {
   for (int i = 0; i < 2; ++i) {
@@ -626,6 +780,7 @@ int main(int argc, char **argv) {
     bindingsAndOutputs();
     resolvedMorphOutputs();
     uvMorphOutputs();
+    materialMorphOutputs();
 #ifdef AVATAR_MMD_TOON_SMOKE
     toonConstructed();
 #endif
