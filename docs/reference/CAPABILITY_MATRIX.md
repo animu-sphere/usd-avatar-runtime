@@ -936,7 +936,19 @@ snapshot lifetime. The live-host configuration's 21 CTests pass.
 See the [state contract](../contracts/EVALUATED_STATE.md#primary-vertex-uvs),
 [USD output](../architecture/USD_POSE_OUTPUT.md) and
 [MMD evidence](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-25-phase8-live-primary-uv.md).
-Additional UVs, materials, renderer pixels, resident Toon UV output and
-Hydra/direct agreement remain open. Rebuild providers and consumers for ABI 5;
-older binaries reject negotiation, and the Toon direct adapter refuses nonempty
-primary UV layouts pending renderer bindings.
+Additional UVs, materials, automatic resident Toon UV mapping and Hydra/direct
+agreement remain open. Rebuild providers and consumers for ABI 5; older binaries
+reject negotiation. See the later scoped direct-consumer evidence below.
+
+## MMD primary UV direct-consumer evidence (2026-10-26)
+
+The opt-in MMD/Toon host consumes the installed renderer's explicit primary UV
+bindings alongside final pose/morph/visibility. Generated owner group/direct
+resolution reaches reordered renderer UV slots for two instances over three
+reset generations. Duplicate arrays/revisions and retained snapshots after
+producer destruction agree. All nine CTests in this configuration pass.
+The renderer's separate generated MMD/MToon Vulkan checks establish texture
+response and zero restoration, not composed MMD-to-GPU or Hydra parity.
+The [MMD report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-26-phase8-toon-primary-uv.md)
+records reproduction and limits. Automatic resident mapping, tangent
+regeneration, additional UV/material output and representative L3 remain open.

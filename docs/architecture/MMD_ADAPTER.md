@@ -38,7 +38,8 @@ The backend is linked only into the test host, never the registration adapter.
 
 `AVATAR_MMD_TOON_SMOKE=ON` additionally requires that Jolt smoke and an installed
 `Toon` package with the `AvatarState` component built for the current runtime
-ABI. A configure-time header probe refuses incompatible installations. Only
+ABI and explicit primary UV bindings. A configure-time header probe refuses
+incompatible installations. Only
 the separate `mmdToonContracts` test host links the renderer; ordinary MMD and
 installed adapter consumers retain their existing dependencies. Explicit
 generated resources exercise final snapshot transport under the
