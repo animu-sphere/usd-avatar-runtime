@@ -16,6 +16,16 @@ struct MorphBinding {
     int32_t morph; // canonical leaf index; host must select compatible output types
     std::string mesh, target;
 };
+enum class MaterialField : uint32_t {
+    DiffuseColor, SpecularColor, SpecularPower, AmbientColor, EdgeColor, EdgeSize,
+    TextureTint, SphereTint, ToonTint
+};
+struct MaterialInputBinding {
+    int32_t material; // canonical material index
+    MaterialField field;
+    std::string target, input; // runtime material/input identity
+    std::array<double, 4> base{}; // immutable base; unused components must be zero
+};
 struct PhysicsAdapterConfig {
     mmd::control::Evaluator evaluator;
     mmd::binding::BoundMotion motion;
@@ -30,6 +40,10 @@ struct PhysicsAdapterConfig {
     std::vector<int32_t> uvMorphs;
     std::string uvMesh;
     std::vector<std::array<double, 2>> baseUvs;
+    // Host-admitted material leaves. Each bound material requires all nine
+    // typed fields, including separate sampled texture/sphere/toon tints.
+    std::vector<int32_t> materialMorphs;
+    std::vector<MaterialInputBinding> materials;
     std::vector<std::string> visibilityTargets;
     std::vector<std::string> after;
     // MMD frame = evaluation_seconds * framesPerSecond + frameOffset.

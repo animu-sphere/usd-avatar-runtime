@@ -30,7 +30,7 @@ workstream B validation is recorded below; the
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
 | physics orchestration | Experimental optional C tables implement exclusive world membership, selective participant removal, existing-plan pre/Step/post boundaries, fixed-tick accumulation with retained bounded catch-up, pause, group reset and invalidation after Step begins; generated MMD/Jolt callbacks and two-avatar shared-world smoke pass. Automatic body/constraint teardown, display interpolation, checkpoint restore and VRM secondary-motion integration remain unimplemented | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
 | Stage Runner host session | Optional installed `avatarStageRunnerSession` wraps a borrowed or owned runtime world registration with measured display time, play/pause, group reset, zero-elapsed simulation retry, retained last successful output, selective member removal and explicit/idempotent close; no second accumulator. Automatic stage/world construction, application wiring and body/constraint teardown remain open | [host session](../architecture/STAGE_RUNNER_SESSION.md) |
-| MMD control/coupling registration | Optional installed `avatarMmdAdapter` invokes owner BeginPhysics -> path-keyed kinematic targets -> caller-owned world snapshot -> feedback -> ResumePhysics; explicit joint/layout/root placement, owner-resolved vertex weights, primary UV values and visibility mapping; generated PMX/VMD/Jolt headless and installed-consumer tests pass. Generic retarget intake, automatic host/renderer binding and avatar L3 acceptance remain open | [MMD adapter](../architecture/MMD_ADAPTER.md) |
+| MMD control/coupling registration | Optional installed `avatarMmdAdapter` invokes owner BeginPhysics -> path-keyed kinematic targets -> caller-owned world snapshot -> feedback -> ResumePhysics; explicit joint/layout/root placement, owner-resolved vertex weights, primary UV values, typed material overrides and visibility mapping; generated PMX/VMD/Jolt headless and installed-consumer tests pass. Material snapshot scope is recorded [below](#mmd-material-snapshot-evidence-2026-10-27); live/rendered material realization, generic retarget intake, automatic host/renderer binding and avatar L3 acceptance remain open | [MMD adapter](../architecture/MMD_ADAPTER.md) |
 | versioned C ABI | revision-4/size validation, revision-1–3 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
 | capability negotiation and diagnostics | exact-version provider/binding intersection, required support checks, ordered bounded diagnostics and provider provenance implemented; semantic vocabulary/output negotiation pending | [capabilities/diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
 | motion validation boundary | installed owner clip/retarget validators invoked before retargeter construction; selected timestamp/scalar/gaze validation delegated by MotionPoseInputBridge; runtime binding/clock/C-string checks retained; owned MotionValidationError and synchronous C sink forwarding preserve owner report identity/order and package version; old InputAssembler source names retained | [motion adapters](../architecture/MOTION_ADAPTER.md) |
@@ -952,3 +952,30 @@ response and zero restoration, not composed MMD-to-GPU or Hydra parity.
 The [MMD report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-26-phase8-toon-primary-uv.md)
 records reproduction and limits. Automatic resident mapping, tangent
 regeneration, additional UV/material output and representative L3 remain open.
+
+## MMD material snapshot evidence (2026-10-27)
+
+Runtime base `a76aaf4` plus this change calls installed owner
+`EvaluateMaterialMorphs` on raw final pose channels and publishes complete
+typed overrides through explicit field/input bindings. Configuration and
+publication requirements belong to the
+[MMD adapter](../architecture/MMD_ADAPTER.md#configuration-and-ownership).
+No core ABI, phase, owner semantics or dependency pin changed.
+
+Generated source and installed-consumer tests exercise all 28 components for
+two materials and two instances, group-plus-direct weights, separate sampled
+tints, all-material/explicit targets, reordered inputs, unrelated input
+preservation, repeated-frame nonaccumulation, zero/absent weights and three
+reset generations. Retained snapshots survive producer destruction. A final
+float overflow after a successful tick publishes no new snapshot, preserves
+the retained frame and recovers through whole-world reset. Missing/mistyped
+outputs, unbound reached-zero materials, owner-invalid offsets and ambiguous
+or incomplete bindings refuse. The material fixture uses caller-synthesized
+completed body transforms, not a material-bearing Jolt/rendered asset.
+
+The MMD-only configuration's six CTests and the extended configuration's nine
+CTests pass, including the existing generated PMX/VMD/Jolt and Toon transport
+regressions. Material rendering is not part of those Toon checks. See the
+[MMD evidence report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-27-phase8-material-snapshots.md)
+for reproduction. Automatic material discovery, live USD material output,
+renderer tint consumption, representative private-input parity and L3 remain open.

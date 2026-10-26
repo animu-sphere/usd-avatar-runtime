@@ -14,7 +14,7 @@ The [keyed-input check](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-e
 adds generated VMD-to-physics replay coverage. Private intake exposes the next
 requirements: complete non-bone morph outputs through the owner/runtime/publication
 boundary beyond the [resolved vertex/group slice](../reference/CAPABILITY_MATRIX.md#live-mmd-resolved-group-evidence-2026-10-24),
-including UV/material effects, and select
+including additional UV channels and live/rendered material effects, and select
 representative inputs admitted by the owner's damping contract.
 Keep source values intact and resolve those requirements before
 claiming full PMX/VMD or L3 acceptance.
@@ -499,3 +499,9 @@ adds explicit UV transport through the installed renderer. Continue with
 automatic resident UV mapping, coherent tangent regeneration, additional
 UV/material realization and composed renderer/Hydra agreement; this does not
 close physics milestone D or Runtime Phase A/C.
+
+Material morphs now have a scoped generated
+[snapshot-publication check](../reference/CAPABILITY_MATRIX.md#mmd-material-snapshot-evidence-2026-10-27).
+Continue with automatic material binding, live USD appearance publication and
+renderer consumption of all sampled texture/sphere/toon contributions. These
+remain workstream C/E and physics milestone D integration gates.

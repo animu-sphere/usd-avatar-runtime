@@ -30,6 +30,12 @@ owner-to-runtime joint/rest bindings. Constructed-rig tests establish direct-own
 snapshot behavior; real-avatar layout conformance and typed resolved
 expression/gaze records remain open.
 
+The optional [MMD adapter](../architecture/MMD_ADAPTER.md) also publishes
+owner-evaluated material modulation as complete typed appearance overrides
+using explicit immutable bases and field bindings. Separate texture/sphere/toon
+contribution tints retain distinct identities. This snapshot transport does
+not establish a renderer realization or add a core shading model.
+
 ## 1. State groups
 
 | Group | Resolved effects |

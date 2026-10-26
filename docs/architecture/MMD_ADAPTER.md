@@ -17,9 +17,10 @@ evidence belong to the [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
 Enable `AVATAR_BUILD_MMD_ADAPTER` with installed `mmdPhysicsAdapter` 0.2 and
 OpenUSD 26.08 available through `CMAKE_PREFIX_PATH`. The owner package must
-provide `Evaluator::BeginPhysics`, `ResumePhysics`, `ResolveMorphChannels` and
-`physics::Adapter`; configuration probes both the morph-resolution header and
-linked symbol and refuses an older/incomplete install with a rebuild instruction;
+provide `Evaluator::BeginPhysics`, `ResumePhysics`, `ResolveMorphChannels`,
+`EvaluateUvMorphs`, `EvaluateMaterialMorphs` and `physics::Adapter`;
+configuration probes the query headers and linked symbols and refuses an
+older/incomplete install with a rebuild instruction;
 the local 0.2 build used for validation is not a published dependency claim.
 No sibling source is compiled into the runtime.
 
@@ -102,9 +103,30 @@ the adapter never expands groups or flips V again. Missing/duplicate/invalid
 vertices, additional UV channels and nonfinite/float-overflow final values
 refuse before any output write. Reached unmapped leaves fail even at zero.
 The live host checks canonical bases against authored unindexed vertex `st`;
-material/flip/impulse effects remain unsupported.
+material/flip/impulse effects remain unsupported in that live host.
 Visibility maps to named targets; hidden state without a target fails.
-Material morph realization and retargeted-input continuation remain open.
+
+The registration adapter separately admits material leaf indices through
+`materialMorphs`. `materials` binds each canonical material's nine
+`MaterialField` values to explicit runtime material/input identities and
+immutable four-component bases. Fields require vec4 diffuse/edge/texture/
+sphere/toon, vec3 specular/ambient and scalar power/edge size; unused base
+components must be zero. Every bound material requires all nine fields, with
+one distinct runtime material target and unique input identities. Tint inputs
+represent separate sampled contributions; the host must supply compatible
+consumer bindings rather than treating them as diffuse overrides.
+
+Post-physics publication calls the owner's material query on raw pose channels
+and applies its multiply/add results to those immutable bases. Every reached
+material, including all-material targets at zero weight, requires a complete
+binding. Missing/mistyped runtime inputs and nonfinite or float-overflow final
+values fail with `MMD_ADAPTER_MATERIAL` before any output writer call. Owner
+refusals retain their original diagnostics. All bound fields publish absolute
+typed overrides, including restored bases when no modulation is reached.
+Constructor validation rejects ambiguous fields/targets, incomplete field sets
+and invalid bases. Material writes use the existing `AR_DOMAIN_MATERIAL` and
+revision-5 state writer; the core ABI does not change. Live USD publication,
+renderer tint realization and retargeted-input continuation remain open.
 
 Register both `PreDescriptor()` and `PostDescriptor()`, select both for each
 instance, and use the post ID as `ArPhysicsParticipant.post_physics_evaluator`.
