@@ -118,9 +118,13 @@ The optional [USD scene resource adapter](PHYSICS_USD_RESOURCES.md) supplies
 ordered constraint/body/shape construction and teardown over owner snapshots,
 and a whole-stage world scope using a caller-selected backend factory;
 it remains separate from this physics-free clock/session target.
-Automatic runtime participant binding, `StageSession`/usdview/standalone application
+The separate [native MMD application session](MMD_SESSION.md) now composes this
+clock session with installed owner bindings and Jolt for single-avatar native
+viewport and usdview hosts. Its scoped controls/resource lifetime do not provide
+general participant discovery or multi-avatar application lifecycle.
+Automatic runtime participant binding, general `StageSession` application
 wiring, stop/single-step UI semantics, automatic application-driven resource teardown,
-resident renderer resource matching and Hydra/direct agreement remain
+broader resident renderer resource matching and Hydra/direct agreement remain
 open. Stop/reset policy must be selected by the application rather than silently
 translating stop into seek or
 a second fixed-step loop.

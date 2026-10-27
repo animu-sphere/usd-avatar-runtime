@@ -24,6 +24,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Project layout](architecture/PROJECT_LAYOUT.md) | proposed directories, components and build separation |
 | [Scoped VRM adapter](architecture/VRM_ADAPTER.md) | optional owner LookAt/expression registration, mapping, lifetime and evidence limits |
 | [Scoped MMD adapter](architecture/MMD_ADAPTER.md) | optional owner control/coupling registration, host world bridge and final-state mapping |
+| [Native MMD session](architecture/MMD_SESSION.md) | reusable single-avatar PMX/VMD/Jolt host, retained final snapshots and optional live USD publication |
 | [Stage Runner physics host session](architecture/STAGE_RUNNER_SESSION.md) | optional clock-to-world requests, playback controls and retained display output for explicitly configured worlds |
 | [USD physics scene resources](architecture/PHYSICS_USD_RESOURCES.md) | optional body/joint resource sets and whole-stage factory binding, path maps, rollback and ordered teardown |
 | [Scoped motion adapters](architecture/MOTION_ADAPTER.md) | clip sampling/retarget registration, MotionPoseInputBridge, installed-owner validation delegation and owned diagnostic reports |

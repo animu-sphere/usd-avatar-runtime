@@ -50,7 +50,31 @@ Update a row only with implementation and validation evidence from this
 repository. A sibling's callable library or published package is an integration
 input, not proof that this runtime already composes it.
 
+## Native MMD application session evidence (2026-10-27)
+
+The optional installed `avatarMmdSession` (`mmd_session` component) shares the
+usdview MMD/Jolt implementation with native hosts. It exposes retained final
+joint, vertex/group morph and primary-UV snapshots with optional USD publication;
+direct mode leaves the stage unchanged. Its generated snapshot test passes
+720 ticks over three generations with exact replay, pause, tick identity, retained-state
+lifetime, close/restart refusal and resource teardown. The existing eight
+usdview native regressions pass after extraction. See the
+[native session contract](../architecture/MMD_SESSION.md) and the renderer's
+[live-viewport evidence](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/107-2026-10-27-live-mmd-viewport.md).
+Single-avatar wiring does not close general application/participant lifecycle,
+representative L3, material output or private-avatar Hydra/direct parity.
+
 ## Validation evidence
+
+Dense primary-UV validation now uses an ordered scan and an unordered-layout
+fallback over borrowed identity views, retaining duplicate and finite-value
+refusals. Copied states share immutable owned identity strings, with independent
+numeric arrays/source samples. The configured 22 tests pass, including dense
+ordered/reversed multi-mesh layouts, nonadjacent duplicate refusal and retained
+snapshots across reset/destruction. The renderer's
+[dense-preview report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/108-2026-10-27-dense-live-mmd.md)
+records separate validation, owner and display timings; real-time private-avatar
+acceptance remains open.
 
 The direct Release build was checked on Windows x64 with MSVC 19.51 and CMake
 4.4.3 on 2026-10-05. No OpenUSD, Hydra, OpenExec or sibling provider target is

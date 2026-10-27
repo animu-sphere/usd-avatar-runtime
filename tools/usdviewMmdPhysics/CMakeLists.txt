@@ -22,8 +22,7 @@ foreach(file IN ITEMS __init__.py controller.py plugInfo.json)
 endforeach()
 add_library(usdviewMmdPhysicsPython MODULE session.cpp)
 target_compile_features(usdviewMmdPhysicsPython PRIVATE cxx_std_20)
-target_link_libraries(usdviewMmdPhysicsPython PRIVATE avatarMmdAdapter avatarUsdBinding
-    avatarStageRunnerSession avatarPhysicsUsdResources physicsJolt::physicsJolt python)
+target_link_libraries(usdviewMmdPhysicsPython PRIVATE avatarMmdSession python)
 set_target_properties(usdviewMmdPhysicsPython PROPERTIES PREFIX "" OUTPUT_NAME "_native"
     LIBRARY_OUTPUT_DIRECTORY "${package}" RUNTIME_OUTPUT_DIRECTORY "${package}")
 foreach(config IN ITEMS DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
