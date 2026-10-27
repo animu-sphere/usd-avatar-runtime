@@ -56,7 +56,7 @@ is not a frozen wire/ABI representation. Adoption is gated by
 | --- | --- |
 | [Capability matrix](reference/CAPABILITY_MATRIX.md) | implementation facts in this repository |
 | [Roadmap index](roadmap/README.md) | roadmap navigation and sequence |
-| [Current roadmap](roadmap/current.md) | boundary cleanup workstreams, Runtime Phases A–F, physics milestones/MVP gates and unresolved decisions |
+| [Current roadmap](roadmap/current.md) | boundary cleanup workstreams, Runtime Phases A–F, physics milestones/MVP gates, VRM secondary-motion integration sequence and unresolved decisions |
 
 ## Maintenance
 

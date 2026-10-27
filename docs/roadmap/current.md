@@ -403,7 +403,7 @@ clock/invalidation to the
 | A: evaluator dependency validation | validate existing evaluator DAGs against MMD pre/post control, morph/append/IK and model-specific post-physics IK; document any required extension before adding generic phase enum values | A/B |
 | B: world integration and barrier | connect the scoped reusable session to application/stage lifecycle and automatic world binding; retain explicit held-input policy, shared non-avatar objects, group reset and post-Step recovery guarantees | A/B |
 | D: final snapshot + fast-path consumer | publish retained CPU snapshots using the existing evaluated-state contract and renderer-owned consumer; verify joint/morph contract agreement with the Hydra path; no Physics Step or IK in rendering | A/B and C |
-| E: multiple avatars, seek and VRM extension | exercise shared-world membership and reset/seek scope, extend discontinuity coverage and integrate owner VRM secondary motion under the same orchestration; arbitrary-time complete replay is outside MVP | B/E |
+| E: multiple avatars, seek and VRM extension | exercise shared-world membership and reset/seek scope, extend discontinuity coverage and integrate owner VRM secondary motion under the same orchestration using the [bounded sequence below](#vrm-secondary-motion-integration); arbitrary-time complete replay is outside MVP | B/E |
 
 The physics MVP must demonstrate:
 
@@ -462,6 +462,63 @@ that delegates settings discovery to the owner and backend construction to a
 caller factory. Application-driven discovery, runtime participant binding and
 selective unload with cross-avatar constraints remain in B/E, with resident
 output work still in D.
+
+### VRM secondary-motion integration
+
+The next VRM integration candidate is owner-evaluated secondary motion under
+physics milestone E. This sequence prepares runtime integration; it does not
+change the live MMD priority above or establish implemented SpringBone support.
+The [VRM owner's track](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/docs/roadmap/springbone-track.md)
+owns its prerequisites and solver delivery. Follow that order before changing
+stage intake or registering a solver. Do not implement a substitute solver in
+runtime or the renderer while waiting for the installed owner API.
+
+The [owner policy](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/docs/design/VRM_MOTION_POLICY.md#10-spring-bones-on-a-rig)
+owns spring structure, root expansion, end-of-chain rules, collider response,
+units and reset mathematics. Runtime owns binding, execution and publication.
+Keep the first solver in the owner's `vrmRig`. Any later extraction of proven
+format-neutral behavior belongs to the physics owner's
+[secondary-motion contract](https://github.com/animu-sphere/usd-physics-plugins/blob/main/docs/design/SECONDARY_MOTION_CONTRACT.md);
+runtime consumes the resulting owner API rather than relocating algorithms.
+Work here proceeds in these bounded slices:
+
+| Slice | Runtime work | Acceptance gate |
+| --- | --- | --- |
+| Owner API admission | consume the installed solver and its feature declaration through an optional adapter; review state reset and transactional staging with the owner | missing/older installs fail explicitly when the integration is enabled; core-only and existing VRM expression builds retain their dependency boundaries; no sibling source compilation |
+| Stage binding | read canonical owner spring/collider declarations and bind them to explicit skeleton/joint identities and placement | generated VRM 0.x and 1.0 stages map to owner values; unresolved joints/groups, ambiguous declarations and unsupported placement fail with preserved owner provenance; bound values outlive the source stage |
+| Stateful evaluator | register an instance-local secondary-phase callback after motion and VRM LookAt/expression; call the owner with the current animated pose | final joint values agree with direct owner evaluation; each instance has independent history; untouched channels retain their working values; same-phase writer conflicts remain visible |
+| Fixed-tick session | drive the evaluator from one runtime-owned accumulator and retain committed snapshots for display | zero/one/multiple ticks, pause/resume, bounded catch-up and observable backlog agree with the lifecycle contract; repeated display/consumer retries perform no solver step |
+| Host and output | compose one VRM plus a clip, with explicit secondary-motion enable/disable and reset controls; hand final snapshots to existing pose/renderer consumers | generated fixtures and one admitted avatar from each VRM version move under a clip; retained joint identity/space/value agreement survives reset and unload; Hydra/direct parity is measured separately |
+
+Before the evaluator slice, settle two integration questions in the existing
+contracts rather than inventing a second scheduling model:
+
+- **Clock without a rigid-body world.** The current
+  [Stage Runner session](../architecture/STAGE_RUNNER_SESSION.md) requires an
+  explicit world registration. A VRM spring solver does not require one.
+  Decide how runtime supplies fixed ticks without a dummy physics backend,
+  a host/adapter accumulator, or a new phase/ABI declaration made in advance.
+  If a rigid-body world also participates, preserve its single-Step barrier
+  and document the VRM callback's dependency relative to it.
+- **Transactional solver history.** The
+  [frame lifecycle](../architecture/FRAME_LIFECYCLE.md#2-execute-a-frame)
+  requires failed attempts to leave provider history unchanged. Verify that
+  the owner API permits independent trial state or a supported checkpoint.
+  Stage changes during evaluation and commit only after final-state validation;
+  abort must permit the same frame to be retried. Resolve missing owner support
+  upstream rather than assuming that reset can restore an arbitrary prior tick.
+
+Regression evidence must include a later evaluator/publication-validation
+failure after a solver call, retry against a clean control run, reset followed
+by identical replay, two-instance isolation, and retained snapshot lifetime
+after reset and destruction. Reset/seek/loop-wrap initialize from the declared
+animated pose; a time jump is never passed as one large or negative step.
+Consumer delivery failure after commit retries the retained snapshot.
+
+Start with generated redistributable inputs and direct owner-value parity.
+Reference trajectory correctness remains the solver owner's gate. Add real
+avatar and renderer evidence only when measured, update the capability matrix
+with its limits, and keep broader physics MVP and ABI-freeze gates open.
 
 ## Open decisions
 
