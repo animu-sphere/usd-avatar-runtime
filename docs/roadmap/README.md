@@ -14,6 +14,9 @@ The 2026-10-20 [physics orchestration track](current.md#physics-orchestration-mi
 adds evaluator DAG validation, runtime-owned world barriers, headless MMD/Jolt,
 final-state consumers and multi-avatar/VRM expansion. Its local A–E milestones
 and MVP gates refine MMD integration without freezing new ABI values.
+The [VRM secondary-motion sequence](current.md#vrm-secondary-motion-integration)
+details owner API admission, stage binding, transactional evaluation, fixed
+ticks and final-state consumer evidence within physics milestone E.
 
 1. Runtime Phase A — freeze common contracts.
 2. Runtime Phase B — integrate motion, VRM, MMD and connector providers.
