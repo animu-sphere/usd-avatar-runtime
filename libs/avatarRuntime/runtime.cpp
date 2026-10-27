@@ -11,6 +11,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <utility>
 #include <vector>
@@ -167,7 +168,7 @@ struct State {
     double seconds = 0;
     uint64_t inputRevision = 0;
     std::shared_ptr<const Layout> layout;
-    std::vector<std::string> strings;
+    std::shared_ptr<const std::vector<std::string>> strings;
     std::vector<ArJoint> joints;
     std::vector<ArBlendShape> shapes;
     std::vector<ArVertexUv> uvs;
@@ -179,9 +180,10 @@ struct State {
 
     explicit State(const ArStateView& v) : instance(v.instance), frame(v.frame_id),
         generation(v.generation), seconds(v.evaluation_seconds) {
-        strings.reserve(size_t(v.joint_count) * 2 + size_t(v.blend_shape_count) * 2 +
+        auto owned = std::make_shared<std::vector<std::string>>();
+        owned->reserve(size_t(v.joint_count) * 2 + size_t(v.blend_shape_count) * 2 +
             size_t(v.material_count) * 2 + v.visibility_count + v.vertex_uv_count);
-        auto copyId = [&](const char* p) { strings.emplace_back(p); return strings.back().c_str(); };
+        auto copyId = [&](const char* p) { owned->emplace_back(p); return owned->back().c_str(); };
         for (uint32_t i = 0; i < v.joint_count; ++i) {
             auto j = v.joints[i]; j.skeleton_id = copyId(j.skeleton_id); j.joint_id = copyId(j.joint_id); joints.push_back(j);
         }
@@ -197,9 +199,13 @@ struct State {
         for (uint32_t i = 0; i < v.visibility_count; ++i) {
             auto x = v.visibility[i]; x.target_id = copyId(x.target_id); visibility.push_back(x);
         }
+        strings = std::move(owned);
     }
-    State(const State& other) : State(other.view()) {
-        inputRevision = other.inputRevision; layout = other.layout;
+    // Layout identities are immutable. Value arrays remain independently owned;
+    // snapshots share only the string storage that their opaque IDs refer to.
+    State(const State& other) : instance(other.instance), frame(other.frame), generation(other.generation),
+        seconds(other.seconds), inputRevision(other.inputRevision), layout(other.layout), strings(other.strings),
+        joints(other.joints), shapes(other.shapes), uvs(other.uvs), materials(other.materials), visibility(other.visibility) {
         for (const auto& s : other.samples) addSample(s, s.evaluator_id);
     }
     State(State&&) = default;
@@ -242,13 +248,28 @@ void validateState(const ArStateView& v, Diagnostics& d) {
     requireSpan(v.joints, v.joint_count, d); requireSpan(v.blend_shapes, v.blend_shape_count, d);
     requireSpan(v.materials, v.material_count, d); requireSpan(v.visibility, v.visibility_count, d);
     requireSpan(v.vertex_uvs, v.vertex_uv_count, d);
-    std::set<std::pair<std::string, uint32_t>> uvIds;
+    // Dense source layouts normally arrive in identity order. Keep all
+    // duplicate checks without allocation for ordered IDs; unordered IDs use
+    // one contiguous allocation and no per-vertex string copies.
+    using UvIdentity = std::pair<std::string_view, uint32_t>;
+    bool orderedUvs = true;
+    UvIdentity previousUv;
     for (uint32_t i = 0; i < v.vertex_uv_count; ++i) {
         const auto& uv = v.vertex_uvs[i]; requireId(uv.mesh_id, d);
-        if (!uvIds.emplace(uv.mesh_id, uv.vertex_index).second)
-            d.fail(AR_DUPLICATE_ID, "runtime.layout.duplicate", "Duplicate vertex UV identity", uv.mesh_id);
+        const UvIdentity identity{uv.mesh_id, uv.vertex_index};
+        if (i && !(previousUv < identity)) orderedUvs = false;
+        previousUv = identity;
         for (double x : uv.value) if (!std::isfinite(x))
             d.fail(AR_INVALID_STATE, "runtime.state.uv", "Non-finite vertex UV", uv.mesh_id);
+    }
+    if (!orderedUvs) {
+        std::vector<UvIdentity> uvIds;
+        uvIds.reserve(v.vertex_uv_count);
+        for (uint32_t i = 0; i < v.vertex_uv_count; ++i)
+            uvIds.emplace_back(v.vertex_uvs[i].mesh_id, v.vertex_uvs[i].vertex_index);
+        std::sort(uvIds.begin(), uvIds.end());
+        if (const auto duplicate = std::adjacent_find(uvIds.begin(), uvIds.end()); duplicate != uvIds.end())
+            d.fail(AR_DUPLICATE_ID, "runtime.layout.duplicate", "Duplicate vertex UV identity", duplicate->first.data());
     }
     std::set<std::pair<std::string, std::string>> ids;
     for (uint32_t i = 0; i < v.joint_count; ++i) {

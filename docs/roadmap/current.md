@@ -465,6 +465,15 @@ output work still in D.
 
 ## Open decisions
 
+The installed [native MMD session](../architecture/MMD_SESSION.md) now supplies
+single-avatar original PMX/VMD/Jolt snapshots to the dedicated renderer viewport,
+including scoped controls and whole-world teardown. Broader B/E lifecycle,
+material output, private-avatar Hydra/direct parity and representative acceptance
+remain open. The renderer's
+[viewport report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/107-2026-10-27-live-mmd-viewport.md)
+records display evidence and the current performance limit. This does not close
+milestone D or the physics MVP.
+
 Owning documents now record scoped prototype choices for clocks/channels, dense
 output, retained source-sample time, two-component material values, lifecycle,
 plan order and C layout. Resident target matching for direct renderers is

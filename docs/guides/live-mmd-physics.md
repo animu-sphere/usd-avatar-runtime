@@ -1,5 +1,10 @@
 # Live MMD physics in usdview
 
+The native implementation is also available as the installed
+[MMD session](../architecture/MMD_SESSION.md). The dedicated renderer host
+consumes its retained final snapshots through the
+[hydra-toon viewport](https://github.com/animu-sphere/hydra-toon/blob/main/docs/guides/BUILDING.md#live-mmd-physics-in-the-dedicated-viewport).
+
 The opt-in `usdviewMmdPhysics` host drives installed MMD control/coupling,
 avatar-runtime's fixed-tick barrier, Jolt, and
 [live UsdSkel pose output](../architecture/USD_POSE_OUTPUT.md).
@@ -48,7 +53,8 @@ The first configuration requires a directly opened PMX root layer with
 `/Asset/skel/Skeleton`, one avatar, rigid default-time placement and a stage
 admitted by the physics owner. Composed multi-avatar configuration, selective
 unload, arbitrary seek, source edits during playback, timeline synchronization,
-representative spring behavior and resident Toon matching remain open. Stop before
+representative spring behavior remain open. This usdview route does not exercise
+resident Toon matching; the native renderer host is linked above. Stop before
 editing or replacing bindings. Hydra-toon may be selected separately by a host
 with a compatible installed delegate; this evidence uses usdview's default
 renderer and makes no Toon rendering/parity claim.

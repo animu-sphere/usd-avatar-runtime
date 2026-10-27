@@ -1,5 +1,6 @@
 #include "avatarRuntime/api.h"
 #include <cstddef>
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -767,10 +768,29 @@ void vertexUvs() {
     CHECK(api.evaluate_frame(reader.runtime, instance, &input, nullptr, &s) == AR_INVALID_ARGUMENT && !s);
 }
 
+void denseUvIdentities() {
+    Fixture f;
+    const std::vector<const char*> selected;
+    auto desc = f.desc(selected);
+    std::vector<ArVertexUv> uvs;
+    for (const char* mesh : {"dense.a", "dense.b"})
+        for (uint32_t vertex = 0; vertex < 32768; ++vertex)
+            uvs.push_back({mesh, vertex, {.25, .75}});
+    desc.initial_state.vertex_uvs = uvs.data(); desc.initial_state.vertex_uv_count = uint32_t(uvs.size());
+    ArInstance id = 0;
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_OK);
+    CHECK(api.destroy_instance(f.runtime, id) == AR_OK);
+    std::reverse(uvs.begin(), uvs.end());
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_OK);
+    CHECK(api.destroy_instance(f.runtime, id) == AR_OK);
+    uvs.back() = uvs.front();
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_DUPLICATE_ID);
+}
+
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     negotiation(); planning(); capabilities(); transactions(); orderedRollbackAndPoisoning();
     inputsAndSnapshots(); deterministicFrames(); gazeInputs(); gazeValidation(); snapshotIdentity(); validation();
-    vec2Materials(); sourceSamples(); vertexUvs();
+    vec2Materials(); sourceSamples(); vertexUvs(); denseUvIdentities();
     std::cout << "Runtime contract checks passed\n";
 }
