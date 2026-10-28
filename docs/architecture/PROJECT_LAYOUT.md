@@ -38,6 +38,7 @@ or rename working directories merely to match a responsibility sketch.
 | `avatarStageRunnerSession` | `adapters/stage-runner`: optional installed clock/playback session with borrowed or owned runtime world registration; [boundary](STAGE_RUNNER_SESSION.md) |
 | `avatarPhysicsUsdResources` | `adapters/physics-usd`: optional installed resource sets over physics-owner snapshots and whole-stage world ownership with a caller-selected factory; [boundary](PHYSICS_USD_RESOURCES.md) |
 | `avatarVrmUsdBinding`, `avatarVrmLookAtUsdBinding`, `avatarVrmExpressionUsdBinding` | `adapters/vrm-usd`: separately optional owner schema/configuration bindings |
+| `avatarVrmSpringUsdBinding` | `adapters/vrm-spring-usd`: optional canonical spring/collider stage snapshot into installed owner values; [boundary](VRM_SPRING_USD_BINDING.md) |
 | `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host, optionally with installed Toon probe transport checks |
 | `usdviewMmdPhysicsPython` | `tools/usdviewMmdPhysics`: opt-in live single-PMX usdview application host, installed-owner control/coupling/Jolt and anonymous pose output |
 | `mmdToonContracts` | `adapters/mmd/tests`: separately opt-in final MMD/Jolt snapshot transport host using installed Toon and explicit generated resources |
