@@ -51,6 +51,12 @@ Its separately opt-in `AVATAR_MMD_TOON_SMOKE` executable also consumes installed
 adapter and its installed component.
 Connector adapters and OST composition remain unconfigured.
 
+The optional [VRM spring USD binding](VRM_SPRING_USD_BINDING.md) consumes the
+generic USD binder plus installed `vrmSchema` and `vrmRig`. Its separate option
+and `vrm_spring_usd` installed component check the solver feature API and v2
+root declarations without adding those requirements to existing expression or
+core builds. It creates no evaluator, physics world or scheduler.
+
 The optional [live usdview MMD host](../guides/live-mmd-physics.md) composes the
 installed MMD, physics/Jolt and Stage Runner packages with USD binding/output
 and Python. Its backend/UI dependencies belong only to the application module;

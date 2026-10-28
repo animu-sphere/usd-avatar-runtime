@@ -9,6 +9,7 @@ option(AVATAR_BUILD_PHYSICS_USD_RESOURCES "Build optional host-owned USD physics
 option(AVATAR_BUILD_MOTION_ADAPTER "Build the optional motion sampling/retarget adapter" OFF)
 option(AVATAR_BUILD_USD_BINDING "Build the optional USD skeleton binding adapter" OFF)
 option(AVATAR_BUILD_VRM_USD_BINDING "Build the optional VRM schema Humanoid binding adapter" OFF)
+option(AVATAR_BUILD_VRM_SPRING_USD_BINDING "Build the optional installed-owner VRM spring stage binding" OFF)
 option(AVATAR_BUILD_MOTION_USD_BINDING "Build the optional semantic USD motion clip binding" OFF)
 option(AVATAR_BUILD_MOTION_CHECK "Build the opt-in avatar/motion parity tool" OFF)
 option(AVATAR_BUILD_USDVIEW_MMD_PHYSICS "Build experimental live usdview MMD physics host" OFF)
@@ -25,6 +26,9 @@ if(AVATAR_BUILD_MOTION_CHECK AND NOT (AVATAR_BUILD_MOTION_USD_BINDING AND AVATAR
 endif()
 if(AVATAR_BUILD_VRM_USD_BINDING AND NOT AVATAR_BUILD_USD_BINDING)
     message(FATAL_ERROR "AVATAR_BUILD_VRM_USD_BINDING requires AVATAR_BUILD_USD_BINDING")
+endif()
+if(AVATAR_BUILD_VRM_SPRING_USD_BINDING AND NOT AVATAR_BUILD_USD_BINDING)
+    message(FATAL_ERROR "AVATAR_BUILD_VRM_SPRING_USD_BINDING requires AVATAR_BUILD_USD_BINDING")
 endif()
 add_library(avatarRuntime SHARED libs/avatarRuntime/runtime.cpp)
 add_library(AvatarRuntime::avatarRuntime ALIAS avatarRuntime)
@@ -60,6 +64,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfig.cmake
     cmake/AvatarMmdMorphResolution.cmake
     cmake/AvatarMotionValidation.cmake
     cmake/AvatarMotionUsdReading.cmake
+    cmake/AvatarVrmSpring.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
 
 if(AVATAR_BUILD_TESTS)
@@ -93,6 +98,9 @@ endif()
 
 if(AVATAR_BUILD_VRM_USD_BINDING)
     add_subdirectory(adapters/vrm-usd)
+endif()
+if(AVATAR_BUILD_VRM_SPRING_USD_BINDING)
+    add_subdirectory(adapters/vrm-spring-usd)
 endif()
 
 if(AVATAR_BUILD_MOTION_USD_BINDING)

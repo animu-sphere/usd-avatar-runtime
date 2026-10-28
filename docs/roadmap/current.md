@@ -480,12 +480,16 @@ Keep the first solver in the owner's `vrmRig`. Any later extraction of proven
 format-neutral behavior belongs to the physics owner's
 [secondary-motion contract](https://github.com/animu-sphere/usd-physics-plugins/blob/main/docs/design/SECONDARY_MOTION_CONTRACT.md);
 runtime consumes the resulting owner API rather than relocating algorithms.
-Work here proceeds in these bounded slices:
+The optional [spring stage binding](../architecture/VRM_SPRING_USD_BINDING.md)
+now admits the installed owner API and reads generated canonical declarations
+without importing expression evaluation or motion sampling. Its
+[evidence](../reference/CAPABILITY_MATRIX.md#vrm-spring-stage-binding-evidence-2026-10-28)
+covers source/installed configuration, owned values and explicit older-owner
+refusal. Transactional history review remains below; no solver is registered
+with runtime yet. Remaining work proceeds in these bounded slices:
 
 | Slice | Runtime work | Acceptance gate |
 | --- | --- | --- |
-| Owner API admission | consume the installed solver and its feature declaration through an optional adapter; review state reset and transactional staging with the owner | missing/older installs fail explicitly when the integration is enabled; core-only and existing VRM expression builds retain their dependency boundaries; no sibling source compilation |
-| Stage binding | read canonical owner spring/collider declarations and bind them to explicit skeleton/joint identities and placement | generated VRM 0.x and 1.0 stages map to owner values; unresolved joints/groups, ambiguous declarations and unsupported placement fail with preserved owner provenance; bound values outlive the source stage |
 | Stateful evaluator | register an instance-local secondary-phase callback after motion and VRM LookAt/expression; call the owner with the current animated pose | final joint values agree with direct owner evaluation; each instance has independent history; untouched channels retain their working values; same-phase writer conflicts remain visible |
 | Fixed-tick session | drive the evaluator from one runtime-owned accumulator and retain committed snapshots for display | zero/one/multiple ticks, pause/resume, bounded catch-up and observable backlog agree with the lifecycle contract; repeated display/consumer retries perform no solver step |
 | Host and output | compose one VRM plus a clip, with explicit secondary-motion enable/disable and reset controls; hand final snapshots to existing pose/renderer consumers | generated fixtures and one admitted avatar from each VRM version move under a clip; retained joint identity/space/value agreement survives reset and unload; Hydra/direct parity is measured separately |

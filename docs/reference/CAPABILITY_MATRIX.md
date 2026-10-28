@@ -1003,3 +1003,36 @@ regressions. Material rendering is not part of those Toon checks. See the
 [MMD evidence report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-27-phase8-material-snapshots.md)
 for reproduction. Automatic material discovery, live USD material output,
 renderer tint consumption, representative private-input parity and L3 remain open.
+
+## VRM spring stage binding evidence (2026-10-28)
+
+The optional [spring USD binding](../architecture/VRM_SPRING_USD_BINDING.md)
+reads canonical applied spring/collider schemas into installed owner values,
+using an explicit skeleton and layout. Windows Release tests cover generated
+VRM 1.0 chains and VRM 0.x branching roots, sphere/capsule fields, parallel
+parameters, center and optional collider groups, forwarded relationships and
+reference remapping. Joint/group resolution failures, ambiguous declarations,
+blocked/mismatched arrays, unknown collider shapes, unsupported units/scales,
+contract-v1 input and owner-rejected topology/parameters fail explicitly.
+
+`adapters.vrm_spring_usd` compares the bound rest/placement against independent
+fixture values, including a rotated avatar placement, then compares 12 steps
+of bound versus direct owner evaluation (`1e-5 m` tails, `1e-5` absolute
+quaternion-dot difference). Copies and all returned configuration remain usable
+after source prim removal and stage destruction. Owner refusal detail, subject,
+package identity and version are retained by `SpringBoneOwnerError`.
+Numerical reference trajectories remain the solver owner's evidence.
+
+`adapters.vrm_spring_usd_installed` repeats these checks through installed
+`AvatarRuntime::avatarVrmSpringUsdBinding`, first checking that core-only
+package lookup imports no owner. It also checks that `vrm_spring_usd` imports
+neither expression registration nor motion sampling. Both source and installed
+configure refuse an older solver install without the feature API and an older
+schema install without `rootJoints`, even when the package version matches.
+The existing expression-only option still builds and passes its six tests
+against that older solver install. Core and existing USD contracts also pass.
+
+This is local Windows stage-binding evidence. Hosted runtime lanes, actual
+`.vrm` intake, stateful runtime callbacks and rollback, fixed-tick scheduling,
+live avatars, and Hydra/direct output parity remain open. No runtime phase,
+physics milestone or ABI freeze gate is closed.
