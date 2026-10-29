@@ -1,0 +1,43 @@
+find_package(vrmRig CONFIG REQUIRED)
+include(${PROJECT_SOURCE_DIR}/cmake/AvatarVrmSpring.cmake)
+avatar_require_vrm_spring_solver()
+add_library(avatarVrmSpringAdapter STATIC springBoneAdapter.cpp)
+add_library(AvatarRuntime::avatarVrmSpringAdapter ALIAS avatarVrmSpringAdapter)
+target_compile_features(avatarVrmSpringAdapter PUBLIC cxx_std_17)
+set_target_properties(avatarVrmSpringAdapter PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_include_directories(avatarVrmSpringAdapter PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+target_link_libraries(avatarVrmSpringAdapter PUBLIC AvatarRuntime::avatarRuntime vrmRig::vrmRig)
+target_compile_definitions(avatarVrmSpringAdapter PRIVATE AR_VRM_SPRING_OWNER_VERSION="${vrmRig_VERSION}")
+if(MSVC)
+    target_compile_options(avatarVrmSpringAdapter PRIVATE /W4 /permissive-)
+endif()
+install(TARGETS avatarVrmSpringAdapter EXPORT AvatarVrmSpringAdapterTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(EXPORT AvatarVrmSpringAdapterTargets NAMESPACE AvatarRuntime::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
+if(AVATAR_BUILD_TESTS)
+    add_executable(vrmSpringAdapterContracts tests.cpp)
+    target_link_libraries(vrmSpringAdapterContracts PRIVATE avatarVrmSpringAdapter)
+    add_test(NAME adapters.vrm_spring COMMAND vrmSpringAdapterContracts)
+    add_test(NAME adapters.vrm_spring_installed COMMAND ${CMAKE_COMMAND}
+        -DROOT_BINARY=${PROJECT_BINARY_DIR}
+        -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
+        -DGENERATOR=${CMAKE_GENERATOR}
+        -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
+        -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+        -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+        -DRC_COMPILER=${CMAKE_RC_COMPILER}
+        -DMT=${CMAKE_MT}
+        -DMOTION_DIR=${motionCore_DIR}
+        -DUSD_DIR=${pxr_DIR}
+        -DVRM_DIR=${vrmRig_DIR}
+        -DCONFIG=$<CONFIG>
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
+    if(WIN32)
+        add_custom_command(TARGET vrmSpringAdapterContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:vrmSpringAdapterContracts>)
+    endif()
+endif()

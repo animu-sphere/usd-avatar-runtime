@@ -10,6 +10,11 @@ if(TARGET AvatarRuntime::avatarVrmAdapter OR TARGET AvatarRuntime::avatarMotionA
 endif()
 add_executable(consumer ../tests.cpp)
 target_link_libraries(consumer PRIVATE AvatarRuntime::avatarVrmSpringUsdBinding)
+if(SPRING_ADAPTER_TEST)
+    find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS vrm_spring)
+    target_link_libraries(consumer PRIVATE AvatarRuntime::avatarVrmSpringAdapter)
+    target_compile_definitions(consumer PRIVATE AR_TEST_SPRING_ADAPTER)
+endif()
 if(WIN32)
     add_custom_command(TARGET consumer POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:AvatarRuntime::avatarRuntime> $<TARGET_FILE_DIR:consumer>)

@@ -108,6 +108,15 @@ motion/avatar bindings still require conformance evidence before freeze.
 
 ## 2. Registration descriptor
 
+The separate optional [VRM spring evaluator](../architecture/VRM_SPRING_ADAPTER.md)
+uses the existing secondary phase after the working motion/LookAt/expression
+pose. It calls the installed owner on trial copies of instance-local history,
+commits only after final-state validation and writes simulated rotations alone.
+Its initial frame resets at the current animated pose; later direct requests
+must be one explicit fixed duration apart. This validates stateful callbacks
+without a rigid-body world. Backend-free accumulator/session scheduling remains
+runtime integration work, with no new phase or core ABI declaration.
+
 The proposed descriptor declares stable provider/evaluator identity and
 version, ABI range, phase membership, supplied/required capabilities,
 read/write state domains, dependencies and lifecycle callbacks.

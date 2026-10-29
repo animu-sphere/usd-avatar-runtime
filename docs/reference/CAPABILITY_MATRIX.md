@@ -1033,6 +1033,52 @@ The existing expression-only option still builds and passes its six tests
 against that older solver install. Core and existing USD contracts also pass.
 
 This is local Windows stage-binding evidence. Hosted runtime lanes, actual
-`.vrm` intake, stateful runtime callbacks and rollback, fixed-tick scheduling,
-live avatars, and Hydra/direct output parity remain open. No runtime phase,
-physics milestone or ABI freeze gate is closed.
+`.vrm` intake, fixed-tick scheduling, live avatars, and Hydra/direct output
+parity remain open. The following evaluator evidence adds stateful runtime
+callbacks and rollback. No runtime phase, physics milestone or ABI freeze gate
+is closed.
+
+## VRM spring evaluator evidence (2026-10-28)
+
+The optional [spring evaluator](../architecture/VRM_SPRING_ADAPTER.md) calls
+installed `vrmRig` through core's existing stateful callbacks in the secondary
+phase. Local Windows x86-64 Release source and installed-consumer tests pass
+against the owner solver built from `14efdec`, schema contract v2, OpenUSD
+26.08 and motion packages 0.5.4. It adds no core provider dependency or C ABI
+change. Spring numerical/reference correctness remains with the owner.
+
+`adapters.vrm_spring` compares 25 frames per generated rig against direct owner
+Reset/Step calls: a VRM 1.0 chain, a branching VRM 0.x root subtree and a
+simulated skeleton root. Working animation includes rotating roots/hair,
+translated placement/root motion and a rotated avatar placement. Final rotation
+agreement uses absolute quaternion-dot error below `1e-8`. Unsimulated joint
+values, translations and other state channels retain their working values.
+
+Failure injection covers initial seeding and a later step followed by a
+downstream provider refusal, and a step followed by an ignored invalid writer
+call. Retrying the same frame matches a clean independently advanced instance
+exactly. Every original frame also matches increasing-generation reset/replay
+exactly. Another instance starts from independent history, and retained
+snapshots survive reset and runtime destruction. Layout/joint/parent mismatch,
+scale, owner-rejected animated non-root translation, duplicate/omitted ticks,
+time jumps and same-phase writer conflicts are refused. Owner diagnostic detail,
+version, origin and evaluator identity remain observable.
+
+`adapters.vrm_spring_installed` repeats the suite through installed
+`AvatarRuntime::avatarVrmSpringAdapter`, checking that core-only lookup imports
+no owner and the spring component selects no schema, USD binding, expression or
+sampling adapter. With both spring options enabled, `adapters.vrm_spring_usd`
+and its installed counterpart pass bound values to the evaluator after stage
+destruction: both declaration shapes and sphere/capsule configurations compare
+13 seed/tick frames against direct owner evaluation, with retained identity and
+snapshot lifetime. The combined configuration's 11 CTests include the existing
+core/physics, USD skeleton/output and installed-consumer checks.
+Both source and installed configure reject an older owner lacking the spring
+API with an explicit admission diagnostic. The existing expression-only build
+still passes all six tests against that older owner.
+
+This is generated fixed-instant evidence. The first request initializes without
+stepping; later calls consume one explicit fixed tick. A backend-free runtime
+accumulator/session, pause/catch-up/backlog policy, real clips and avatars,
+host controls, hosted runtime lanes and renderer/Hydra parity remain open. It
+does not close physics milestone E, a Runtime Phase or an ABI-freeze gate.
