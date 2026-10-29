@@ -31,7 +31,7 @@ or rename working directories merely to match a responsibility sketch.
 | `avatarRuntime` | `libs/avatarRuntime`: common C contracts, lifecycle, storage, registration, scheduling and diagnostics; no external provider dependency |
 | `avatarMmdSession` | `adapters/mmd-session`: optional native single-avatar PMX/VMD/Jolt application composition; shared by usdview and external snapshot consumers; [session contract](MMD_SESSION.md) |
 | `avatarMotionAdapter` | `adapters/motion`: owner sampling/retarget/validation invocation, owned diagnostic reports and MotionPoseInputBridge with legacy source aliases |
-| `avatarUsdBinding` | `adapters/usd`: typed owner skeleton/placement read to runtime identity/baseline/placement binding and pose-only live UsdSkel publication |
+| `avatarUsdBinding` | `adapters/usd`: typed owner skeleton/placement read to runtime identity/baseline/placement binding and live pose, selected morph/UV/material publication |
 | `avatarMotionUsdBinding` | `adapters/motion-usd`: throwing owner-result read used directly by the host; compatible immutable StageClip wrapper delegates to it |
 | `avatarVrmAdapter` | `adapters/vrm`: owner LookAt/expression registration and common-state mapping |
 | `avatarMmdAdapter` | `adapters/mmd`: owner MMD pre/post control/coupling registration and host world bridge; [boundary](MMD_ADAPTER.md) |

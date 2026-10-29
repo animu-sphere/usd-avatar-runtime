@@ -7,8 +7,8 @@ owner: usd-avatar-runtime
 
 `avatarUsd::SkeletonPoseOutput`, installed with the optional `avatarUsdBinding`
 target and `usd` component, transports completed runtime joints and optional
-single-mesh blend-shape weights and primary UV values to a composed
-`UsdSkelAnimation`. It consumes a stage and an existing owner-validated
+single-mesh blend-shape weights, primary UV values and selected numeric material
+inputs. It consumes a stage and an existing owner-validated
 [`SkeletonBinding`](USD_BINDING.md); it runs no motion, control or physics.
 The [live MMD host guide](../guides/live-mmd-physics.md) describes the first
 application consumer. Current evidence belongs to the
@@ -35,6 +35,16 @@ nonfinite values and float overflow refuse. Face indices/counts, point count,
 primvar type/interpolation/indexing and stronger session-root opinions are
 rechecked before publication. The consumer performs no UV morph evaluation or
 source-basis conversion.
+
+The optional fifth constructor argument lists material input property paths.
+Each must already exist on a Material as an unconnected float, float3/4 or
+color3f/4f input. Runtime material/input identities match the prim path and
+complete attribute name. Apply requires exactly one correctly typed finite,
+float-representable value per selected input. Changed types/connections,
+missing/duplicate identities and masking session-root properties reject before
+any pose, UV or material output changes. Values are default-only opinions in
+the same scratch/anonymous layer. This transport adds no format semantics and
+creates no inputs for sampled texture tints.
 
 Root joints arrive in runtime world space, in metres. Publication removes the
 binding's rigid skeleton placement once, converts translations to stage units,
@@ -70,7 +80,7 @@ Retained CPU state remains usable after output teardown.
 ## Scope
 
 This USD publication path supplies joints and optional single-mesh blend-shape
-weights and primary vertex UVs for usdview's Hydra consumer. It supplies no
-additional UV, material or visibility publication, resident Toon matching,
+weights, primary vertex UVs and selected numeric material inputs for usdview's
+Hydra consumer. It supplies no additional UV or visibility publication, resident Toon matching,
 renderer resources, complete Scene Index, Hydra/direct parity or pixel guarantee.
 Those broader [output-path gates](OUTPUT_PATHS.md) remain open.

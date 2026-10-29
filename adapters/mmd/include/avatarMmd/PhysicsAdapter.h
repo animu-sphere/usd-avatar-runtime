@@ -20,11 +20,16 @@ enum class MaterialField : uint32_t {
     DiffuseColor, SpecularColor, SpecularPower, AmbientColor, EdgeColor, EdgeSize,
     TextureTint, SphereTint, ToonTint
 };
+enum class MaterialValueMode : uint32_t { Resolved, Multiply, Add };
 struct MaterialInputBinding {
     int32_t material; // canonical material index
     MaterialField field;
     std::string target, input; // runtime material/input identity
     std::array<double, 4> base{}; // immutable base; unused components must be zero
+    // Sampled texture contributions need independent affine coefficients.
+    // Multiply/Add are allowed only for tint fields, as a complete pair;
+    // base must be zero. Resolved preserves the existing base*M+A contract.
+    MaterialValueMode mode = MaterialValueMode::Resolved;
 };
 struct PhysicsAdapterConfig {
     mmd::control::Evaluator evaluator;
@@ -41,7 +46,8 @@ struct PhysicsAdapterConfig {
     std::string uvMesh;
     std::vector<std::array<double, 2>> baseUvs;
     // Host-admitted material leaves. Each bound material requires all nine
-    // typed fields, including separate sampled texture/sphere/toon tints.
+    // typed fields. Each sampled tint binds either a legacy resolved value
+    // or independent Multiply/Add inputs (required for live rendering).
     std::vector<int32_t> materialMorphs;
     std::vector<MaterialInputBinding> materials;
     std::vector<std::string> visibilityTargets;

@@ -99,24 +99,28 @@ struct PhysicsAdapter::Impl {
         std::map<std::string, int32_t> materialTargets;
         for (const auto& b : config.materials) {
             const auto field = static_cast<uint32_t>(b.field);
-            if (b.material < 0 || field >= 9 || b.target.empty() || b.input.empty() ||
+            const auto mode = static_cast<uint32_t>(b.mode);
+            if (b.material < 0 || field >= 9 || mode > 2 || (field < 6 && mode) || b.target.empty() || b.input.empty() ||
                 !materialInputs.emplace(b.target, b.input).second)
                 throw std::invalid_argument("Invalid or ambiguous MMD material input binding");
             auto& [target, mask] = materialFields[b.material];
-            if ((!target.empty() && target != b.target) || (mask & (1u << field)))
+            if ((!target.empty() && target != b.target) || (mask & (1u << (field * 3 + mode))))
                 throw std::invalid_argument("Ambiguous MMD material field binding");
-            target = b.target; mask |= 1u << field;
+            target = b.target; mask |= 1u << (field * 3 + mode);
             const auto [it, inserted] = materialTargets.emplace(b.target, b.material);
             if (!inserted && it->second != b.material)
                 throw std::invalid_argument("MMD materials must have distinct runtime targets");
             for (uint32_t a = 0; a < 4; ++a)
                 if (!std::isfinite(b.base[a]) || std::abs(b.base[a]) > std::numeric_limits<float>::max() ||
-                    (a >= materialTypes[field] && b.base[a] != 0))
+                    ((a >= materialTypes[field] || mode) && b.base[a] != 0))
                     throw std::invalid_argument("Invalid MMD material base value");
         }
         for (const auto& [material, binding] : materialFields)
-            if (binding.second != 0x1ffu)
-                throw std::invalid_argument("MMD material binding requires all nine fields");
+            for (uint32_t field = 0; field < 9; ++field) {
+                const auto modes = (binding.second >> (field * 3)) & 7u;
+                if (modes != 1u && !(field >= 6 && modes == 6u))
+                    throw std::invalid_argument("MMD material binding requires all fields and complete tint coefficient pairs");
+            }
         if (!config.materialMorphs.empty() && config.materials.empty())
             throw std::invalid_argument("Missing MMD material output bindings");
         std::set<std::string> visibility;
@@ -183,10 +187,13 @@ struct PhysicsAdapter::Impl {
                 for (const auto& b : config.materials) {
                     const auto field = static_cast<uint32_t>(b.field);
                     auto value = b.base;
+                    if (b.mode == MaterialValueMode::Multiply) value = {1,1,1,1};
                     for (const auto& row : modulation.value()) if (row.material == b.material) {
                         const auto multiply = fields(row.multiply), add = fields(row.add);
                         for (uint32_t a = 0; a < materialTypes[field]; ++a)
-                            value[a] = b.base[a] * multiply[field][a] + add[field][a];
+                            value[a] = b.mode == MaterialValueMode::Multiply ? multiply[field][a] :
+                                b.mode == MaterialValueMode::Add ? add[field][a] :
+                                b.base[a] * multiply[field][a] + add[field][a];
                     }
                     for (double x : value)
                         if (!std::isfinite(x) || std::abs(x) > std::numeric_limits<float>::max())

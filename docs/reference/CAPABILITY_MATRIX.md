@@ -1005,6 +1005,35 @@ regressions. Material rendering is not part of those Toon checks. See the
 for reproduction. Automatic material discovery, live USD material output,
 renderer tint consumption, representative private-input parity and L3 remain open.
 
+## Live MMD material evidence (2026-10-29)
+
+The [native MMD session](../architecture/MMD_SESSION.md) now binds direct-PMX
+stage-contract v2 materials and delivers six canonical fields plus six vec4
+sampled-tint coefficients per material. The original resolved-tint adapter
+configuration remains compatible; live consumers use independent multiply/add
+inputs, preserving `sample*M+A` instead of evaluating it against a white texel.
+No core C ABI, phase, owner evaluation rule or schema is changed.
+
+Generated `hosts.mmd_session_materials` compares all 40 components of each of
+two materials against direct installed-owner evaluation across group/direct
+weights, all-material multiplication, explicit addition, negative weights and
+zero restoration. Both direct-only and USD-enabled modes run three exact
+240-tick reset generations (1440 Jolt ticks total), with paused Step counts,
+retained output through destruction and source/session-layer restoration.
+USD compares the six canonical inputs with float tolerance `1e-6`; the owner
+defines no USD input for sampled tints. `adapters.usd_pose_output` verifies
+typed numeric delivery, reordered slots, malformed/missing/duplicate inputs,
+float overflow and masking session-root opinions without partial publication.
+The complete enabled Windows Release configuration passes 24 CTests, including
+installed core, adapter and USD consumers and the existing live regressions.
+
+The renderer consumes the installed `mmd_session` package through automatic
+resident matching. Its [material delivery report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/111-2026-10-29-live-mmd-materials.md)
+owns six passing renderer checks, sampled-texture GPU evidence and 120-frame
+generated viewport delivery. Representative private assets, broader discovery,
+additional UV channels, full Hydra/direct numerical/pixel parity and L3 remain
+open; this does not close physics milestone D or the ABI-freeze gates.
+
 ## VRM spring stage binding evidence (2026-10-28)
 
 The optional [spring USD binding](../architecture/VRM_SPRING_USD_BINDING.md)

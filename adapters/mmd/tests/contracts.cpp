@@ -668,6 +668,38 @@ void materialMorphOutputs() {
         Fixture f(a, false, [&](auto& c) { bind(c); c.motion.morphs.clear(); });
         CHECK(f.advance(1./120) == AR_OK); check(f.api, f.snapshots[0], false);
     }
+    const auto affine = [&](auto& c) {
+        bind(c);
+        auto old = std::move(c.materials); c.materials.clear();
+        for (auto b : old) {
+            if (uint32_t(b.field) < 6) { c.materials.push_back(b); continue; }
+            b.base = {};
+            const auto input = b.input;
+            b.mode = avatarMmd::MaterialValueMode::Multiply; b.input = input + ":multiply"; c.materials.push_back(b);
+            b.mode = avatarMmd::MaterialValueMode::Add; b.input = input + ":add"; c.materials.push_back(b);
+        }
+    };
+    {
+        Fixture f(a, false, affine);
+        for (int tick = 1; tick <= 9; ++tick) {
+            CHECK(f.advance(1. / 120.) == AR_OK);
+            if (tick != 1 && tick != 9) continue;
+            ArStateView v{AR_HEADER(ArStateView)}; CHECK(f.api.get_snapshot(f.snapshots[0], &v) == AR_OK);
+            CHECK(v.material_count == 25);
+            for (uint32_t i = 0; i < v.material_count; ++i) {
+                const auto& m = v.materials[i]; const std::string name(m.input_id);
+                const auto sep = name.find(':'); if (sep == std::string::npos) continue;
+                const uint32_t tint = name.rfind("texture",0) == 0 ? 0 : name.rfind("sphere",0) == 0 ? 1 : 2;
+                for (uint32_t n = 0; n < 4; ++n) {
+                    const double component = 16 + tint * 4 + n;
+                    const bool multiply = name.substr(sep) == ":multiply";
+                    const double expected = tick == 1 ? (multiply ? 1.5 + component / 32. :
+                        (std::string(m.material_id) == "material0" ? -.5 * (.25 + component / 32.) : 0)) : (multiply ? 1 : 0);
+                    CHECK(m.value[n] == expected);
+                }
+            }
+        }
+    }
     // A post-Step arithmetic refusal preserves an earlier retained frame and
     // requires group reset; the first frame after reset uses immutable bases.
     {
@@ -726,6 +758,8 @@ void materialMorphOutputs() {
     rejected([](auto& c) { c.materials[0].base[0] = std::numeric_limits<double>::quiet_NaN(); });
     rejected([](auto& c) { c.materialMorphs.push_back(0); });
     rejected([](auto& c) { c.materials.clear(); });
+    rejected([](auto& c) { c.materials[0].mode = avatarMmd::MaterialValueMode::Multiply; });
+    rejected([](auto& c) { c.materials[6].base = {}; c.materials[6].mode = avatarMmd::MaterialValueMode::Multiply; });
 }
 
 #ifdef AVATAR_MMD_TOON_SMOKE

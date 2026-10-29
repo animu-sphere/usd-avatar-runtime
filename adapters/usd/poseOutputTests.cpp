@@ -48,6 +48,11 @@ int main() {
     for (const auto& target : targets) UsdSkelBlendShape::Define(stage, target);
     meshBinding.CreateBlendShapesAttr().Set(shapes);
     meshBinding.CreateBlendShapeTargetsRel().SetTargets(targets);
+    auto material = stage->DefinePrim(SdfPath("/Avatar/Surface"), TfToken("Material"));
+    const auto color = material.CreateAttribute(TfToken("inputs:color"), SdfValueTypeNames->Color4f);
+    const auto specular = material.CreateAttribute(TfToken("inputs:specular"), SdfValueTypeNames->Color3f);
+    const auto power = material.CreateAttribute(TfToken("inputs:power"), SdfValueTypeNames->Float);
+    color.Set(GfVec4f(1)); specular.Set(GfVec3f(.5)); power.Set(8.f);
     std::string original; stage->GetRootLayer()->ExportToString(&original);
     auto foreign = SdfLayer::CreateAnonymous("other-session-data.usda");
     stage->GetSessionLayer()->SetSubLayerPaths({foreign->GetIdentifier()});
@@ -63,6 +68,10 @@ int main() {
     desc.initial_state.blend_shapes = morphs; desc.initial_state.blend_shape_count = 3;
     ArVertexUv uvs[]{{"/Avatar/Mesh",2,{-.25,1.5}}, {"/Avatar/Mesh",0,{.5,.25}}, {"/Avatar/Mesh",1,{1,0}}};
     desc.initial_state.vertex_uvs = uvs; desc.initial_state.vertex_uv_count = 3;
+    ArMaterialInput materials[]{{"/Avatar/Surface","inputs:power",1,1,{4,0,0,0}},
+        {"/Avatar/Surface","inputs:color",4,1,{.25,.5,.75,.125}},
+        {"/Avatar/Surface","inputs:specular",3,1,{.125,.25,.5,0}}};
+    desc.initial_state.materials = materials; desc.initial_state.material_count = 3;
     ArInstance instance = 0; CHECK(api.create_instance(runtime, &desc, nullptr, &instance) == AR_OK);
     ArInputFrame input{AR_HEADER(ArInputFrame)}; input.generation = 1; input.frame_id = 1;
     ArSnapshot snapshot = 0; CHECK(api.evaluate_frame(runtime, instance, &input, nullptr, &snapshot) == AR_OK);
@@ -73,8 +82,13 @@ int main() {
         poseOnly.Apply(api, snapshot);
         CHECK(!UsdSkelAnimation::Get(stage, poseOnly.AnimationPath()).GetBlendShapesAttr().HasAuthoredValue());
     }
-    avatarUsd::SkeletonPoseOutput output(stage, binding, mesh.GetPath(), mesh.GetPath());
+    avatarUsd::SkeletonPoseOutput output(stage, binding, mesh.GetPath(), mesh.GetPath(),
+        {color.GetPath(),specular.GetPath(),power.GetPath()});
     output.Apply(api, snapshot);
+    GfVec4f rgba; GfVec3f rgb; float scalar;
+    CHECK(color.Get(&rgba) && rgba == GfVec4f(.25,.5,.75,.125));
+    CHECK(specular.Get(&rgb) && rgb == GfVec3f(.125,.25,.5));
+    CHECK(power.Get(&scalar) && scalar == 4);
     VtVec2fArray actualUvs; CHECK(st.Get(&actualUvs) && actualUvs == VtVec2fArray({{.5,.25},{1,0},{-.25,1.5}}));
     CHECK(st.GetAttr().GetNumTimeSamples() == 0);
     CHECK(stage->GetEditTarget().GetLayer() == stage->GetRootLayer());
@@ -104,6 +118,18 @@ int main() {
         std::string after; output.Layer()->ExportToString(&after); CHECK(after == good);
     };
     auto bad = view; bad.layout_version = 2; refuse(bad);
+    bad = view; bad.materials = nullptr; refuse(bad);
+    bad = view; bad.material_count = 2; refuse(bad);
+    auto changedMaterials = std::vector<ArMaterialInput>(materials,materials+3);
+    bad = view; bad.materials = changedMaterials.data();
+    changedMaterials[0].value[0] = 1e100; refuse(bad);
+    changedMaterials[0] = materials[1]; refuse(bad);
+    changedMaterials[0] = materials[0]; changedMaterials[1].value_type = AR_VALUE_VEC3; refuse(bad);
+    {
+        UsdEditContext edit(stage,stage->GetSessionLayer());
+        color.Set(GfVec4f(0)); refuse(view);
+        material.RemoveProperty(TfToken("inputs:color"));
+    }
     bad = view; bad.vertex_uvs = nullptr; refuse(bad);
     bad = view; bad.vertex_uv_count = 2; refuse(bad);
     auto changedUvs = std::vector<ArVertexUv>(uvs, uvs + 3);
@@ -160,6 +186,9 @@ int main() {
         skeleton.GetPrim().RemoveProperty(TfToken("skel:animationSource"));
     }
     output.Close(); output.Close();
+    CHECK(color.Get(&rgba) && rgba == GfVec4f(1));
+    CHECK(specular.Get(&rgb) && rgb == GfVec3f(.5));
+    CHECK(power.Get(&scalar) && scalar == 8);
     CHECK(st.Get(&actualUvs) && actualUvs == baseUvs);
     CHECK(stage->GetSessionLayer()->GetSubLayerPaths().size() == 1);
     CHECK(stage->GetSessionLayer()->GetSubLayerPaths()[0] == foreign->GetIdentifier());

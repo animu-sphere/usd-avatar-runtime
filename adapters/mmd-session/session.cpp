@@ -70,6 +70,9 @@ struct Session::Impl {
     std::string uvMeshId_;
     std::vector<ArBlendShape> baselineMorphs_;
     std::vector<ArVertexUv> baselineUvs_;
+    std::vector<avatarMmd::MaterialInputBinding> materialBindings_;
+    std::vector<ArMaterialInput> baselineMaterials_;
+    std::vector<SdfPath> materialInputs_;
     bool publishUsd_ = true;
     bool translationSprings_ = false, rotationSprings_ = false;
     size_t translationAxes_ = 0, rotationAxes_ = 0;
@@ -228,6 +231,7 @@ public:
         size_t vertices = 0;
         for (const auto& morph : model.morphs) {
             if (morph.type == mmd::MorphType::Uv) c.uvMorphs.push_back(int32_t(morph.sourceIndex));
+            if (morph.type == mmd::MorphType::Material) c.materialMorphs.push_back(int32_t(morph.sourceIndex));
             if (morph.type != mmd::MorphType::Vertex) continue;
             ++vertices;
             const TfToken name(morph.name.stableId);
@@ -246,6 +250,49 @@ public:
             c.morphs.push_back({int32_t(morph.sourceIndex), meshPath.GetString(), name.GetString()});
         }
         if (vertices != shapes.size()) throw std::invalid_argument("PMX/stage vertex morph count mismatch");
+        if (!c.materialMorphs.empty()) {
+            const auto version = stage_->GetPrimAtPath(SdfPath("/Asset")).GetCustomDataByKey(TfToken("mmd:stageContractVersion"));
+            if (!version.IsHolding<int>() || version.UncheckedGet<int>() != 2)
+                throw std::invalid_argument("MMD_SESSION_MATERIAL: stage contract v2 required");
+            const char* fields[]{"diffuseColor","specularColor","specularPower","ambientColor","edgeColor","edgeSize"};
+            const SdfValueTypeName types[]{SdfValueTypeNames->Color4f,SdfValueTypeNames->Color3f,SdfValueTypeNames->Float,
+                SdfValueTypeNames->Color3f,SdfValueTypeNames->Color4f,SdfValueTypeNames->Float};
+            for (size_t i = 0; i < model.materials.size(); ++i) {
+                const auto& m = model.materials[i];
+                const auto path = SdfPath("/Asset/mtl").AppendChild(TfToken(m.name.stableId));
+                const auto prim = stage_->GetPrimAtPath(path);
+                const auto index = prim ? prim.GetCustomDataByKey(TfToken("mmd:sourceIndex")) : VtValue();
+                if (!prim || prim.GetTypeName() != TfToken("Material") ||
+                    !prim.HasAPI(TfToken("MmdMaterialAPI")) || !index.IsHolding<int>() || index.UncheckedGet<int>() != int(i))
+                    throw std::invalid_argument("MMD_SESSION_MATERIAL: PMX/stage identity mismatch");
+                const std::array<double,4> bases[]{
+                    {m.diffuseColor[0],m.diffuseColor[1],m.diffuseColor[2],m.diffuseColor[3]},
+                    {m.specularColor[0],m.specularColor[1],m.specularColor[2],0}, {m.specularPower,0,0,0},
+                    {m.ambientColor[0],m.ambientColor[1],m.ambientColor[2],0},
+                    {m.edgeColor[0],m.edgeColor[1],m.edgeColor[2],m.edgeColor[3]}, {m.edgeSize,0,0,0}};
+                for (uint32_t field = 0; field < 6; ++field) {
+                    const auto name = std::string("inputs:mmd:material:") + fields[field];
+                    const auto attr = prim.GetAttribute(TfToken(name));
+                    VtValue value;
+                    if (!attr || attr.GetTypeName() != types[field] || attr.HasAuthoredConnections() ||
+                        attr.GetNumTimeSamples() || !attr.Get(&value))
+                        throw std::invalid_argument("MMD_SESSION_MATERIAL: missing/static numeric input required");
+                    std::array<double,4> actual{};
+                    if (value.IsHolding<float>()) actual[0] = value.UncheckedGet<float>();
+                    else if (value.IsHolding<GfVec3f>()) for (int a = 0; a < 3; ++a) actual[a] = value.UncheckedGet<GfVec3f>()[a];
+                    else if (value.IsHolding<GfVec4f>()) for (int a = 0; a < 4; ++a) actual[a] = value.UncheckedGet<GfVec4f>()[a];
+                    else throw std::invalid_argument("MMD_SESSION_MATERIAL: input value type mismatch");
+                    if (actual != bases[field]) throw std::invalid_argument("MMD_SESSION_MATERIAL: PMX/stage baseline mismatch");
+                    c.materials.push_back({int32_t(i),static_cast<avatarMmd::MaterialField>(field),path.GetString(),name,actual});
+                    materialInputs_.push_back(attr.GetPath());
+                }
+                const char* tints[]{"texture","sphere","toon"};
+                for (uint32_t tint = 0; tint < 3; ++tint)
+                    for (auto mode : {avatarMmd::MaterialValueMode::Multiply,avatarMmd::MaterialValueMode::Add})
+                        c.materials.push_back({int32_t(i),static_cast<avatarMmd::MaterialField>(6+tint),path.GetString(),
+                            std::string("mmd:") + tints[tint] + "Tint:" + (mode == avatarMmd::MaterialValueMode::Multiply ? "multiply" : "add"),{},mode});
+            }
+        }
         if (vertices) morphMesh_ = meshPath;
         std::vector<ArVertexUv> uvs;
         if (!c.uvMorphs.empty()) {
@@ -281,6 +328,14 @@ public:
         // UV string storage is borrowed only until create_instance copies it.
         uvMeshId_ = c.uvMesh;
         for (auto& uv : uvs) uv.mesh_id = uvMeshId_.c_str();
+        materialBindings_ = c.materials;
+        const uint32_t materialTypes[]{4,3,1,3,4,1,4,4,4};
+        for (const auto& b : materialBindings_) {
+            ArMaterialInput value{b.target.c_str(),b.input.c_str(),materialTypes[uint32_t(b.field)],0,{}};
+            std::copy(b.base.begin(),b.base.end(),value.value);
+            if (b.mode == avatarMmd::MaterialValueMode::Multiply) std::fill(value.value,value.value+4,1.);
+            baselineMaterials_.push_back(value);
+        }
         adapter_ = std::make_unique<avatarMmd::PhysicsAdapter>(std::move(c));
         auto pre = adapter_->PreDescriptor(), post = adapter_->PostDescriptor();
         check(runtime_.api.register_evaluator(runtime_.handle, &pre, nullptr));
@@ -292,6 +347,8 @@ public:
         desc.initial_state.blend_shapes = morphs.data();
         desc.initial_state.blend_shape_count = uint32_t(morphs.size());
         desc.initial_state.vertex_uvs = uvs.data(); desc.initial_state.vertex_uv_count = uint32_t(uvs.size());
+        desc.initial_state.materials = baselineMaterials_.data();
+        desc.initial_state.material_count = uint32_t(baselineMaterials_.size());
         check(runtime_.api.create_instance(runtime_.handle, &desc, nullptr, &instance_));
         baselineMorphs_ = std::move(morphs); baselineUvs_ = std::move(uvs);
         baseline_ = desc.initial_state; baseline_.instance = instance_; baseline_.generation = 1;
@@ -303,7 +360,7 @@ public:
         world.fixed_step_seconds = 1. / 120; world.max_catch_up_ticks = 8;
         world.user_data = this; world.step = step; world.reset = resetWorld;
         session_ = std::make_unique<avatarStageRunner::PhysicsSession>(runtime_.handle, world, [this] { return now_; });
-        if (publishUsd_) output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_, uvMesh_);
+        if (publishUsd_) output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_, uvMesh_, materialInputs_);
     }
     void play() { if (!session_ || !session_->IsOpen()) throw std::runtime_error("Session closed"); session_->Play(); }
     void pause() { if (session_) session_->Pause(); }
@@ -322,7 +379,7 @@ public:
         ArDiagnosticSink sink{this, diagnostic}; error_.clear();
         status(session_->Reset(++generation_, &sink));
         if (output_) {
-            output_->Close(); output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_, uvMesh_);
+            output_->Close(); output_ = std::make_unique<avatarUsd::SkeletonPoseOutput>(stage_, binding_, morphMesh_, uvMesh_, materialInputs_);
         }
         baseline_.generation = generation_;
     }

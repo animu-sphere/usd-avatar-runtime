@@ -46,7 +46,9 @@ equivalence. The host binds canonical vertex morphs by the owner's mesh token,
 target and source index, then publishes owner-resolved direct/group weights
 alongside final joints. Primary UV leaves use the installed owner UV query
 and immutable canonical bases, with absolute `st` publication in the same
-temporary layer. Additional UV, flip, material and impulse leaves and hidden
+temporary layer. Material morphs now publish canonical material inputs in that
+layer and separate sampled tint coefficients through direct snapshots. USD has
+no canonical input for the latter. Additional UV, flip and impulse leaves and hidden
 outputs without bindings fail through the owner registration adapter.
 
 The first configuration requires a directly opened PMX root layer with
@@ -174,7 +176,9 @@ configuration explicitly refuses older/incomplete headers or libraries.
 This native test checks direct, group-only and mixed direct/group weights,
 including return to zero while the pivot moves and physics drives the final skeleton,
 composed blend-shape deformation followed by skinning, pause at a nonzero weight,
-exact reset replay and layer restoration. Material input refuses even at zero.
+exact reset replay and layer restoration. The empty material declaration is now
+admitted with a complete material layout. Nonempty material modulation has its
+own generated [session check](../architecture/MMD_SESSION.md).
 The UV test checks direct and mixed group/direct UV plus vertex leaves, signed
 and above-one weights, primary-V conversion, ignored primary Z/W, return to
 immutable bases, pause, three-generation replay and Reset/Close cleanup.

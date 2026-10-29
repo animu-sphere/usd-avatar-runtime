@@ -103,7 +103,8 @@ the adapter never expands groups or flips V again. Missing/duplicate/invalid
 vertices, additional UV channels and nonfinite/float-overflow final values
 refuse before any output write. Reached unmapped leaves fail even at zero.
 The live host checks canonical bases against authored unindexed vertex `st`;
-material/flip/impulse effects remain unsupported in that live host.
+flip/impulse effects remain unsupported in that live host. The native session
+also binds material leaves as described below.
 Visibility maps to named targets; hidden state without a target fails.
 
 The registration adapter separately admits material leaf indices through
@@ -112,9 +113,13 @@ The registration adapter separately admits material leaf indices through
 immutable four-component bases. Fields require vec4 diffuse/edge/texture/
 sphere/toon, vec3 specular/ambient and scalar power/edge size; unused base
 components must be zero. Every bound material requires all nine fields, with
-one distinct runtime material target and unique input identities. Tint inputs
-represent separate sampled contributions; the host must supply compatible
-consumer bindings rather than treating them as diffuse overrides.
+one distinct runtime material target and unique input identities.
+`MaterialValueMode::Resolved` preserves the original immutable-base `base*M+A`
+mapping. A live renderer instead binds each tint twice, using `Multiply` and
+`Add`, with zero unused bases. Complete coefficient pairs preserve the separate
+sampled texture/sphere/toon contributions; neither is folded into diffuse or
+evaluated against an assumed white texel. Mixed resolved/coefficient bindings,
+missing pairs and coefficient modes on canonical fields reject.
 
 Post-physics publication calls the owner's material query on raw pose channels
 and applies its multiply/add results to those immutable bases. Every reached
@@ -125,8 +130,9 @@ refusals retain their original diagnostics. All bound fields publish absolute
 typed overrides, including restored bases when no modulation is reached.
 Constructor validation rejects ambiguous fields/targets, incomplete field sets
 and invalid bases. Material writes use the existing `AR_DOMAIN_MATERIAL` and
-revision-5 state writer; the core ABI does not change. Live USD publication,
-renderer tint realization and retargeted-input continuation remain open.
+revision-5 state writer; the core ABI does not change. The
+[native MMD session](MMD_SESSION.md) supplies automatic binding and scoped
+USD/direct material delivery. Retargeted-input continuation remains open.
 
 Register both `PreDescriptor()` and `PostDescriptor()`, select both for each
 instance, and use the post ID as `ArPhysicsParticipant.post_physics_evaluator`.
