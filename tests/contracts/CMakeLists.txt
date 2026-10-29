@@ -37,7 +37,13 @@ add_executable(physicsContracts physics_contracts.cpp)
 target_link_libraries(physicsContracts PRIVATE avatarRuntime)
 target_compile_features(physicsContracts PRIVATE cxx_std_17)
 add_test(NAME contracts.physics COMMAND physicsContracts)
+add_executable(sessionContracts session_contracts.cpp)
+target_link_libraries(sessionContracts PRIVATE avatarRuntime)
+target_compile_features(sessionContracts PRIVATE cxx_std_17)
+add_test(NAME contracts.fixed_tick_session COMMAND sessionContracts)
 if(WIN32)
+    add_custom_command(TARGET sessionContracts POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:sessionContracts>)
     add_custom_command(TARGET physicsContracts POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:physicsContracts>)
 endif()

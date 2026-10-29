@@ -72,5 +72,6 @@ configuration for subsequent [runtime integration slices](../roadmap/current.md#
 The separate [spring evaluator](VRM_SPRING_ADAPTER.md) consumes these owned values
 and adds transactional history and current-pose mapping. With both options
 enabled, source and installed binding tests compose that evaluator after stage
-destruction. Fixed-tick scheduling, actual VRM-file intake, live-avatar motion
-and Hydra/direct publication parity remain outside the binding's evidence.
+destruction. Fixed-tick scheduling, actual VRM-file intake and clip-driven avatar
+poses are measured separately by the [native host](VRM_SESSION.md).
+Hydra/direct renderer parity remains outside either boundary's evidence.

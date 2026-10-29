@@ -181,6 +181,43 @@ resource unload. This removes every member and requires explicit instance
 reset before reuse. Selective removal uses the separately negotiated membership
 extension below.
 
+### Native backend-free fixed-tick session
+
+`avatarRuntime::FixedTickSession` is an experimental C++ surface in the core
+runtime library and installed headers. It adds no C ABI table, phase or owner
+dependency. It binds one fresh/reset instance exclusively: direct evaluation,
+direct reset, destruction and world registration refuse until the session is
+closed. Close detaches the instance and requires increasing-generation reset
+before reuse. The caller owns the runtime and instance and serializes all calls.
+
+It applies the same bounded catch-up, pause, retained-backlog, held-observation
+and increasing accepted request-ID policy as `advance_world`. Its first accepted
+request explicitly evaluates a seed at `startSeconds`, including while paused;
+this initializes current animated state before any solver Step. Seed uses frame
+one and tick index zero; later frames use `tick + 1`, evaluated at
+`startSeconds + tick * fixedStepSeconds`. The seed is excluded from the catch-up
+tick budget. The next accepted request can run zero, one or several fixed ticks.
+
+Evaluation uses the same core transaction, output validation, snapshot allocation
+and commit as `evaluate_frame`. An ordinary provider/output refusal leaves the
+failed tick due and its solver trial discarded; retry with a new request ID and
+zero elapsed. Earlier completed ticks and the latest displayable snapshot remain
+committed even when a later tick fails. Infallible lifecycle violations still
+poison the instance and require reset. Stats expose completed ticks, simulation
+time, pending seconds and whether the seed committed. Consumer delivery failure
+retries the retained `Snapshot()` without evaluation.
+
+`Reset(generation, startSeconds)` prepares new provider states before replacing
+the old states and clears clock/output only on success. It declares a new seed
+instant for reset, seek or loop wrap; the next advance initializes there. No
+negative/large solver step, interpolation or checkpoint restore is inferred.
+The [VRM clip host](VRM_SESSION.md) composes this surface with installed adapters.
+Rigid-body participants continue to use `advance_world` and its existing
+single-Step barrier/group recovery. This single-instance surface does not create
+a parallel clock for a shared world or claim VRM/world integration evidence.
+
+### Shared-world request and membership details
+
 `advance_world` accepts nonnegative finite elapsed time, pause state and exactly
 one input template per participant. Runtime preserves observations and input
 revision, and assigns the participant generation, tick ID and evaluation seconds

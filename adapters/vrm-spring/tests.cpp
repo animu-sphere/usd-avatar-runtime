@@ -1,4 +1,5 @@
 #include "avatarVrm/SpringBoneAdapter.h"
+#include "avatarRuntime/FixedTickSession.h"
 #include "pxr/base/gf/quatd.h"
 #include <algorithm>
 #include <cmath>
@@ -68,6 +69,7 @@ struct Fixture {
     avatarVrm::SpringBoneAdapter adapter;
     ArRuntime runtime = 0;
     int failure = 0, badPose = 0;
+    double failureAtSeconds = -1;
     ArJoint joints[5]{{"unrelated", "other", -1, {{9,8,7}, {0,0,0,1}, {1,1,1}}}};
     ArBlendShape morph{"mesh", "smile", 0.123456789};
     ArMaterialInput material{"mat", "surface:color", AR_VALUE_VEC3, 0, {0.1,0.2,0.3,0}};
@@ -106,6 +108,7 @@ struct Fixture {
     }
     static ArStatus AR_CALL later(void* user, void*, const ArEvaluationContext* ctx, const ArStateWriter* w) {
         auto& f = *static_cast<Fixture*>(user);
+        if (ctx->input->evaluation_seconds < f.failureAtSeconds) return AR_OK;
         if (f.failure == 1) return AR_PROVIDER_ERROR;
         if (f.failure == 2) {
             auto t = ctx->working->joints[2].local; t.rotation[3] = 10;
@@ -264,9 +267,86 @@ void refusals() {
     CHECK(tiny.evaluate(instance, 2, 2e-12, &s) != AR_OK && !s);
     CHECK(tiny.evaluate(instance, 2, 1e-12, &s) == AR_OK); CHECK(api.release_snapshot(s) == AR_OK);
 }
+void session(bool roots) {
+    Fixture f(roots); ArInstance a = 0, b = 0;
+    CHECK(f.make(&a) == AR_OK && f.make(&b) == AR_OK);
+    ArSnapshot held = 0;
+    {
+        avatarRuntime::FixedTickSession s(f.runtime, a, {0, tick, 2});
+        avatarRuntime::FixedTickSession control(f.runtime, b, {0, tick, 2});
+        ArInputFrame input{AR_HEADER(ArInputFrame)}; input.input_revision = 73;
+        uint64_t request = 0;
+        auto advance = [&](double elapsed, bool paused = false) {
+            return s.Advance(++request, elapsed, paused, input);
+        };
+        f.failure = 1;
+        CHECK(advance(0, true) != AR_OK && !s.Stats().initialized && !s.Snapshot());
+        f.failure = 0;
+        CHECK(advance(0, true) == AR_OK && s.Stats().initialized && s.Stats().tick == 0);
+        CHECK(control.Advance(1, 0, true, input) == AR_OK);
+        CHECK(view(s.Snapshot()).evaluation_seconds == 0 && view(s.Snapshot()).frame_id == 1);
+        CHECK(advance(tick / 2) == AR_OK && s.Stats().tickCount == 0);
+        auto seed = s.Snapshot();
+        CHECK(advance(tick / 2) == AR_OK && s.Stats().tick == 1);
+        CHECK(s.Snapshot() != seed);
+        held = s.Snapshot(); CHECK(api.retain_snapshot(held) == AR_OK);
+        const auto current = s.Snapshot();
+        for (int i = 0; i < 3; ++i) {
+            CHECK(advance(100, true) == AR_OK && s.Snapshot() == current && s.Stats().tick == 1);
+            equal(view(held), view(s.Snapshot())); // delivery retry does not evaluate
+        }
+        // Malformed observations and duplicate requests must not accept elapsed.
+        input.scalar_count = 1;
+        CHECK(s.Advance(request + 1, 100, false, input) != AR_OK);
+        input.scalar_count = 0;
+        CHECK(advance(5 * tick) == AR_OK && s.Stats().tickCount == 2 && s.Stats().tick == 3);
+        CHECK(s.Stats().pendingSeconds > 2.9 * tick);
+        CHECK(s.Advance(request, 100, false, input) == AR_INVALID_ARGUMENT);
+        CHECK(advance(100, true) == AR_OK && s.Stats().tick == 3);
+        // A failed downstream provider/writer aborts the trial solver and keeps backlog.
+        f.failure = 1; CHECK(advance(0) != AR_OK && s.Stats().tick == 3);
+        f.failure = 2; CHECK(advance(0) != AR_OK && s.Stats().tick == 3);
+        f.failure = 0;
+        CHECK(advance(0) == AR_OK && s.Stats().tick == 5);
+        CHECK(advance(0) == AR_OK && s.Stats().tick == 6);
+        CHECK(control.Advance(2, 6 * tick, false, input) == AR_OK);
+        CHECK(control.Advance(3, 0, false, input) == AR_OK);
+        CHECK(control.Advance(4, 0, false, input) == AR_OK);
+        equal(view(s.Snapshot()), view(control.Snapshot()));
+        CHECK(view(s.Snapshot()).input_revision == 73);
+        // Earlier ticks commit even if a later tick in the same request fails.
+        f.failure = 1; f.failureAtSeconds = 8 * tick;
+        CHECK(advance(3 * tick) != AR_OK && s.Stats().tick == 7 && s.Stats().tickCount == 1);
+        CHECK(s.Stats().pendingSeconds > 1.9 * tick && view(s.Snapshot()).frame_id == 8);
+        f.failure = 0; f.failureAtSeconds = -1;
+        CHECK(advance(0) == AR_OK && s.Stats().tick == 9);
+        CHECK(control.Advance(5, 3 * tick, false, input) == AR_OK);
+        CHECK(control.Advance(6, 0, false, input) == AR_OK);
+        equal(view(s.Snapshot()), view(control.Snapshot()));
+        CHECK(api.reset_instance(f.runtime, a, 2) == AR_INVALID_STATE);
+        CHECK(api.destroy_instance(f.runtime, a) == AR_INVALID_STATE);
+        ArSnapshot refused = 0;
+        CHECK(f.evaluate(a, 100, 1, &refused) == AR_INVALID_STATE && !refused);
+        CHECK(s.Reset(1, 0) == AR_INVALID_ARGUMENT && s.Snapshot());
+        CHECK(s.Reset(2, 0) == AR_OK && !s.Snapshot() && !s.Stats().initialized);
+        request = 0;
+        CHECK(advance(tick) == AR_OK && s.Stats().tick == 1);
+        equal(view(held), view(s.Snapshot()));
+        CHECK(s.Reset(3, 5) == AR_OK); request = 0;
+        CHECK(advance(0, true) == AR_OK && view(s.Snapshot()).evaluation_seconds == 5);
+        CHECK(s.Close() == AR_OK && s.Close() == AR_OK && !s.Snapshot());
+        CHECK(advance(0) == AR_INVALID_STATE);
+        CHECK(f.evaluate(a, 100, 6, &refused) == AR_INVALID_STATE);
+        CHECK(api.reset_instance(f.runtime, a, 4) == AR_OK);
+    }
+    CHECK(api.destroy_runtime(f.runtime) == AR_OK); f.runtime = 0;
+    CHECK(view(held).generation == 1 && view(held).joints[2].joint_id == std::string("hair"));
+    CHECK(api.release_snapshot(held) == AR_OK);
+}
 } // namespace
 int main() {
     CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
     parity(false); parity(true); parity(true, true); refusals();
+    session(false); session(true);
     std::cout << "VRM spring owner parity, transaction, reset, isolation and mapping contracts passed\n";
 }
