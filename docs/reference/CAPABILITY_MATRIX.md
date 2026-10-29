@@ -28,7 +28,8 @@ workstream B validation is recorded below; the
 | runtime architecture and layout | one reusable `avatarRuntime` target; further component split proposed | [overview](../architecture/OVERVIEW.md), [layout](../architecture/PROJECT_LAYOUT.md) |
 | input/evaluated-state contracts | experimental revision-5 C headers: attributed scalars and typed gaze point/direction observations with explicit world/joint-local space, validity and clock mappings; host input revision and dense snapshots with retained layout ID/version, active capabilities and source-sample provenance (selected inputs plus provider-reported pose samples with mapped runtime seconds); scalar/vec2/vec3/vec4 material values and primary vertex UV values; configured owner clip-to-pose mapping with retained interpolated/held sample time and owned selected-motion scalar/world-gaze assembly implemented; live observation intake, multi-source composition, expression/gaze result records and other deformation channels pending | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) |
 | evaluator registration, phase execution and lifecycle | direct serial plan, dependencies/cycles/write validation, instance state, commit/abort/reset implemented; real-provider phase conformance and checkpoint restore pending | [evaluator](../contracts/EVALUATOR.md), [lifecycle](../architecture/FRAME_LIFECYCLE.md) |
-| physics orchestration | Experimental optional C tables implement exclusive world membership, selective participant removal, existing-plan pre/Step/post boundaries, fixed-tick accumulation with retained bounded catch-up, pause, group reset and invalidation after Step begins; generated MMD/Jolt callbacks and two-avatar shared-world smoke pass. Automatic body/constraint teardown, display interpolation, checkpoint restore and VRM secondary-motion integration remain unimplemented | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
+| physics orchestration | Experimental optional C tables implement exclusive world membership, selective participant removal, existing-plan pre/Step/post boundaries, fixed-tick accumulation with retained bounded catch-up, pause, group reset and invalidation after Step begins; generated MMD/Jolt callbacks and two-avatar shared-world smoke pass. Automatic body/constraint teardown, display interpolation, checkpoint restore and shared-world VRM composition remain unimplemented | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities) |
+| Backend-free VRM session | Core native fixed-tick session and optional installed VRM/clip host implement seeding, bounded catch-up/backlog, pause, reset/seek, transactional retry and retained output; generated and two-version real-avatar owner/pose-transport checks pass. Resident renderer/Hydra parity and scaled spring rigs remain open | [VRM session](../architecture/VRM_SESSION.md) |
 | Stage Runner host session | Optional installed `avatarStageRunnerSession` wraps a borrowed or owned runtime world registration with measured display time, play/pause, group reset, zero-elapsed simulation retry, retained last successful output, selective member removal and explicit/idempotent close; no second accumulator. Automatic stage/world construction, application wiring and body/constraint teardown remain open | [host session](../architecture/STAGE_RUNNER_SESSION.md) |
 | MMD control/coupling registration | Optional installed `avatarMmdAdapter` invokes owner BeginPhysics -> path-keyed kinematic targets -> caller-owned world snapshot -> feedback -> ResumePhysics; explicit joint/layout/root placement, owner-resolved vertex weights, primary UV values, typed material overrides and visibility mapping; generated PMX/VMD/Jolt headless and installed-consumer tests pass. Material snapshot scope is recorded [below](#mmd-material-snapshot-evidence-2026-10-27); live/rendered material realization, generic retarget intake, automatic host/renderer binding and avatar L3 acceptance remain open | [MMD adapter](../architecture/MMD_ADAPTER.md) |
 | versioned C ABI | revision-4/size validation, revision-1–3 rejection, scoped handles, retain/release and installed C provider-consumer tests; ABI freeze pending | [ABI](../contracts/ABI.md) |
@@ -1077,8 +1078,74 @@ Both source and installed configure reject an older owner lacking the spring
 API with an explicit admission diagnostic. The existing expression-only build
 still passes all six tests against that older owner.
 
-This is generated fixed-instant evidence. The first request initializes without
-stepping; later calls consume one explicit fixed tick. A backend-free runtime
-accumulator/session, pause/catch-up/backlog policy, real clips and avatars,
-host controls, hosted runtime lanes and renderer/Hydra parity remain open. It
-does not close physics milestone E, a Runtime Phase or an ABI-freeze gate.
+This is generated fixed-instant evaluator evidence. The first request initializes
+without stepping; later calls consume one explicit fixed tick. Subsequent native
+clock and host evidence is recorded below. Hosted runtime lanes and renderer/Hydra
+parity remain open. Neither slice closes physics milestone E, a Runtime Phase or
+an ABI-freeze gate.
+
+## VRM fixed-tick session and host evidence (2026-10-29)
+
+Measured on Windows x86-64 / OpenUSD 26.08, using installed `vrmRig` and
+contract-v2 `vrmSchema` 0.10.0 and published motion 0.5.4 packages.
+`FixedTickSession` is a backend-free core C++ surface over the existing core
+transaction and snapshot registry; the C ABI tables/phases are unchanged.
+It excludes direct/world clock ownership of the same instance. A declared seed
+at tick zero precedes due fixed ticks. The runtime retains excess time with the
+same bounded catch-up/pause policy as its physics clock.
+
+`contracts.fixed_tick_session` runs without owner dependencies. Expanded
+`adapters.vrm_spring` and `adapters.vrm_spring_installed` exercise both declaration
+shapes with zero/one/multiple ticks, pause/resume/backlog, malformed-input and
+duplicate-request refusal before elapsed acceptance, failed seed, downstream
+provider/writer failure and same-tick retry against an independent control.
+A later failure in a multi-tick request preserves the earlier tick's commit,
+display snapshot and failed-tick backlog. Reset replays identically, and retained
+state survives reset, session close and runtime destruction.
+
+`hosts.vrm_session` and `hosts.vrm_session_installed` compose generated Humanoid,
+clip and root/chain spring fixtures with explicit enabled/disabled mode,
+play/pause/reset/close, stage-independent lifetime, pose output and retained
+unload. The separate installed consumer selects `vrm_session` and checks the
+dependency boundary. The combined configuration passes all 20 CTests, including
+existing C provider/consumer, physics and installed adapter regressions.
+
+The installed `avatarVrmSessionCheck` also ran each real avatar below with
+`VRMA_01.vrma`, at 60 Hz for 120 ticks, in both spring and motion-only modes.
+Its comparison uses direct owner motion sampling/retargeting and a separate
+owner spring solver, then reads delivered USD local joint TRS/identity. Both
+enabled runs and both disabled runs pass exact reset replay and retained unload.
+
+| Avatar | Joints | Motion-changed joints | Spring-changed joints | Max motion component error | Max spring quaternion error | Max USD translation/quaternion error |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| AliciaSolid (VRM 0.x) | 128 | 49 | 48 | `1.01596e-7` | `1.01743e-7` | `7.13532e-8` |
+| VRM1 Constraint Twist Sample (VRM 1.0) | 154 | 51 | 57 | `1.02064e-7` | `1.02069e-7` | `7.92478e-8` |
+
+Translation/quaternion tolerance is `1e-6`. USD half-scale quantization is
+checked separately with relative `5e-4` tolerance (absolute near zero): maximum
+scale errors are zero and `7.15256e-7`, respectively. The 1.0 importer emits its
+existing `VRM110` conflicting-inverse-bind warning and uses its declared first
+matrix policy; this host does not evaluate the sample's node constraints.
+Spring-changed counts compare simulated output with the unsimulated clip pose;
+motion-changed counts compare the clip pose with authored rest.
+
+Asset SHA-256 identities, with no asset redistribution:
+
+- AliciaSolid: `237bb02efadf8c13a114af91dd8e860173081457dee87017e51011c448d05dc2`.
+- Constraint Twist Sample: `12c2b97e95e700783a6a550dc0eee2d7880aeedccef9ae67bc4c5a2f0f2631a2`.
+- VRMA_01: `f45abc44800c647fa106537a2e31a84cb83b74cf3dd8a0ee71c6915f1555ac57`.
+
+`tools/check-vrm-session.ps1` records rerunnable asset hashes/outcomes. The local
+run's JSON/logs are under ignored `build/vrm-session-real-evidence.json` and
+`build/vrm-session-real.log`. Importer binary/resources were refreshed to contract
+v2 in a local staged prefix; the older staged importer was correctly refused by
+`VRM_SPRING_BINDING_CONTRACT`. Owner libraries are installed packages, not sibling
+source additions to the host build.
+
+Seed-san is explicitly refused by `VRM_SPRING_BINDING_SCALE` at
+`hips/spine/chest/bag_rope_L`. Its motion-only 120-tick run passes owner/pose
+transport and exact reset/unload: motion error `1.12983e-7`, translation/quaternion
+output error `1.01355e-7`, and half-scale quantization `2.35081e-4`. No scale is
+discarded to admit springs. Renderer resident-resource delivery, Hydra/direct
+agreement, pixels, interpolation, in-place mode changes, broader avatar/motion
+coverage, hosted runtime lanes and VRM/shared-world composition remain open.

@@ -86,9 +86,10 @@ origin and bound skeleton subject. The string-only owner API supplies no numeric
 code. Runtime stamps evaluator/instance/frame/phase. No C ABI field is added.
 
 The evaluator validates supplied fixed instants; it owns no clock or accumulator.
-This slice uses direct runtime requests for generated conformance checks. A
-backend-free runtime fixed-tick session, pause/catch-up/backlog handling, clip
-host, real-avatar intake and renderer delivery remain
+Generated evaluator conformance still uses direct requests. The separate
+[native VRM session](VRM_SESSION.md) now supplies a backend-free runtime clock,
+pause/catch-up/backlog, clip composition and scoped real-avatar pose delivery.
+Resident renderer delivery and Hydra/direct parity remain
 [roadmap work](../roadmap/current.md#vrm-secondary-motion-integration).
 It must initialize at the declared seed instant before advancing fixed ticks.
 Display and consumer retries read retained snapshots and do not call evaluation.

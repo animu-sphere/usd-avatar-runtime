@@ -491,25 +491,33 @@ pose mapping and exact fixed-instant validation. Generated source/installed
 [evidence](../reference/CAPABILITY_MATRIX.md#vrm-spring-evaluator-evidence-2026-10-28)
 covers both declaration shapes, retries after downstream failures, reset replay,
 instance isolation and retained snapshots. It introduces no accumulator.
-Remaining work proceeds in these bounded slices:
+The next two slices now have scoped headless evidence; renderer acceptance stays
+separate:
 
 | Slice | Runtime work | Acceptance gate |
 | --- | --- | --- |
-| Fixed-tick session | drive the evaluator from one runtime-owned accumulator and retain committed snapshots for display | zero/one/multiple ticks, pause/resume, bounded catch-up and observable backlog agree with the lifecycle contract; repeated display/consumer retries perform no solver step |
-| Host and output | compose one VRM plus a clip, with explicit secondary-motion enable/disable and reset controls; hand final snapshots to existing pose/renderer consumers | generated fixtures and one admitted avatar from each VRM version move under a clip; retained joint identity/space/value agreement survives reset and unload; Hydra/direct parity is measured separately |
+| Fixed-tick session | implemented by core `FixedTickSession`, with seed-at-start and retained committed snapshots | generated source/installed tests pass zero/one/multiple ticks, pause/resume, bounded catch-up, backlog, downstream failure retry, partial-request commit, reset and consumer retry without evaluation |
+| Host and output | optional native VRM/clip session and check host; construction selects spring or motion-only mode; play/pause/reset/close and pose transport implemented | both generated declaration shapes and one admitted real avatar from each VRM version pass owner parity, exact reset replay and retained unload; resident renderer delivery and Hydra/direct parity remain open |
 
-Before the fixed-tick session slice, settle the remaining clock integration
-question in the existing contracts rather than inventing a second scheduling model:
+The [native session contract](../architecture/FRAME_LIFECYCLE.md#native-backend-free-fixed-tick-session)
+records the scoped clock decision without changing either C table or adding a phase:
 
 - **Clock without a rigid-body world.** The current
   [Stage Runner session](../architecture/STAGE_RUNNER_SESSION.md) requires an
   explicit world registration. A VRM spring solver does not require one.
-  Decide how runtime supplies fixed ticks without a dummy physics backend,
-  a host/adapter accumulator, or a new phase/ABI declaration made in advance.
-  If a rigid-body world also participates, preserve its single-Step barrier
-  and document the VRM callback's dependency relative to it.
-  The evaluator's first request seeds the current pose without a step; the
-  session must initialize at that declared instant before advancing due ticks.
+  Core `FixedTickSession` owns the backend-free single-instance accumulator and
+  uses existing transactional evaluation. It seeds the declared animated pose
+  before due ticks, with exclusive membership and observable backlog. No dummy
+  backend or host/adapter accumulator is used. Rigid-body participants continue
+  to use the existing world clock/barrier. Composing VRM with that barrier and
+  measuring its dependency relative to Step remain open.
+
+The [host](../architecture/VRM_SESSION.md) and
+[2026-10-29 evidence](../reference/CAPABILITY_MATRIX.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29)
+record installed consumption and headless limits. Seed-san's non-unit joint scale
+is refused in spring mode; it passes motion-only delivery. Scaled spring rigs,
+live enable/disable without reconstructing session/consumer bindings, resident
+rendering, hosted runtime lanes and shared-world VRM integration remain open.
 
 Regression evidence must include a later evaluator/publication-validation
 failure after a solver call, retry against a clean control run, reset followed

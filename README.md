@@ -54,6 +54,7 @@ and USD integrations are separately optional targets:
 | `avatarVrmAdapter` / VRM USD binding targets | owner LookAt/expression evaluation and authored configuration |
 | `avatarVrmSpringUsdBinding` | optional canonical spring/collider stage snapshot into installed owner values |
 | `avatarVrmSpringAdapter` | optional secondary-phase owner evaluation with transactional instance-local history |
+| `avatarVrmSession` / `avatarVrmSessionCheck` | optional native VRM/clip host and pose-parity check over the core backend-free `FixedTickSession` |
 | `avatarMmdAdapter` | owner MMD pre/post control and coupling registration with a caller-owned world bridge |
 | `avatarStageRunnerSession` | optional Stage Runner clock and playback session over an existing runtime world |
 | `avatarMotionCheck` | opt-in real-asset adapter parity host |

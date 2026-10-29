@@ -1,4 +1,5 @@
 #include "avatarRuntime/physics.h"
+#include "avatarRuntime/FixedTickSession.h"
 
 #include <algorithm>
 #include <cmath>
@@ -348,6 +349,7 @@ struct Instance {
     std::shared_ptr<const State> prior;
     bool poisoned = false;
     ArPhysicsWorld world = 0;
+    const void* fixedSession = nullptr;
     Instance(uint64_t g, const ArStateView& v) : generation(g), baseline(v) {
         for (const auto& j : baseline.joints) jointIds.emplace(j.skeleton_id, j.joint_id);
     }
@@ -677,13 +679,15 @@ ArStatus AR_CALL createInstance(ArRuntime h, const ArInstanceDesc* desc, const A
 }
 ArStatus AR_CALL destroyInstance(ArRuntime h, ArInstance id) {
     return boundary([&]() -> ArStatus {
-        std::lock_guard<std::mutex> lock(apiMutex); auto& r = runtime(h); if (instance(r, id).world) return AR_INVALID_STATE; r.instances.erase(id); return AR_OK;
+        std::lock_guard<std::mutex> lock(apiMutex); auto& r = runtime(h);
+        if (instance(r, id).world || instance(r, id).fixedSession) return AR_INVALID_STATE;
+        r.instances.erase(id); return AR_OK;
     });
 }
 ArStatus AR_CALL resetInstance(ArRuntime h, ArInstance id, uint64_t generation) {
     return boundary([&]() -> ArStatus {
         std::lock_guard<std::mutex> lock(apiMutex); auto& inst = instance(runtime(h), id);
-        if (inst.world) return AR_INVALID_STATE;
+        if (inst.world || inst.fixedSession) return AR_INVALID_STATE;
         if (generation <= inst.generation) return AR_INVALID_ARGUMENT;
         std::vector<BoundEvaluator> fresh; fresh.reserve(inst.plan.size());
         for (const auto& b : inst.plan) fresh.push_back({b.evaluator, nullptr});
@@ -742,14 +746,7 @@ void runEvaluators(Instance& inst, const ArInputFrame& input, State& work,
     }
 }
 
-ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* input,
-                              const ArDiagnosticSink* sink, ArSnapshot* out) {
-    if (out) *out = 0;
-    return boundary([&]() -> ArStatus {
-        std::lock_guard<std::mutex> lock(apiMutex); auto& inst = instance(runtime(h), id); Diagnostics d(sink);
-        d.instance = id; if (header(input)) d.frame = input->frame_id;
-        if (!out) return AR_INVALID_ARGUMENT;
-        if (inst.world) d.fail(AR_INVALID_STATE, "runtime.physics.managed", "World participants must use advance_world");
+ArStatus evaluateInstance(Instance& inst, const ArInputFrame* input, Diagnostics& d, ArSnapshot* out) {
         if (inst.poisoned) d.fail(AR_INVALID_STATE, "runtime.lifecycle.poisoned", "Provider violated infallible lifecycle; reset required");
         validateInput(input, inst, d);
         State work(inst.baseline); prepareWork(work, *input);
@@ -763,6 +760,17 @@ ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* i
         try { transaction.commit(); }
         catch (...) { snapshots.erase(snapshotId); d.emit(AR_PROVIDER_ERROR, "runtime.lifecycle.commit", "Provider commit failed; reset required"); throw; }
         inst.prior = std::move(published); *out = snapshotId; return AR_OK;
+}
+ArStatus AR_CALL evaluateFrame(ArRuntime h, ArInstance id, const ArInputFrame* input,
+                              const ArDiagnosticSink* sink, ArSnapshot* out) {
+    if (out) *out = 0;
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex); auto& inst = instance(runtime(h), id); Diagnostics d(sink);
+        d.instance = id; if (header(input)) d.frame = input->frame_id;
+        if (!out) return AR_INVALID_ARGUMENT;
+        if (inst.world || inst.fixedSession)
+            d.fail(AR_INVALID_STATE, "runtime.clock.managed", "Managed instances must use their runtime clock");
+        return evaluateInstance(inst, input, d, out);
     });
 }
 /* Shared-world scheduling reuses the same private plans, transactions and
@@ -807,7 +815,7 @@ ArStatus AR_CALL createPhysicsWorld(ArRuntime h, const ArPhysicsWorldDesc* desc,
         std::set<ArInstance> unique;
         for (uint32_t n = 0; n < desc->participant_count; ++n) {
             const auto& member = desc->participants[n]; auto& inst = instance(r, member.instance);
-            if (inst.world || inst.prior || inst.poisoned)
+            if (inst.world || inst.fixedSession || inst.prior || inst.poisoned)
                 d.fail(AR_INVALID_STATE, "runtime.physics.membership", "Participant requires an unbound, reset instance");
             if (!unique.emplace(member.instance).second)
                 d.fail(AR_DUPLICATE_ID, "runtime.physics.participant", "Duplicate world participant");
@@ -1038,6 +1046,128 @@ ArStatus AR_CALL getCapabilities(ArRuntime h, ArInstance id, const ArCapability*
     });
 }
 } // namespace
+
+namespace avatarRuntime {
+struct FixedTickSession::Impl {
+    ArRuntime runtime;
+    ArInstance instance;
+    FixedTickConfig config;
+    FixedTickStats stats;
+    uint64_t request = 0;
+    ArSnapshot snapshot = 0;
+    void release() {
+        if (snapshot) {
+            auto found = snapshots.find(snapshot);
+            if (found != snapshots.end() && !--found->second.references) snapshots.erase(found);
+            snapshot = 0;
+        }
+    }
+};
+FixedTickSession::FixedTickSession(ArRuntime h, ArInstance id, FixedTickConfig config)
+    : impl_(std::make_unique<Impl>()) {
+    const auto status = boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex);
+        auto& inst = instance(runtime(h), id);
+        if (!std::isfinite(config.startSeconds) || !std::isfinite(config.fixedStepSeconds) ||
+            config.fixedStepSeconds <= 0 || !config.maxCatchUpTicks ||
+            !std::isfinite(config.startSeconds + config.fixedStepSeconds) ||
+            config.startSeconds + config.fixedStepSeconds <= config.startSeconds)
+            return AR_INVALID_ARGUMENT;
+        if (inst.world || inst.fixedSession || inst.prior || inst.poisoned) return AR_INVALID_STATE;
+        impl_->runtime = h; impl_->instance = id; impl_->config = config;
+        impl_->stats.simulationSeconds = config.startSeconds;
+        inst.fixedSession = impl_.get();
+        return AR_OK;
+    });
+    if (status != AR_OK) throw std::invalid_argument("FixedTickSession binding failed: " + std::to_string(status));
+}
+FixedTickSession::~FixedTickSession() { Close(); }
+ArStatus FixedTickSession::Advance(uint64_t requestId, double elapsed, bool paused,
+    const ArInputFrame& observation, const ArDiagnosticSink* sink) {
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex);
+        auto& s = *impl_;
+        if (!s.instance) return AR_INVALID_STATE;
+        auto& inst = instance(runtime(s.runtime), s.instance);
+        Diagnostics d(sink); d.instance = s.instance;
+        if (inst.fixedSession != impl_.get() || inst.poisoned) return AR_INVALID_STATE;
+        if (!requestId || requestId <= s.request || !std::isfinite(elapsed) || elapsed < 0)
+            return AR_INVALID_ARGUMENT;
+        requireHeader(&observation, d);
+        ArInputFrame input = observation;
+        input.frame_id = s.stats.tick + (s.stats.initialized ? 2 : 1);
+        input.generation = inst.generation;
+        input.evaluation_seconds = s.stats.simulationSeconds;
+        validateInput(&input, inst, d); // also on zero-tick/paused requests
+        const double pending = s.stats.pendingSeconds + (paused ? 0 : elapsed);
+        if (!std::isfinite(pending)) return AR_INVALID_ARGUMENT;
+        s.request = requestId; s.stats.pendingSeconds = pending; s.stats.tickCount = 0;
+        const auto commit = [&](uint64_t frame, double seconds) {
+            input.frame_id = frame; input.evaluation_seconds = seconds; d.frame = frame;
+            ArSnapshot next = 0;
+            evaluateInstance(inst, &input, d, &next);
+            s.release(); s.snapshot = next;
+        };
+        if (!s.stats.initialized) {
+            commit(1, s.config.startSeconds);
+            s.stats.initialized = true;
+        }
+        const double tolerance = s.config.fixedStepSeconds * (8 * std::numeric_limits<double>::epsilon());
+        while (!paused && s.stats.tickCount < s.config.maxCatchUpTicks &&
+            (s.stats.pendingSeconds >= s.config.fixedStepSeconds ||
+             s.config.fixedStepSeconds - s.stats.pendingSeconds <= tolerance)) {
+            const auto tick = s.stats.tick + 1;
+            const double seconds = s.config.startSeconds + double(tick) * s.config.fixedStepSeconds;
+            if (tick >= std::numeric_limits<uint64_t>::max() - 1 ||
+                !std::isfinite(seconds) || seconds <= s.stats.simulationSeconds)
+                return AR_INVALID_STATE;
+            commit(tick + 1, seconds);
+            s.stats.tick = tick; s.stats.simulationSeconds = seconds;
+            s.stats.pendingSeconds = std::max(0.0, s.stats.pendingSeconds - s.config.fixedStepSeconds);
+            ++s.stats.tickCount;
+        }
+        return AR_OK;
+    });
+}
+ArStatus FixedTickSession::Reset(uint64_t generation, double start) {
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex);
+        auto& s = *impl_;
+        if (!s.instance) return AR_INVALID_STATE;
+        auto& inst = instance(runtime(s.runtime), s.instance);
+        if (!std::isfinite(start) || !std::isfinite(start + s.config.fixedStepSeconds) ||
+            start + s.config.fixedStepSeconds <= start || generation <= inst.generation)
+            return AR_INVALID_ARGUMENT;
+        std::vector<BoundEvaluator> fresh; fresh.reserve(inst.plan.size());
+        for (const auto& b : inst.plan) fresh.push_back({b.evaluator, nullptr});
+        try { initializeStates(fresh, s.instance, generation); }
+        catch (...) { cleanupStates(fresh); throw; }
+        cleanupStates(inst.plan); inst.plan = std::move(fresh);
+        inst.generation = generation; inst.baseline.generation = generation;
+        inst.prior.reset(); inst.poisoned = false;
+        s.release(); s.config.startSeconds = start; s.request = 0;
+        s.stats = {}; s.stats.simulationSeconds = start;
+        return AR_OK;
+    });
+}
+ArStatus FixedTickSession::Close() {
+    return boundary([&]() -> ArStatus {
+        std::lock_guard<std::mutex> lock(apiMutex);
+        auto& s = *impl_; s.release();
+        if (!s.instance) return AR_OK;
+        // Runtime destruction is also safe: retained snapshots are independent.
+        auto r = runtimes.find(s.runtime);
+        if (r != runtimes.end()) {
+            auto& inst = instance(*r->second, s.instance);
+            inst.fixedSession = nullptr; inst.poisoned = true;
+        }
+        s.instance = 0;
+        return AR_OK;
+    });
+}
+const FixedTickStats& FixedTickSession::Stats() const { return impl_->stats; }
+ArSnapshot FixedTickSession::Snapshot() const { return impl_->snapshot; }
+} // namespace avatarRuntime
 
 extern "C" AR_EXPORT ArStatus AR_CALL arGetApi(uint32_t version, uint32_t size, ArRuntimeApi* out) {
     if (!out) return AR_INVALID_ARGUMENT;
