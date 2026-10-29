@@ -53,6 +53,7 @@ and USD integrations are separately optional targets:
 | `avatarUsdBinding` / `avatarMotionUsdBinding` | runtime skeleton/baseline binding and direct owner motion-stage results; legacy StageClip compatibility |
 | `avatarVrmAdapter` / VRM USD binding targets | owner LookAt/expression evaluation and authored configuration |
 | `avatarVrmSpringUsdBinding` | optional canonical spring/collider stage snapshot into installed owner values |
+| `avatarVrmSpringAdapter` | optional secondary-phase owner evaluation with transactional instance-local history |
 | `avatarMmdAdapter` | owner MMD pre/post control and coupling registration with a caller-owned world bridge |
 | `avatarStageRunnerSession` | optional Stage Runner clock and playback session over an existing runtime world |
 | `avatarMotionCheck` | opt-in real-asset adapter parity host |

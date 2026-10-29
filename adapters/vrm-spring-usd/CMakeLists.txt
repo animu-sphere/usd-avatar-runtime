@@ -22,6 +22,10 @@ install(EXPORT AvatarVrmSpringUsdBindingTargets NAMESPACE AvatarRuntime::
 if(AVATAR_BUILD_TESTS)
     add_executable(vrmSpringUsdBindingContracts tests.cpp)
     target_link_libraries(vrmSpringUsdBindingContracts PRIVATE avatarVrmSpringUsdBinding)
+    if(AVATAR_BUILD_VRM_SPRING_ADAPTER)
+        target_link_libraries(vrmSpringUsdBindingContracts PRIVATE avatarVrmSpringAdapter)
+        target_compile_definitions(vrmSpringUsdBindingContracts PRIVATE AR_TEST_SPRING_ADAPTER)
+    endif()
     add_test(NAME adapters.vrm_spring_usd COMMAND vrmSpringUsdBindingContracts)
     add_test(NAME adapters.vrm_spring_usd_installed COMMAND ${CMAKE_COMMAND}
         -DROOT_BINARY=${PROJECT_BINARY_DIR}
@@ -38,6 +42,7 @@ if(AVATAR_BUILD_TESTS)
         -DUSD_DIR=${pxr_DIR}
         -DSCHEMA_DIR=${vrmSchema_DIR}
         -DVRM_DIR=${vrmRig_DIR}
+        -DSPRING_ADAPTER_TEST=${AVATAR_BUILD_VRM_SPRING_ADAPTER}
         -DCONFIG=$<CONFIG>
         -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
     if(WIN32)

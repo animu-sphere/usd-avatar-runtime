@@ -20,6 +20,7 @@ run("${CMAKE_COMMAND}" -S "${CONSUMER_SOURCE}" -B "${consumer_binary}" ${generat
     "-DCMAKE_RC_COMPILER=${RC_COMPILER}" "-DCMAKE_MT=${MT}"
     "-DmotionRetarget_DIR=${RETARGET_DIR}" "-DmotionCore_DIR=${MOTION_DIR}"
     "-DmotionUsd_DIR=${MOTION_USD_DIR}" "-Dpxr_DIR=${USD_DIR}"
-    "-DvrmSchema_DIR=${SCHEMA_DIR}" "-DvrmRig_DIR=${VRM_DIR}")
+    "-DvrmSchema_DIR=${SCHEMA_DIR}" "-DvrmRig_DIR=${VRM_DIR}"
+    "-DSPRING_ADAPTER_TEST=${SPRING_ADAPTER_TEST}")
 run("${CMAKE_COMMAND}" --build "${consumer_binary}" --config "${CONFIG}")
 run("${CMAKE_CTEST_COMMAND}" --test-dir "${consumer_binary}" -C "${CONFIG}" --output-on-failure)

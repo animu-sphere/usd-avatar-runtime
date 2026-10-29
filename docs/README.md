@@ -35,6 +35,7 @@ reference records the current tree, and roadmap tracks incomplete work.
 | [Scoped VRM USD LookAt binding](architecture/VRM_LOOKAT_USD_BINDING.md) | owner range-map extraction, explicit head/eye/rest binding, adapter configuration and real-avatar evidence limits |
 | [Scoped VRM USD Expression binding](architecture/VRM_EXPRESSION_USD_BINDING.md) | owner expression/output extraction, canonical morph/material baseline, LookAt composition and evidence limits |
 | [Scoped VRM spring USD binding](architecture/VRM_SPRING_USD_BINDING.md) | optional installed-owner admission, canonical spring/collider intake and owned rigid-metre configuration |
+| [Scoped VRM spring evaluator](architecture/VRM_SPRING_ADAPTER.md) | optional secondary-phase registration, transactional owner history, fixed-instant validation and final pose mapping |
 
 ## Contracts
 

@@ -467,7 +467,7 @@ output work still in D.
 
 The next VRM integration candidate is owner-evaluated secondary motion under
 physics milestone E. This sequence prepares runtime integration; it does not
-change the live MMD priority above or establish implemented SpringBone support.
+change the live MMD priority above or establish a live SpringBone host.
 The [VRM owner's track](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/docs/roadmap/springbone-track.md)
 owns its prerequisites and solver delivery. Follow that order before changing
 stage intake or registering a solver. Do not implement a substitute solver in
@@ -485,17 +485,21 @@ now admits the installed owner API and reads generated canonical declarations
 without importing expression evaluation or motion sampling. Its
 [evidence](../reference/CAPABILITY_MATRIX.md#vrm-spring-stage-binding-evidence-2026-10-28)
 covers source/installed configuration, owned values and explicit older-owner
-refusal. Transactional history review remains below; no solver is registered
-with runtime yet. Remaining work proceeds in these bounded slices:
+refusal. The separate [stateful spring evaluator](../architecture/VRM_SPRING_ADAPTER.md)
+now registers owner calls with transactional trial history, current animated
+pose mapping and exact fixed-instant validation. Generated source/installed
+[evidence](../reference/CAPABILITY_MATRIX.md#vrm-spring-evaluator-evidence-2026-10-28)
+covers both declaration shapes, retries after downstream failures, reset replay,
+instance isolation and retained snapshots. It introduces no accumulator.
+Remaining work proceeds in these bounded slices:
 
 | Slice | Runtime work | Acceptance gate |
 | --- | --- | --- |
-| Stateful evaluator | register an instance-local secondary-phase callback after motion and VRM LookAt/expression; call the owner with the current animated pose | final joint values agree with direct owner evaluation; each instance has independent history; untouched channels retain their working values; same-phase writer conflicts remain visible |
 | Fixed-tick session | drive the evaluator from one runtime-owned accumulator and retain committed snapshots for display | zero/one/multiple ticks, pause/resume, bounded catch-up and observable backlog agree with the lifecycle contract; repeated display/consumer retries perform no solver step |
 | Host and output | compose one VRM plus a clip, with explicit secondary-motion enable/disable and reset controls; hand final snapshots to existing pose/renderer consumers | generated fixtures and one admitted avatar from each VRM version move under a clip; retained joint identity/space/value agreement survives reset and unload; Hydra/direct parity is measured separately |
 
-Before the evaluator slice, settle two integration questions in the existing
-contracts rather than inventing a second scheduling model:
+Before the fixed-tick session slice, settle the remaining clock integration
+question in the existing contracts rather than inventing a second scheduling model:
 
 - **Clock without a rigid-body world.** The current
   [Stage Runner session](../architecture/STAGE_RUNNER_SESSION.md) requires an
@@ -504,13 +508,8 @@ contracts rather than inventing a second scheduling model:
   a host/adapter accumulator, or a new phase/ABI declaration made in advance.
   If a rigid-body world also participates, preserve its single-Step barrier
   and document the VRM callback's dependency relative to it.
-- **Transactional solver history.** The
-  [frame lifecycle](../architecture/FRAME_LIFECYCLE.md#2-execute-a-frame)
-  requires failed attempts to leave provider history unchanged. Verify that
-  the owner API permits independent trial state or a supported checkpoint.
-  Stage changes during evaluation and commit only after final-state validation;
-  abort must permit the same frame to be retried. Resolve missing owner support
-  upstream rather than assuming that reset can restore an arbitrary prior tick.
+  The evaluator's first request seeds the current pose without a step; the
+  session must initialize at that declared instant before advancing due ticks.
 
 Regression evidence must include a later evaluator/publication-validation
 failure after a solver call, retry against a clean control run, reset followed

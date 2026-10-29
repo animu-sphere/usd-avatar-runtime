@@ -1,4 +1,7 @@
 #include "avatarVrmUsd/SpringBoneBinding.h"
+#ifdef AR_TEST_SPRING_ADAPTER
+#include "avatarVrm/SpringBoneAdapter.h"
+#endif
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/scope.h"
@@ -81,6 +84,52 @@ void fails(const UsdStagePtr &s, const char *code) {
         CHECK(std::string(e.what()).find(code) != std::string::npos);
     }
 }
+#ifdef AR_TEST_SPRING_ADAPTER
+void runtimeMapping(const avatarVrmUsd::SpringBoneBinding& binding) {
+    // Compose only owned binder values, after the source stage is destroyed.
+    const auto& skeleton = binding.Skeleton();
+    const auto& baseline = skeleton.Baseline();
+    avatarVrm::SpringBoneAdapterConfig c;
+    c.evaluatorId = "spring"; c.layoutId = baseline.layout_id; c.layoutVersion = baseline.layout_version;
+    c.skeletonId = skeleton.SkeletonId(); c.jointIds = skeleton.JointIds();
+    c.rig = binding.Rig(); c.placement = binding.RestPose().placement; c.fixedStepSeconds = 1.0 / 60;
+    avatarVrm::SpringBoneAdapter adapter(c);
+    ArRuntimeApi api{}; CHECK(arGetApi(AR_ABI_VERSION, sizeof(api), &api) == AR_OK);
+    ArRuntime runtime = 0; CHECK(api.create_runtime(&runtime) == AR_OK);
+    auto d = adapter.Descriptor(); CHECK(api.register_evaluator(runtime, &d, nullptr) == AR_OK);
+    const char* id = "spring";
+    ArInstanceDesc desc{AR_HEADER(ArInstanceDesc)};
+    desc.generation = 1; desc.layout_id = c.layoutId.c_str(); desc.layout_version = c.layoutVersion;
+    desc.evaluators = &id; desc.evaluator_count = 1; desc.initial_state = baseline;
+    desc.bound_capabilities = d.supplies; desc.bound_capability_count = 1;
+    ArInstance instance = 0; CHECK(api.create_instance(runtime, &desc, nullptr, &instance) == AR_OK);
+    vrmRig::SpringBoneSolver owner; CHECK(owner.Configure(c.rig));
+    ArSnapshot held = 0;
+    for (uint64_t i = 0; i <= 12; ++i) {
+        vrmRig::SpringBoneResult expected;
+        CHECK(i == 0 ? owner.Reset(binding.RestPose(), &expected) :
+              owner.Step(float(c.fixedStepSeconds), binding.RestPose(), &expected));
+        ArInputFrame input{AR_HEADER(ArInputFrame)};
+        input.frame_id = i+1; input.generation = 1; input.evaluation_seconds = double(i) * c.fixedStepSeconds;
+        ArSnapshot result = 0; CHECK(api.evaluate_frame(runtime, instance, &input, nullptr, &result) == AR_OK);
+        ArStateView actual{AR_HEADER(ArStateView)}; CHECK(api.get_snapshot(result, &actual) == AR_OK);
+        for (size_t j = 0; j < expected.localRotations.size(); ++j) {
+            auto q = GfQuatd(expected.localRotations[j]);
+            if (c.rig.parents[j] < 0) q = GfQuatd(c.placement.rotation) * q;
+            q.Normalize();
+            const auto& t = actual.joints[j].local;
+            CHECK(std::abs(GfDot(q, GfQuatd(t.rotation[3], GfVec3d(t.rotation[0],t.rotation[1],t.rotation[2])))) > 1-1e-8);
+            CHECK(std::string(actual.joints[j].joint_id) == c.jointIds[j]);
+        }
+        if (i == 0) held = result; else CHECK(api.release_snapshot(result) == AR_OK);
+    }
+    CHECK(api.reset_instance(runtime, instance, 2) == AR_OK);
+    CHECK(api.destroy_runtime(runtime) == AR_OK);
+    ArStateView retained{AR_HEADER(ArStateView)};
+    CHECK(api.get_snapshot(held, &retained) == AR_OK && retained.generation == 1);
+    CHECK(api.release_snapshot(held) == AR_OK);
+}
+#endif
 void mapping(bool roots, bool capsule) {
     auto s = stage(roots, capsule);
     avatarVrmUsd::SpringBoneBinding binding(s, config());
@@ -114,6 +163,9 @@ void mapping(bool roots, bool capsule) {
     s->RemovePrim(SdfPath("/Avatar"));
     s.Reset();
     CHECK(copy.Skeleton().JointIds()[1] == "Root/Hair");
+#ifdef AR_TEST_SPRING_ADAPTER
+    runtimeMapping(copy);
+#endif
     // Construct a separate owner rig from known fixture values, including a
     // rotated placement. This detects double-applied placement and root expansion.
     vrmRig::SpringBoneRig control = rig;

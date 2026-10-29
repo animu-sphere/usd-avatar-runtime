@@ -69,5 +69,8 @@ root expansion or parameter validation is implemented here.
 The [capability matrix](../reference/CAPABILITY_MATRIX.md#vrm-spring-stage-binding-evidence-2026-10-28)
 records generated-stage and installed-consumer checks. This boundary provides
 configuration for subsequent [runtime integration slices](../roadmap/current.md#vrm-secondary-motion-integration).
-It does not establish transactional evaluator history, fixed-tick scheduling,
-actual VRM-file intake, live-avatar motion or Hydra/direct publication parity.
+The separate [spring evaluator](VRM_SPRING_ADAPTER.md) consumes these owned values
+and adds transactional history and current-pose mapping. With both options
+enabled, source and installed binding tests compose that evaluator after stage
+destruction. Fixed-tick scheduling, actual VRM-file intake, live-avatar motion
+and Hydra/direct publication parity remain outside the binding's evidence.

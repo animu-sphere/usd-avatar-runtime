@@ -70,6 +70,13 @@ direct path; future adapters must preserve the same distinction.
 
 ## 3. Failure and discontinuities
 
+The optional [VRM spring evaluator](VRM_SPRING_ADAPTER.md) validates the trial
+state mechanism with installed owner value copies. A later provider refusal or
+invalid output discards solver and tick-time changes; same-frame retry matches
+a clean instance. Reset recreates history and seeds from the next frame's
+declared animated pose. Retained snapshots survive reset and destruction.
+This per-instance rollback does not change shared-world invalidation rules.
+
 The proposed default is to publish only a complete valid snapshot. Evaluation
 failure produces an explicit failed-frame result; a previous valid snapshot
 can remain displayed if the host chooses, carrying its original frame identity.

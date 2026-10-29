@@ -57,6 +57,12 @@ and `vrm_spring_usd` installed component check the solver feature API and v2
 root declarations without adding those requirements to existing expression or
 core builds. It creates no evaluator, physics world or scheduler.
 
+The separate optional [VRM spring evaluator](VRM_SPRING_ADAPTER.md) requires
+installed `vrmRig` only. Its `vrm_spring` component checks the spring feature
+API and linked symbols without selecting schema intake, expression evaluation,
+motion sampling or a rigid-body backend. It uses core's existing transactional
+callbacks and secondary phase; core gains no provider dependency.
+
 The optional [live usdview MMD host](../guides/live-mmd-physics.md) composes the
 installed MMD, physics/Jolt and Stage Runner packages with USD binding/output
 and Python. Its backend/UI dependencies belong only to the application module;
