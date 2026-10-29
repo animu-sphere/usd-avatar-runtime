@@ -14,7 +14,7 @@ The [keyed-input check](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-e
 adds generated VMD-to-physics replay coverage. Private intake exposes the next
 requirements: complete non-bone morph outputs through the owner/runtime/publication
 boundary beyond the [resolved vertex/group slice](../reference/CAPABILITY_MATRIX.md#live-mmd-resolved-group-evidence-2026-10-24),
-including additional UV channels and live/rendered material effects, and select
+including additional UV channels and representative live/rendered material checks, and select
 representative inputs admitted by the owner's damping contract.
 Keep source values intact and resolve those requirements before
 claiming full PMX/VMD or L3 acceptance.
@@ -536,7 +536,7 @@ with its limits, and keep broader physics MVP and ABI-freeze gates open.
 The installed [native MMD session](../architecture/MMD_SESSION.md) now supplies
 single-avatar original PMX/VMD/Jolt snapshots to the dedicated renderer viewport,
 including scoped controls and whole-world teardown. Broader B/E lifecycle,
-material output, private-avatar Hydra/direct parity and representative acceptance
+representative material output, private-avatar Hydra/direct parity and representative acceptance
 remain open. The renderer's
 [viewport report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/107-2026-10-27-live-mmd-viewport.md)
 records display evidence and the current performance limit. This does not close
@@ -577,8 +577,9 @@ automatic resident UV mapping, coherent tangent regeneration, additional
 UV/material realization and composed renderer/Hydra agreement; this does not
 close physics milestone D or Runtime Phase A/C.
 
-Material morphs now have a scoped generated
-[snapshot-publication check](../reference/CAPABILITY_MATRIX.md#mmd-material-snapshot-evidence-2026-10-27).
-Continue with automatic material binding, live USD appearance publication and
-renderer consumption of all sampled texture/sphere/toon contributions. These
-remain workstream C/E and physics milestone D integration gates.
+Material morphs have scoped generated
+[live-session evidence](../reference/CAPABILITY_MATRIX.md#live-mmd-material-evidence-2026-10-29)
+for automatic direct-PMX binding, canonical USD inputs and independent sampled
+texture/sphere/toon coefficients. Continue with representative private assets,
+composed Hydra/direct agreement and broader material discovery. These remain
+workstream C/E and physics milestone D integration gates.

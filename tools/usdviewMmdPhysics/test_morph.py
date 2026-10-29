@@ -83,20 +83,16 @@ for motion, constant in ((sys.argv[2], False), (sys.argv[3], True), (sys.argv[4]
     assert stage.GetRootLayer().ExportToString() == original
     assert stage.GetSessionLayer().ExportToString() == session_layer
 
-# A declared unsupported channel still refuses rather than being silently lost.
+# The existing empty material declaration now has a complete live binding.
 for motion in sys.argv[5:]:
-    unsupported = _native.Session(stage, sys.argv[1], motion)
+    material = _native.Session(stage, sys.argv[1], motion)
     try:
-        unsupported.play()
-        try:
-            unsupported.advance(.0083334)
-            raise AssertionError("Unsupported morph must refuse")
-        except RuntimeError as error:
-            assert "MMD_ADAPTER_MORPH" in str(error), error
-        assert stage.GetSessionLayer().ExportToString() == session_layer
+        material.play()
+        material.advance(.0083334)
+        assert material.stats["steps"] == 1
     finally:
-        unsupported.close()
+        material.close()
 assert stage.GetRootLayer().ExportToString() == original
 assert stage.GetSessionLayer().ExportToString() == session_layer
 print(f"live morph: direct/group/mixed each 3 x 240 ticks, resolved/zero weights, final deformation error {max_error:.6g} m, "
-      "exact reset replay, cleanup and unsupported material refusal passed")
+      "exact reset replay, cleanup and empty material admission passed")

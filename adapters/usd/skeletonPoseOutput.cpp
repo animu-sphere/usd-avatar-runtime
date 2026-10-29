@@ -42,11 +42,24 @@ GfMatrix4d matrix(const ArTransform& t) {
 }
 }
 SkeletonPoseOutput::SkeletonPoseOutput(UsdStageRefPtr stage, SkeletonBinding binding,
-                                     SdfPath blendShapeMesh, SdfPath uvMesh)
+                                     SdfPath blendShapeMesh, SdfPath uvMesh, std::vector<SdfPath> materialInputs)
     : stage_(std::move(stage)), binding_(std::move(binding)),
       layer_(SdfLayer::CreateAnonymous("avatar-runtime-pose.usda")), mesh_(std::move(blendShapeMesh)),
-      uvMesh_(std::move(uvMesh)) {
+      uvMesh_(std::move(uvMesh)), materialInputs_(std::move(materialInputs)) {
     require(bool(stage_) && bool(stage_->GetSessionLayer()), "USD_OUTPUT_STAGE: missing stage/session layer");
+    std::set<SdfPath> uniqueInputs;
+    for (const auto& path : materialInputs_) {
+        const auto attr = stage_->GetAttributeAtPath(path);
+        require(path.IsPropertyPath() && uniqueInputs.insert(path).second && attr &&
+            stage_->GetPrimAtPath(path.GetPrimPath()).GetTypeName() == TfToken("Material") &&
+            path.GetName().rfind("inputs:", 0) == 0 && !attr.HasAuthoredConnections(),
+            "USD_OUTPUT_MATERIAL: invalid/duplicate material input");
+        const auto type = attr.GetTypeName();
+        require(type == SdfValueTypeNames->Float || type == SdfValueTypeNames->Color3f ||
+            type == SdfValueTypeNames->Color4f || type == SdfValueTypeNames->Float3 ||
+            type == SdfValueTypeNames->Float4, "USD_OUTPUT_MATERIAL: unsupported input type");
+        materialTypes_.push_back(type.GetAsToken());
+    }
     if (!mesh_.IsEmpty()) {
         const auto mesh = UsdGeomMesh::Get(stage_, mesh_);
         const UsdSkelBindingAPI api(mesh);
@@ -104,6 +117,34 @@ void SkeletonPoseOutput::Apply(const ArStateView& state) {
     require(state.generation > generation_ ||
         (state.generation == generation_ && state.frame_id >= frame_), "USD_OUTPUT_STALE: older output");
     require(state.joint_count && state.joints, "USD_OUTPUT_JOINTS: missing joints");
+    std::vector<VtValue> materials;
+    require(!state.material_count || state.materials, "USD_OUTPUT_MATERIAL: missing material array");
+    for (size_t n = 0; n < materialInputs_.size(); ++n) {
+        const auto& path = materialInputs_[n];
+        const auto attr = stage_->GetAttributeAtPath(path);
+        require(attr && attr.GetTypeName().GetAsToken() == materialTypes_[n] && !attr.HasAuthoredConnections(),
+            "USD_OUTPUT_MATERIAL: changed material input; rebind required");
+        require(!stage_->GetSessionLayer()->GetAttributeAtPath(path),
+            "USD_OUTPUT_MATERIAL: session-root input would mask live output");
+        const ArMaterialInput* found = nullptr;
+        for (uint32_t i = 0; i < state.material_count; ++i) {
+            const auto& m = state.materials[i];
+            if (m.material_id && m.input_id && path.GetPrimPath().GetString() == m.material_id && path.GetName() == m.input_id) {
+                require(!found, "USD_OUTPUT_MATERIAL: duplicate input identity"); found = &m;
+            }
+        }
+        const auto type = attr.GetTypeName();
+        const uint32_t count = type == SdfValueTypeNames->Float ? 1 :
+            (type == SdfValueTypeNames->Color3f || type == SdfValueTypeNames->Float3) ? 3 : 4;
+        require(found && found->value_type == count, "USD_OUTPUT_MATERIAL: missing/mistyped input");
+        for (uint32_t a = 0; a < 4; ++a)
+            require(std::isfinite(found->value[a]) && std::abs(found->value[a]) <= std::numeric_limits<float>::max() &&
+                (a < count || found->value[a] == 0), "USD_OUTPUT_MATERIAL: invalid numeric value");
+        const auto* v = found->value;
+        if (count == 1) materials.emplace_back(float(v[0]));
+        else if (count == 3) materials.emplace_back(GfVec3f(float(v[0]),float(v[1]),float(v[2])));
+        else materials.emplace_back(GfVec4f(float(v[0]),float(v[1]),float(v[2]),float(v[3])));
+    }
     const auto skeleton = UsdSkelSkeleton::Get(stage_, SdfPath(binding_.SkeletonId()));
     VtTokenArray tokens;
     require(skeleton && skeleton.GetJointsAttr().Get(&tokens) && tokens.size() == baseline.joint_count,
@@ -229,6 +270,12 @@ void SkeletonPoseOutput::Apply(const ArStateView& state) {
         require(UsdGeomPrimvarsAPI(scratch->OverridePrim(uvMesh_)).CreatePrimvar(TfToken("st"),
             SdfValueTypeNames->TexCoord2fArray, UsdGeomTokens->vertex).Set(uvs),
             "USD_OUTPUT_AUTHOR: UV authoring failed");
+    for (size_t n = 0; n < materialInputs_.size(); ++n) {
+        const auto& path = materialInputs_[n];
+        require(scratch->OverridePrim(path.GetPrimPath()).CreateAttribute(path.GetNameToken(),
+            stage_->GetAttributeAtPath(path).GetTypeName(), false).Set(materials[n]),
+            "USD_OUTPUT_AUTHOR: material authoring failed");
+    }
     auto paths = stage_->GetSessionLayer()->GetSubLayerPaths();
     std::vector<std::string> ordered(paths.begin(), paths.end());
     const auto id = layer_->GetIdentifier();
