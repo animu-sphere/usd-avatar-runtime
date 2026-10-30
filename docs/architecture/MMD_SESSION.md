@@ -26,7 +26,24 @@ at most eight catch-up ticks per request, with backlog retained. MMD owns
 VMD binding, pre/post controls, bone feedback, vertex/group morph weights
 and primary UV/material evaluation; Jolt executes once at each runtime Step barrier.
 Both experimental spring options remain OFF by default. Existing owner
-body-property, startup and unsupported-morph admission rules are preserved.
+startup and unsupported-morph admission rules are preserved. Body properties
+explicitly select installed `ReadSourceBodyProperties`: each damping channel
+maps its owner finite rate or pre-force prior-velocity clearing response into
+the neutral descriptor. The strict owner reader remains separate.
+
+`DampingNormalizations()` returns owned session records with original attribute
+paths, original coefficients and effective coefficients for normalized source
+values. Copy records before carrying them across a rebuild. Successful Reset
+rereads declarations and replaces the records; malformed declarations still
+refuse. The Python wrapper exposes copied `dampingNormalizations` dictionaries,
+and usdview reports them on construction and successful Reset. This is applied
+source policy, separate from `UnappliedMetadata()` spring gaps.
+
+Configuration and installed `mmd_session` lookup require owner
+`SOURCE_BODY_PROPERTIES_VERSION=1`, core `DAMPING_RESPONSE_VERSION=1` and
+`physicsJolt_PRIOR_VELOCITY_CLEARING_AVAILABLE`. Rebuild the complete physics
+core/backend/USD bridge and runtime consumer closure for the descriptor change;
+matching product versions alone do not establish compatibility.
 
 `Baseline()` exposes the complete layout for renderer matching. `Snapshot()`
 borrows the latest final result; independently retain it through `Api()`
@@ -74,6 +91,12 @@ set to generated `live-physics-uv-mixed.vmd`. The existing eight usdview native
 tests cover the shared implementation's properties, springs, keyed input,
 dynamic feedback, startup and morph/UV publication. This scoped host does not
 close representative L3, Hydra/direct parity or the broader physics MVP gates.
+
+Setting `AVATAR_MMD_SESSION_TEST_PMX` also enables
+`hosts.mmd_session_installed`. This separately configures and compiles an
+installed `mmd_session` consumer, checking typed normalization records, Reset,
+live snapshots and nonmutation without Python. It can use the generated
+pendulum alone without configuring the mixed UV/vertex VMD option.
 
 `hosts.mmd_session_materials` accepts the optional
 `AVATAR_MMD_SESSION_TEST_MATERIAL_PMX`/`_VMD` generated pair. Generate it with

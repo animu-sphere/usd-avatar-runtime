@@ -21,6 +21,10 @@ struct BodyState {
     std::array<double, 4> rotation; // x, y, z, w
     std::array<double, 3> velocity;
 };
+struct DampingNormalization {
+    std::string attributePath;
+    float original, coefficient;
+};
 
 // Optional single-avatar PMX/VMD application session. MMD owns controls and
 // coupling; the runtime owns fixed ticks; Jolt supplies the backend. Use one
@@ -39,6 +43,9 @@ public:
     void Close(); // unregister world before destroying solver resources; idempotent
     Stats GetStats() const;
     std::vector<BodyState> BodyStates() const;
+    // Owned source-policy normalization records from the latest successful
+    // world build; reread on Reset. Endpoint selection itself is not a warning.
+    const std::vector<DampingNormalization>& DampingNormalizations() const;
     const std::vector<std::string>& UnappliedMetadata() const;
     const ArStateView& Baseline() const;
     const ArRuntimeApi& Api() const;

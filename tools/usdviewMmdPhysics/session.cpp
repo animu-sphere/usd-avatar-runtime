@@ -13,6 +13,16 @@ public:
     }
     py::dict advance(double elapsed) { Advance(elapsed); return stats(); }
     py::list warnings() const { py::list rows; for (const auto& w : UnappliedMetadata()) rows.append(w); return rows; }
+    py::list dampingNormalizations() const {
+        py::list rows;
+        for (const auto& n : DampingNormalizations()) {
+            py::dict row;
+            row["attributePath"] = n.attributePath;
+            row["original"] = n.original; row["coefficient"] = n.coefficient;
+            rows.append(row);
+        }
+        return rows;
+    }
     py::dict bodyStates() const {
         py::dict rows;
         for (const auto& s : BodyStates()) {
@@ -32,5 +42,6 @@ PXR_BOOST_PYTHON_MODULE(_native) {
         .def("play", &Session::Play).def("pause", &Session::Pause).def("advance", &Session::advance)
         .def("reset", &Session::Reset).def("close", &Session::Close)
         .add_property("stats", &Session::stats).add_property("unappliedMetadata", &Session::warnings)
+        .add_property("dampingNormalizations", &Session::dampingNormalizations)
         .add_property("bodyStates", &Session::bodyStates);
 }

@@ -1,10 +1,13 @@
 find_package(physicsJolt 0.1 CONFIG REQUIRED)
 find_package(mmdPhysicsAdapter 0.2 CONFIG REQUIRED)
-foreach(api IN ITEMS INITIAL_POSE BODY_PROPERTIES JOINT_SPRINGS)
+foreach(api IN ITEMS INITIAL_POSE BODY_PROPERTIES JOINT_SPRINGS SOURCE_BODY_PROPERTIES)
     if(NOT mmdPhysicsAdapter_${api}_VERSION EQUAL 1)
         message(FATAL_ERROR "MMD session requires installed mmdPhysicsAdapter ${api} API version 1")
     endif()
 endforeach()
+if(NOT physicsCore_DAMPING_RESPONSE_VERSION EQUAL 1 OR NOT physicsJolt_PRIOR_VELOCITY_CLEARING_AVAILABLE)
+    message(FATAL_ERROR "MMD session requires prior-velocity clearing; rebuild/install the complete physics core/backend/bridge/consumer closure")
+endif()
 if(NOT physicsJolt_BACKEND_AVAILABLE)
     message(FATAL_ERROR "MMD session requires an available Jolt backend")
 endif()
@@ -26,6 +29,14 @@ set(AVATAR_MMD_SESSION_TEST_PMX "" CACHE FILEPATH "Generated morph PMX for direc
 set(AVATAR_MMD_SESSION_TEST_VMD "" CACHE FILEPATH "Generated mixed primary UV/vertex VMD for direct session tests")
 set(AVATAR_MMD_SESSION_TEST_MATERIAL_PMX "" CACHE FILEPATH "Generated two-material physics PMX")
 set(AVATAR_MMD_SESSION_TEST_MATERIAL_VMD "" CACHE FILEPATH "Generated group/direct material VMD")
+if(AVATAR_BUILD_TESTS AND AVATAR_MMD_SESSION_TEST_PMX)
+    add_test(NAME hosts.mmd_session_installed COMMAND ${CMAKE_COMMAND}
+        "-DROOT_BINARY=${PROJECT_BINARY_DIR}" "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
+        "-DDEPENDENCY_PREFIX=${CMAKE_PREFIX_PATH}" "-DGENERATOR=${CMAKE_GENERATOR}"
+        "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}" "-DCONFIG=$<CONFIG>"
+        "-Dpxr_DIR=${pxr_DIR}" "-DJolt_DIR=${Jolt_DIR}" "-DruntimeCore_DIR=${runtimeCore_DIR}"
+        "-DPMX=${AVATAR_MMD_SESSION_TEST_PMX}" -P "${CMAKE_CURRENT_SOURCE_DIR}/installed.cmake")
+endif()
 if(AVATAR_BUILD_TESTS AND AVATAR_MMD_SESSION_TEST_MATERIAL_PMX AND AVATAR_MMD_SESSION_TEST_MATERIAL_VMD)
     add_executable(mmdSessionMaterials materialTests.cpp)
     target_link_libraries(mmdSessionMaterials PRIVATE avatarMmdSession)

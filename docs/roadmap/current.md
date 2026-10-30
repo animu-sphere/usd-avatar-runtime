@@ -14,8 +14,10 @@ The [keyed-input check](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-e
 adds generated VMD-to-physics replay coverage. Private intake exposes the next
 requirements: complete non-bone morph outputs through the owner/runtime/publication
 boundary beyond the [resolved vertex/group slice](../reference/CAPABILITY_MATRIX.md#live-mmd-resolved-group-evidence-2026-10-24),
-including additional UV channels and representative live/rendered material checks, and select
-representative inputs admitted by the owner's damping contract.
+including additional UV channels and representative live/rendered material checks.
+Continue from the [source-policy damping evidence](../reference/CAPABILITY_MATRIX.md#source-damping-runtime-evidence-2026-10-31)
+with an owner admission decision for private joints with no dynamic endpoint,
+then representative scene and renderer acceptance.
 Keep source values intact and resolve those requirements before
 claiming full PMX/VMD or L3 acceptance.
 

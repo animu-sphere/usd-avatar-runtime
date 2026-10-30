@@ -23,12 +23,13 @@ simulation bake is involved. The
 [capability matrix](../reference/CAPABILITY_MATRIX.md#live-usdskel-and-usdview-mmd-evidence-2026-10-21)
 records native and actual-window checks.
 
-The host consumes installed `mmdPhysicsAdapter::ReadBodyProperties` for MMD
+The host consumes installed `mmdPhysicsAdapter::ReadSourceBodyProperties` for MMD
 collision admission masks, contact coefficients and damping. The single-format
 world uses product friction/restitution mixing with friction capped at 10,
-following the MMD owner's policy. Damping fractions convert to finite decay
-rates; backend stepping approximates the source response. Unit damping refuses
-explicitly, and malformed declarations report their owner code and body path,
+following the MMD owner's policy. Each damping channel resolves to finite decay
+or pre-force prior-velocity clearing at the unit endpoint, with explicit source
+normalization records; backend stepping remains an approximation. Malformed
+declarations report their owner code and body path,
 including during Reset. Missing metadata pairs retain shared body defaults.
 The installed owner's `ReadJointSprings` validates source spring declarations
 and converts coefficients to SI. Independent default-OFF translation and rotation
@@ -86,6 +87,11 @@ The installed MMD package must export `mmdPhysicsAdapter_BODY_PROPERTIES_VERSION
 `mmdPhysicsAdapter_JOINT_SPRINGS_VERSION=1` and
 `mmdPhysicsAdapter_INITIAL_POSE_VERSION=1`;
 older packages refuse at configure time with a rebuild/install instruction.
+The source-policy session also requires
+`mmdPhysicsAdapter_SOURCE_BODY_PROPERTIES_VERSION=1`,
+`physicsCore_DAMPING_RESPONSE_VERSION=1` and
+`physicsJolt_PRIOR_VELOCITY_CLEARING_AVAILABLE`. Rebuild the complete physics
+core/backend/USD bridge and runtime consumer closure before using this layout.
 Only this application module links Jolt/Python; reusable core and adapter package
 dependencies are unchanged. The build stages the plugin and native module under
 `build/usdview-mmd/tools/usdviewMmdPhysics/python`; installation places them under
@@ -188,7 +194,17 @@ This numeric check does not open a window or establish rendered pixel acceptance
 `hosts.usdview_mmd_properties` additionally adapts the same generated stage in
 memory to isolate admitted/rejected drops, restitution, inclined-floor friction,
 linear damping and pendulum angular damping. Source files remain untouched.
-Malformed/unit damping checks cover constructor and Reset refusal.
+Malformed damping checks cover constructor and Reset refusal. The host now
+explicitly selects the owner's source damping policy: unit coefficients clear
+prior velocity independently before gravity/constraints; finite source values
+outside [0,1] normalize with original path/value diagnostics. USD declarations
+still require complete uniform unsampled float pairs. Neither source files nor
+stage opinions are edited by admission. `session.dampingNormalizations` returns
+owned records; successful Reset rereads declarations and updates the records.
+The separate `hosts.usdview_mmd_damping` generated keyed-input check exercises
+independent channels, finite coexistence, constraint response and exact replay.
+See the [source damping evidence](../reference/CAPABILITY_MATRIX.md#source-damping-runtime-evidence-2026-10-31)
+for package rebuild requirements and the bounded private-intake result.
 `hosts.usdview_mmd_springs` checks separate translation/rotation response,
 positive free/limited activation, signed/locked/type/disabled gaps, live pose
 agreement, exact reset replay, changed-stiffness reconstruction and owner refusal.

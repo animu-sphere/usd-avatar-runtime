@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.22)
+project(MmdSessionInstalledConsumer LANGUAGES CXX)
+find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS mmd_session)
+add_executable(mmdSessionConsumer main.cpp)
+target_link_libraries(mmdSessionConsumer PRIVATE AvatarRuntime::avatarMmdSession)
+if(WIN32)
+    add_custom_command(TARGET mmdSessionConsumer POST_BUILD COMMAND ${CMAKE_COMMAND} -E
+        copy_if_different $<TARGET_FILE:AvatarRuntime::avatarRuntime> $<TARGET_FILE_DIR:mmdSessionConsumer>)
+endif()
+enable_testing()
+add_test(NAME installed.mmd_session COMMAND mmdSessionConsumer "${PMX}")
