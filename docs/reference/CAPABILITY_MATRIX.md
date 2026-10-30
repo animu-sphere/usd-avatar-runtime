@@ -1178,3 +1178,42 @@ output error `1.01355e-7`, and half-scale quantization `2.35081e-4`. No scale is
 discarded to admit springs. Renderer resident-resource delivery, Hydra/direct
 agreement, pixels, interpolation, in-place mode changes, broader avatar/motion
 coverage, hosted runtime lanes and VRM/shared-world composition remain open.
+
+## Source damping runtime evidence (2026-10-31)
+
+The optional native MMD session and shared usdview wrapper explicitly consume
+installed owner `ReadSourceBodyProperties`, mapping independent finite rates or
+pre-force prior-velocity clearing into the neutral descriptor. The owner
+retains strict structural admission and original coefficients; core remains
+provider-independent. Native `DampingNormalizations()` and Python copied
+`dampingNormalizations` records expose original attribute paths/values and
+effective coefficients, independently of unapplied spring metadata. Successful
+Reset rereads declarations and replaces records; malformed source opinions
+refuse with retained owner code/path and can be repaired/retried.
+
+Local Windows/MSVC Release, OpenUSD 26.08, Python 3.13.14 and deterministic
+Jolt 5.5.0/six-DOF verification uses rebuilt installed owner and physics
+core/backend/USD bridge packages. Configuration and installed `mmd_session`
+lookup require `mmdPhysicsAdapter_SOURCE_BODY_PROPERTIES_VERSION=1`,
+`physicsCore_DAMPING_RESPONSE_VERSION=1` and
+`physicsJolt_PRIOR_VELOCITY_CLEARING_AVAILABLE`; product versions alone do not
+authorize mixing the descriptor layouts.
+
+All 24 configured runtime/core/adapter/live CTests pass. The generated property
+test checks surviving gravity at the unit endpoint against the 120 Hz analytic
+response, and equality for normalized 2/unit and negative/zero controls. New
+`hosts.usdview_mmd_damping` covers eight policies, three exact 120-tick replay
+generations each, independent channels, finite coexistence, fresh keyed
+constraint motion, unaffected kinematic commands, Pause, nonmutation and changed
+source/failed-Reset repair. A separately compiled installed native-session
+consumer exercises public normalization records and Reset without Python.
+Neutral backend queued-force/contact evidence remains in the physics owner.
+
+A bounded private PMX/VMD rerun uses no damping overrides or motion filtering,
+with 58 normalization records and exact 120-tick replay after Reset. Raw intake
+still refuses joints with no dynamic endpoint; the scoped rerun disables 10
+inert kinematic/kinematic joints in an anonymous session layer. The MMD owner's
+[dated report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-31-phase8-source-damping-runtime.md)
+records identities, measurements, compiler environment and limitations. This
+is headless local evidence, not published packages, live renderer acceptance,
+full-motion coverage, native MMD trajectories or representative L3 completion.

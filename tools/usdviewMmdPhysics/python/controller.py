@@ -35,6 +35,7 @@ class Controller(QtCore.QObject):
             self.session = _native.Session(stage, pmx, self.motion,
                 os.environ.get("AVATAR_MMD_TRANSLATION_SPRINGS") == "1",
                 os.environ.get("AVATAR_MMD_ROTATION_SPRINGS") == "1")
+            self.reportDampingNormalizations()
             stats = self.session.stats
             if stats["approximateTranslationSpringAxes"] or stats["approximateRotationSpringAxes"]:
                 Tf.Warn("Experimental MMD spring approximation: {} Hookean translation axes, "
@@ -46,6 +47,11 @@ class Controller(QtCore.QObject):
                         "preserved but not fully applied. "
                         "{} attributes; first entries: {}".format(len(gaps), ", ".join(gaps[:5])))
         return self.session
+
+    def reportDampingNormalizations(self):
+        for row in self.session.dampingNormalizations:
+            Tf.Warn("MMD source damping normalized: {} original={} coefficient={}".format(
+                row["attributePath"], row["original"], row["coefficient"]))
 
     def play(self):
         self.ensureSession().play()
@@ -62,6 +68,7 @@ class Controller(QtCore.QObject):
     def reset(self):
         self.timer.stop()
         self.ensureSession().reset()
+        self.reportDampingNormalizations()
         self.refresh()
         self.api.PrintStatus("MMD Physics: reset; press Play to resume")
 

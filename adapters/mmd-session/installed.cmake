@@ -1,0 +1,22 @@
+set(prefix "${ROOT_BINARY}/installed-mmd-session/prefix")
+set(binary "${ROOT_BINARY}/installed-mmd-session/consumer")
+function(run)
+    execute_process(COMMAND ${ARGV} RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    if(NOT status EQUAL 0)
+        message(FATAL_ERROR "Command failed: ${ARGV}\n${output}\n${error}")
+    endif()
+endfunction()
+run("${CMAKE_COMMAND}" --install "${ROOT_BINARY}" --prefix "${prefix}" --config "${CONFIG}")
+set(generator_args -G "${GENERATOR}")
+if(PLATFORM)
+    list(APPEND generator_args -A "${PLATFORM}")
+endif()
+execute_process(COMMAND "${CMAKE_COMMAND}" -S "${SOURCE}/installed_consumer" -B "${binary}" ${generator_args}
+    "-DCMAKE_PREFIX_PATH=${prefix};${DEPENDENCY_PREFIX}" "-DCMAKE_BUILD_TYPE=${CONFIG}"
+    "-Dpxr_DIR=${pxr_DIR}" "-DJolt_DIR=${Jolt_DIR}" "-DruntimeCore_DIR=${runtimeCore_DIR}" "-DPMX=${PMX}"
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT status EQUAL 0)
+    message(FATAL_ERROR "Installed MMD session configuration failed: ${output}\n${error}")
+endif()
+run("${CMAKE_COMMAND}" --build "${binary}" --config "${CONFIG}")
+run("${CMAKE_CTEST_COMMAND}" --test-dir "${binary}" -C "${CONFIG}" --output-on-failure)

@@ -65,6 +65,7 @@ struct Session::Impl {
     avatarStageRunner::PhysicsSession::FrameClock::Clock::time_point now_{};
     std::string error_;
     std::vector<std::string> warnings_;
+    std::vector<DampingNormalization> dampingNormalizations_;
     ArStateView baseline_{};
     std::vector<avatarMmd::MorphBinding> morphBindings_;
     std::string uvMeshId_;
@@ -90,6 +91,7 @@ struct Session::Impl {
         if (world_ && !world_->Close()) throw std::runtime_error("Physics resource close refused; retry reset");
         world_.reset(); pending_.clear(); result_.clear(); pendingFrame_ = resultFrame_ = steps_ = 0;
         std::vector<std::string> warnings;
+        std::vector<DampingNormalization> dampingNormalizations;
         std::set<std::string> applied;
         size_t translationAxes = 0, rotationAxes = 0;
         // Validate owner declarations even for disabled/format-only joints;
@@ -108,20 +110,36 @@ struct Session::Impl {
             const core::ContactMixing mixing{Rule::product, Rule::product, 10};
             if (settings) return usd_physics::jolt::createWorld(mixing, settings->gravity);
             return usd_physics::jolt::createWorld(mixing);
-        }, [this](const auto& body, auto& descriptor) {
+        }, [&](const auto& body, auto& descriptor) {
             if (const auto found = initialBodies_.find(body.path); found != initialBodies_.end()) {
                 const auto& t = found->second;
                 descriptor.initialTransform = {{t.translation[0], t.translation[1], t.translation[2]},
                     {t.rotation[3], t.rotation[0], t.rotation[1], t.rotation[2]}};
             }
-            const auto properties = take(mmd::physics::ReadBodyProperties(
+            // This single-format application explicitly selects the owner's
+            // source policy; the conventional/strict reader remains unchanged.
+            const auto source = take(mmd::physics::ReadSourceBodyProperties(
                 stage_->GetPrimAtPath(SdfPath(body.path))));
+            const auto& properties = source.properties;
             if (properties.filter)
                 descriptor.collisionFilter = {properties.filter->category, properties.filter->mask};
             if (properties.contact)
                 descriptor.contactMaterial = {properties.contact->friction, properties.contact->restitution};
-            if (properties.damping)
-                descriptor.damping = {properties.damping->linear, properties.damping->angular};
+            if (source.damping) {
+                const auto& d = *source.damping;
+                const auto mode = [](const auto& response) {
+                    return response.mode == mmd::physics::SourceDampingMode::ClearPriorVelocity ?
+                        core::BodyDampingMode::clearPriorVelocity : core::BodyDampingMode::finiteRate;
+                };
+                descriptor.damping = {d.linear.rate, d.angular.rate, mode(d.linear), mode(d.angular)};
+                for (bool angular : {false, true}) {
+                    const auto& response = angular ? d.angular : d.linear;
+                    if (response.clamped)
+                        dampingNormalizations.push_back({body.path + ".mmd:physics:" +
+                            (angular ? "angularDamping" : "linearDamping"),
+                            angular ? d.originalAngular : d.originalLinear, response.coefficient});
+                }
+            }
         }, [&](const auto& joint, auto& descriptor) {
             const auto properties = take(mmd::physics::ReadJointSprings(
                 stage_->GetPrimAtPath(SdfPath(joint.path))));
@@ -147,6 +165,7 @@ struct Session::Impl {
         warnings_.clear();
         for (const auto& path : warnings) if (!applied.count(path)) warnings_.push_back(path);
         translationAxes_ = translationAxes; rotationAxes_ = rotationAxes;
+        dampingNormalizations_ = std::move(dampingNormalizations);
     }
     static ArStatus AR_CALL step(void* data, const ArPhysicsTick* tick, const ArDiagnosticSink*) {
         auto& self = *static_cast<Impl*>(data);
@@ -417,6 +436,7 @@ void Session::Reset() { impl_->reset(); }
 void Session::Close() { impl_->close(); }
 Stats Session::GetStats() const { return impl_->stats(); }
 std::vector<BodyState> Session::BodyStates() const { return impl_->bodyStates(); }
+const std::vector<DampingNormalization>& Session::DampingNormalizations() const { return impl_->dampingNormalizations_; }
 const std::vector<std::string>& Session::UnappliedMetadata() const { return impl_->warnings_; }
 const ArStateView& Session::Baseline() const { return impl_->baseline_; }
 const ArRuntimeApi& Session::Api() const { return impl_->runtime_.api; }

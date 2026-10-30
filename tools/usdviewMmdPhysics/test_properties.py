@@ -65,6 +65,15 @@ assert max(row["linearVelocity"][1] for row in elastic) > 2
 assert max(row["linearVelocity"][1] for row in admitted) < .1
 damped = run_drop(mask=0, damping=.75)
 assert abs(damped[39]["linearVelocity"][1]) < .65 * abs(rejected[39]["linearVelocity"][1])
+# Clearing happens before each substep's gravity, leaving fresh acceleration.
+# This distinguishes the endpoint from a huge finite post-force drag rate.
+endpoint = run_drop(mask=0, damping=1.)
+normalized = run_drop(mask=0, damping=2.)
+assert endpoint == normalized
+assert run_drop(mask=0, damping=-2.) == rejected
+for row in endpoint:
+    assert abs(row["linearVelocity"][1] + 9.81 / 120) < 2e-5, row
+assert abs(endpoint[-1]["translation"][1] - (2 - 240 * 9.81 / 120**2)) < 2e-5
 smooth = run_drop(slope=10)
 rough = run_drop(slope=10, friction=1)
 assert abs(smooth[-1]["linearVelocity"][0]) > abs(rough[-1]["linearVelocity"][0]) + .5
@@ -89,7 +98,7 @@ free_angle, damped_angle = swing(0), swing(.999)
 # verify a visible response difference, rather than free-spin exponential decay.
 assert damped_angle < .95 * free_angle, (free_angle, damped_angle)
 # Failure is explicit and leaves no live output, including during reconstruction.
-for name, value, code in (("linearDamping", 1., "MMD_PHYSICS_DAMPING_UNSUPPORTED"),
+for name, value, code in (("linearDamping", float("nan"), "MMD_PHYSICS_METADATA_INVALID"),
                           ("restitution", 2., "MMD_PHYSICS_METADATA_INVALID")):
     stage = stage_for_drop()
     session = _native.Session(stage, pmx, "")
