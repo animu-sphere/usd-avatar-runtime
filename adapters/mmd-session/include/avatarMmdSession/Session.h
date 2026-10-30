@@ -46,6 +46,9 @@ public:
     // Owned source-policy normalization records from the latest successful
     // world build; reread on Reset. Endpoint selection itself is not a warning.
     const std::vector<DampingNormalization>& DampingNormalizations() const;
+    // Source joint paths omitted by the MMD owner's inert-joint policy.
+    // Owned records from the latest successful construction/Reset.
+    const std::vector<std::string>& InertJoints() const;
     const std::vector<std::string>& UnappliedMetadata() const;
     const ArStateView& Baseline() const;
     const ArRuntimeApi& Api() const;

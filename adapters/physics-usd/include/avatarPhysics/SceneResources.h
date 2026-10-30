@@ -19,9 +19,13 @@ public:
                                        usd_physics::core::BodyDescriptor &)>;
   using JointPolicy = std::function<void(const usd_physics::usd::Joint &,
                                         usd_physics::core::SixDofConstraintDescriptor &)>;
+  // Called after conversion/policy validation, before any world mutation.
+  // False retains the source declaration but allocates no solver constraint.
+  using JointAdmission = std::function<bool(const usd_physics::usd::Joint &)>;
   SceneResources(usd_physics::core::PhysicsWorld &world,
                  const usd_physics::usd::PhysicsScene &scene,
-                 BodyPolicy policy = {}, JointPolicy jointPolicy = {});
+                 BodyPolicy policy = {}, JointPolicy jointPolicy = {},
+                 JointAdmission jointAdmission = {});
   ~SceneResources();
   SceneResources(const SceneResources &) = delete;
   SceneResources &operator=(const SceneResources &) = delete;

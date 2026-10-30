@@ -1217,3 +1217,33 @@ inert kinematic/kinematic joints in an anonymous session layer. The MMD owner's
 records identities, measurements, compiler environment and limitations. This
 is headless local evidence, not published packages, live renderer acceptance,
 full-motion coverage, native MMD trajectories or representative L3 completion.
+
+## Inert MMD joint admission evidence (2026-10-31)
+
+The optional native session explicitly selects installed owner
+`ReadJointAdmission`, requiring `mmdPhysicsAdapter_JOINT_ADMISSION_VERSION=1`
+in source and installed package lookup. Enabled `spring6Dof` joints between two
+validated `followBone` endpoints retain their USD declaration but allocate no
+solver constraint. Native `InertJoints()` and copied Python `inertJoints`
+expose source paths; usdview reports them on construction and successful Reset.
+Generic `SceneResources`/`StageWorld` accept an optional caller admission
+predicate after conversion/policy/descriptor validation, before allocation.
+They interpret no MMD metadata. Existing callers admit every enabled joint.
+
+Local Windows/MSVC Release with the same OpenUSD/Jolt package closure passes
+25/25 CTests. Generated coverage includes selective omission and teardown,
+invalid omitted descriptors and callback refusal before mutation, two exact
+120-tick live replay generations, Pause, changed-endpoint Reset re-admission,
+invalid spring repair, copied path lifetime and unchanged USD after Close.
+The installed native-session consumer also checks inert paths and Reset over
+fully kinematic generated endpoints. Existing spring-type compatibility passes.
+
+The prior private PMX/VMD pair now constructs with no damping/joint overrides
+or motion filtering: 265 bodies, 461 skeleton joints, 10 inert paths and 58
+damping normalizations. All exposed body state is finite and replays exactly
+over two 120-tick generations; Reset retains the inert paths and Close restores
+layers without changing source-file hashes. The owner's
+[dated report](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/reports/2026-10-31-phase8-inert-joint-admission.md)
+records revisions, environment, commands, identities, timing and limits.
+World/non-MMD endpoint policy, published packages, full-motion coverage,
+representative L3, renderer parity and final interactive acceptance remain open.

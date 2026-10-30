@@ -1,6 +1,7 @@
 #include <avatarMmd/PhysicsAdapter.h>
 #include <mmdPhysicsAdapter/BodyProperties.h>
 #include <mmdPhysicsAdapter/JointSprings.h>
+#include <mmdPhysicsAdapter/JointAdmission.h>
 #include <avatarUsd/SkeletonPoseOutput.h>
 #include <avatarPhysics/StageWorld.h>
 #include <avatarStageRunner/PhysicsSession.h>
@@ -66,6 +67,7 @@ struct Session::Impl {
     std::string error_;
     std::vector<std::string> warnings_;
     std::vector<DampingNormalization> dampingNormalizations_;
+    std::vector<std::string> inertJoints_;
     ArStateView baseline_{};
     std::vector<avatarMmd::MorphBinding> morphBindings_;
     std::string uvMeshId_;
@@ -92,6 +94,7 @@ struct Session::Impl {
         world_.reset(); pending_.clear(); result_.clear(); pendingFrame_ = resultFrame_ = steps_ = 0;
         std::vector<std::string> warnings;
         std::vector<DampingNormalization> dampingNormalizations;
+        std::vector<std::string> inertJoints;
         std::set<std::string> applied;
         size_t translationAxes = 0, rotationAxes = 0;
         // Validate owner declarations even for disabled/format-only joints;
@@ -141,6 +144,11 @@ struct Session::Impl {
                 }
             }
         }, [&](const auto& joint, auto& descriptor) {
+            if (take(mmd::physics::ReadJointAdmission(stage_->GetPrimAtPath(SdfPath(joint.path)))) ==
+                    mmd::physics::JointAdmission::Inert) {
+                inertJoints.push_back(joint.path);
+                return;
+            }
             const auto properties = take(mmd::physics::ReadJointSprings(
                 stage_->GetPrimAtPath(SdfPath(joint.path))));
             if (!properties || !properties->spring6Dof) return;
@@ -159,6 +167,8 @@ struct Session::Impl {
                 if (complete) applied.insert(joint.path + ".mmd:physics:" +
                     (rotation ? "rotationSpring" : "translationSpring"));
             }
+        }, [&](const auto& joint) {
+            return std::find(inertJoints.begin(), inertJoints.end(), joint.path) == inertJoints.end();
         });
         if (!dynamic_cast<core::KinematicMotion*>(world_->World()))
             throw std::runtime_error("Live MMD preview requires KinematicMotion");
@@ -166,6 +176,7 @@ struct Session::Impl {
         for (const auto& path : warnings) if (!applied.count(path)) warnings_.push_back(path);
         translationAxes_ = translationAxes; rotationAxes_ = rotationAxes;
         dampingNormalizations_ = std::move(dampingNormalizations);
+        inertJoints_ = std::move(inertJoints);
     }
     static ArStatus AR_CALL step(void* data, const ArPhysicsTick* tick, const ArDiagnosticSink*) {
         auto& self = *static_cast<Impl*>(data);
@@ -437,6 +448,7 @@ void Session::Close() { impl_->close(); }
 Stats Session::GetStats() const { return impl_->stats(); }
 std::vector<BodyState> Session::BodyStates() const { return impl_->bodyStates(); }
 const std::vector<DampingNormalization>& Session::DampingNormalizations() const { return impl_->dampingNormalizations_; }
+const std::vector<std::string>& Session::InertJoints() const { return impl_->inertJoints_; }
 const std::vector<std::string>& Session::UnappliedMetadata() const { return impl_->warnings_; }
 const ArStateView& Session::Baseline() const { return impl_->baseline_; }
 const ArRuntimeApi& Session::Api() const { return impl_->runtime_.api; }

@@ -123,9 +123,10 @@ if("mmd_session" IN_LIST AvatarRuntime_FIND_COMPONENTS)
         include(CMakeFindDependencyMacro)
         find_dependency(physicsJolt 0.1 CONFIG)
         if(NOT mmdPhysicsAdapter_SOURCE_BODY_PROPERTIES_VERSION EQUAL 1 OR
+                NOT mmdPhysicsAdapter_JOINT_ADMISSION_VERSION EQUAL 1 OR
                 NOT physicsCore_DAMPING_RESPONSE_VERSION EQUAL 1 OR
                 NOT physicsJolt_PRIOR_VELOCITY_CLEARING_AVAILABLE)
-            message(FATAL_ERROR "MMD session requires source-policy body properties and prior-velocity clearing; rebuild/install the complete owner/physics/runtime closure")
+            message(FATAL_ERROR "MMD session requires owner joint admission, source-policy body properties and prior-velocity clearing; rebuild/install the complete owner/physics/runtime closure")
         endif()
         include("${CMAKE_CURRENT_LIST_DIR}/AvatarMmdSessionTargets.cmake")
         set(AvatarRuntime_mmd_session_FOUND TRUE)

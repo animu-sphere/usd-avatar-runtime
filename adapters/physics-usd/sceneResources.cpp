@@ -10,7 +10,7 @@ namespace usd = usd_physics::usd;
 
 SceneResources::SceneResources(core::PhysicsWorld &world,
                                const usd::PhysicsScene &scene, BodyPolicy policy,
-                               JointPolicy jointPolicy)
+                               JointPolicy jointPolicy, JointAdmission jointAdmission)
     : world_(world), shapes_(scene.bodies.size()),
       constraints_(scene.joints.size()) {
   // Allocate bookkeeping and validate all declarations/policy before touching
@@ -57,8 +57,6 @@ SceneResources::SceneResources(core::PhysicsWorld &world,
       throw std::invalid_argument("SceneResources requires unique absolute joint paths");
     if (!joint.enabled)
       continue;
-    if (!sixDof)
-      throw std::invalid_argument("SceneResources requires SixDofConstraints for enabled joints");
     auto descriptor = usd::toSixDofConstraint(joint, endpoint(provisional, joint.body0),
                                              endpoint(provisional, joint.body1));
     const auto first = descriptor->firstBody, second = descriptor->secondBody;
@@ -67,6 +65,10 @@ SceneResources::SceneResources(core::PhysicsWorld &world,
     if (descriptor->firstBody != first || descriptor->secondBody != second)
       throw std::invalid_argument("SceneResources owns joint endpoint assignment");
     core::validateSixDofConstraintDescriptor(*descriptor);
+    if (jointAdmission && !jointAdmission(joint))
+      continue;
+    if (!sixDof)
+      throw std::invalid_argument("SceneResources requires SixDofConstraints for admitted joints");
     preparedJoints.back() = std::move(descriptor);
   }
   try {
@@ -82,7 +84,7 @@ SceneResources::SceneResources(core::PhysicsWorld &world,
     }
     for (size_t i = 0; i < scene.joints.size(); ++i) {
       const auto &joint = scene.joints[i];
-      if (!joint.enabled)
+      if (!preparedJoints[i])
         continue;
       auto descriptor = *preparedJoints[i];
       descriptor.firstBody = endpoint(bodies_, joint.body0);

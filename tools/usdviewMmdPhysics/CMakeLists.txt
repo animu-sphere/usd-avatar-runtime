@@ -72,6 +72,9 @@ if(AVATAR_BUILD_TESTS AND AVATAR_MMD_PREVIEW_PMX)
         add_test(NAME hosts.usdview_mmd_damping COMMAND ${Python3_EXECUTABLE}
             "${CMAKE_CURRENT_SOURCE_DIR}/test_damping.py" "${AVATAR_MMD_PREVIEW_PMX}" "${AVATAR_MMD_PREVIEW_VMD}")
         list(APPEND live_tests hosts.usdview_mmd_damping)
+        add_test(NAME hosts.usdview_mmd_admission COMMAND ${Python3_EXECUTABLE}
+            "${CMAKE_CURRENT_SOURCE_DIR}/test_admission.py" "${AVATAR_MMD_PREVIEW_PMX}" "${AVATAR_MMD_PREVIEW_VMD}")
+        list(APPEND live_tests hosts.usdview_mmd_admission)
         get_filename_component(start_fixtures "${AVATAR_MMD_PREVIEW_VMD}" DIRECTORY)
         foreach(kind IN ITEMS offset turn bone)
             if(NOT EXISTS "${start_fixtures}/live-physics-start-${kind}.vmd")
