@@ -207,6 +207,16 @@ poison the instance and require reset. Stats expose completed ticks, simulation
 time, pending seconds and whether the seed committed. Consumer delivery failure
 retries the retained `Snapshot()` without evaluation.
 
+A held observation set suits a host whose input does not depend on the tick. A second
+`Advance` form takes a `FixedTickObservations` source instead, called with the frame ID and
+evaluation seconds of each evaluation, including the seed, so that catch-up gives the same
+result as single ticks. Identity, generation and time remain the runtime's. The source runs as
+a callback, so runtime calls from it return `AR_BUSY`, and it must be a pure function of its
+arguments for replay to hold. It is not called for a request that evaluates nothing, so its
+records are validated per evaluation rather than before elapsed is accepted. A refusal or a
+throw leaves that tick due, as an evaluator failure does. The source is host input assembly:
+providers still see only the immutable `ArInputFrame`, and no provider samples a host source.
+
 `Reset(generation, startSeconds)` prepares new provider states before replacing
 the old states and clears clock/output only on success. It declares a new seed
 instant for reset, seek or loop wrap; the next advance initializes there. No

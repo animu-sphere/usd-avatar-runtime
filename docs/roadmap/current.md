@@ -16,7 +16,7 @@ Order: VRM session integration -> direct rendering end to end -> Hydra/direct ag
 
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
-| P0 | [VRM session integration](#b-vrm-end-to-end) | the session selects pose, spring, expression and LookAt; expression and gaze come only from the host, and CI has only generated fixtures | a real VRM goes from input through evaluation to a committed snapshot with pose, expression, LookAt and spring |
+| P0 | [VRM session integration](#b-vrm-end-to-end) | the session selects pose, spring, expression and LookAt, with expression and gaze from the host or the clip; CI has only generated fixtures | a real VRM goes from input through evaluation to a committed snapshot with pose, expression, LookAt and spring |
 | P0 | [`hydra-toon` direct consumer](#c-renderer-consumer) | `toon-viewport-vrm` builds from the package; the resident check is headless and pose-only | one real VRM renders, updates, resets and tears down soundly |
 | P1 | [Hydra/direct agreement](#renderer-paths) | no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
 | P1 | [MMD session trial package](#mmd-session) | source-only session | a real PMX/VMD loads, plays, resets and feeds physics back from a package |
@@ -52,7 +52,6 @@ ABI freeze and bindings for several languages at once.
 
 ### B. VRM end to end
 
-- [ ] Decide how clip-authored expression channels and gaze reach the session. `FixedTickSession` holds one observation set across catch-up, so the bridge cannot sample them per tick from outside it without the host driving single ticks.
 - [ ] Decide what happens to node constraints: integrate them, or defer them explicitly.
 - [ ] Document the state contract consumers rely on: views, units, spaces, lifetime and the absent representation for pose, morph, material and gaze.
 - [ ] Add a redistributable small VRM, motion and expected state to CI. Private assets stay as additional evidence.

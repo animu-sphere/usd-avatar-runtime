@@ -1077,6 +1077,65 @@ struct FixedTickSession::Impl {
             snapshot = 0;
         }
     }
+    // Exactly one of held and source supplies the observations.
+    ArStatus advance(uint64_t requestId, double elapsed, bool paused, const ArInputFrame* held,
+        const FixedTickObservations* source, const ArDiagnosticSink* sink) {
+        return boundary([&]() -> ArStatus {
+            std::lock_guard<std::mutex> lock(apiMutex);
+            auto& s = *this;
+            if (!s.instance) return AR_INVALID_STATE;
+            auto& inst = ::instance(::runtime(s.runtime), s.instance);
+            Diagnostics d(sink); d.instance = s.instance;
+            if (inst.fixedSession != this || inst.poisoned) return AR_INVALID_STATE;
+            if (!requestId || requestId <= s.request || !std::isfinite(elapsed) || elapsed < 0)
+                return AR_INVALID_ARGUMENT;
+            ArInputFrame input{AR_HEADER(ArInputFrame)};
+            if (held) {
+                requireHeader(held, d);
+                input = *held;
+                input.frame_id = s.stats.tick + (s.stats.initialized ? 2 : 1);
+                input.generation = inst.generation;
+                input.evaluation_seconds = s.stats.simulationSeconds;
+                validateInput(&input, inst, d); // also on zero-tick/paused requests
+            }
+            const double pending = s.stats.pendingSeconds + (paused ? 0 : elapsed);
+            if (!std::isfinite(pending)) return AR_INVALID_ARGUMENT;
+            s.request = requestId; s.stats.pendingSeconds = pending; s.stats.tickCount = 0;
+            const auto commit = [&](uint64_t frame, double seconds) {
+                d.frame = frame;
+                if (source) {
+                    {
+                        CallbackScope scope;
+                        input = (*source)(frame, seconds);
+                    }
+                    requireHeader(&input, d);
+                }
+                input.frame_id = frame; input.generation = inst.generation; input.evaluation_seconds = seconds;
+                ArSnapshot next = 0;
+                evaluateInstance(inst, &input, d, &next);
+                s.release(); s.snapshot = next;
+            };
+            if (!s.stats.initialized) {
+                commit(1, s.config.startSeconds);
+                s.stats.initialized = true;
+            }
+            const double tolerance = s.config.fixedStepSeconds * (8 * std::numeric_limits<double>::epsilon());
+            while (!paused && s.stats.tickCount < s.config.maxCatchUpTicks &&
+                (s.stats.pendingSeconds >= s.config.fixedStepSeconds ||
+                 s.config.fixedStepSeconds - s.stats.pendingSeconds <= tolerance)) {
+                const auto tick = s.stats.tick + 1;
+                const double seconds = s.config.startSeconds + double(tick) * s.config.fixedStepSeconds;
+                if (tick >= std::numeric_limits<uint64_t>::max() - 1 ||
+                    !std::isfinite(seconds) || seconds <= s.stats.simulationSeconds)
+                    return AR_INVALID_STATE;
+                commit(tick + 1, seconds);
+                s.stats.tick = tick; s.stats.simulationSeconds = seconds;
+                s.stats.pendingSeconds = std::max(0.0, s.stats.pendingSeconds - s.config.fixedStepSeconds);
+                ++s.stats.tickCount;
+            }
+            return AR_OK;
+        });
+    }
 };
 FixedTickSession::FixedTickSession(ArRuntime h, ArInstance id, FixedTickConfig config)
     : impl_(std::make_unique<Impl>()) {
@@ -1099,50 +1158,11 @@ FixedTickSession::FixedTickSession(ArRuntime h, ArInstance id, FixedTickConfig c
 FixedTickSession::~FixedTickSession() { Close(); }
 ArStatus FixedTickSession::Advance(uint64_t requestId, double elapsed, bool paused,
     const ArInputFrame& observation, const ArDiagnosticSink* sink) {
-    return boundary([&]() -> ArStatus {
-        std::lock_guard<std::mutex> lock(apiMutex);
-        auto& s = *impl_;
-        if (!s.instance) return AR_INVALID_STATE;
-        auto& inst = instance(runtime(s.runtime), s.instance);
-        Diagnostics d(sink); d.instance = s.instance;
-        if (inst.fixedSession != impl_.get() || inst.poisoned) return AR_INVALID_STATE;
-        if (!requestId || requestId <= s.request || !std::isfinite(elapsed) || elapsed < 0)
-            return AR_INVALID_ARGUMENT;
-        requireHeader(&observation, d);
-        ArInputFrame input = observation;
-        input.frame_id = s.stats.tick + (s.stats.initialized ? 2 : 1);
-        input.generation = inst.generation;
-        input.evaluation_seconds = s.stats.simulationSeconds;
-        validateInput(&input, inst, d); // also on zero-tick/paused requests
-        const double pending = s.stats.pendingSeconds + (paused ? 0 : elapsed);
-        if (!std::isfinite(pending)) return AR_INVALID_ARGUMENT;
-        s.request = requestId; s.stats.pendingSeconds = pending; s.stats.tickCount = 0;
-        const auto commit = [&](uint64_t frame, double seconds) {
-            input.frame_id = frame; input.evaluation_seconds = seconds; d.frame = frame;
-            ArSnapshot next = 0;
-            evaluateInstance(inst, &input, d, &next);
-            s.release(); s.snapshot = next;
-        };
-        if (!s.stats.initialized) {
-            commit(1, s.config.startSeconds);
-            s.stats.initialized = true;
-        }
-        const double tolerance = s.config.fixedStepSeconds * (8 * std::numeric_limits<double>::epsilon());
-        while (!paused && s.stats.tickCount < s.config.maxCatchUpTicks &&
-            (s.stats.pendingSeconds >= s.config.fixedStepSeconds ||
-             s.config.fixedStepSeconds - s.stats.pendingSeconds <= tolerance)) {
-            const auto tick = s.stats.tick + 1;
-            const double seconds = s.config.startSeconds + double(tick) * s.config.fixedStepSeconds;
-            if (tick >= std::numeric_limits<uint64_t>::max() - 1 ||
-                !std::isfinite(seconds) || seconds <= s.stats.simulationSeconds)
-                return AR_INVALID_STATE;
-            commit(tick + 1, seconds);
-            s.stats.tick = tick; s.stats.simulationSeconds = seconds;
-            s.stats.pendingSeconds = std::max(0.0, s.stats.pendingSeconds - s.config.fixedStepSeconds);
-            ++s.stats.tickCount;
-        }
-        return AR_OK;
-    });
+    return impl_->advance(requestId, elapsed, paused, &observation, nullptr, sink);
+}
+ArStatus FixedTickSession::Advance(uint64_t requestId, double elapsed, bool paused,
+    const FixedTickObservations& source, const ArDiagnosticSink* sink) {
+    return impl_->advance(requestId, elapsed, paused, nullptr, &source, sink);
 }
 ArStatus FixedTickSession::Reset(uint64_t generation, double start) {
     return boundary([&]() -> ArStatus {
