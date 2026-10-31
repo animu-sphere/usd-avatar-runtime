@@ -1704,3 +1704,10 @@ placement, leaving held gaze valid and keeping the restamped time of a held samp
 
 This is headless: no renderer received these values. Linux was not measured when this was
 written, and the installed consumer runs in the pull request lane.
+
+## Session clip face check on Linux (2026-11-01)
+
+`session ci` run `41224814270` on pull request #67 passed `contracts.fixed_tick_session`,
+`hosts.vrm_session` and `installed.vrm_session` on hosted Windows and Linux, including the
+clip expression and gaze checks on the generated bone and expression fixtures and exact
+catch-up equality. Real avatars remain measured on Windows only.
