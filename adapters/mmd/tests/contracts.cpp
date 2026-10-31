@@ -412,6 +412,12 @@ void bindingsAndOutputs() {
         CHECK(f.diagnostics.front() == "MMD_ADAPTER_LAYOUT");
     }
     {
+        // A later slot that was never bound still fails the identity search.
+        Fixture f(a, false, [](auto& c) { c.joints[1].joint = "absent"; });
+        CHECK(f.advance(1.0/120) == AR_PROVIDER_ERROR && f.steps == 0);
+        CHECK(f.diagnostics.front() == "MMD_ADAPTER_JOINT");
+    }
+    {
         Fixture f(a, false, [](auto& c) { c.joints[1].parent = -1; });
         CHECK(f.advance(1.0/120) == AR_PROVIDER_ERROR && f.steps == 0);
         CHECK(f.diagnostics.front() == "MMD_ADAPTER_PARENT");
