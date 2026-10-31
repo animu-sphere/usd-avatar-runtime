@@ -5,24 +5,8 @@ owner: usd-avatar-runtime
 
 # Project layout
 
-This maps [design policy section 18](../design/DESIGN_POLICY.md) and
-[boundary policy sections 9 and 17](../design/BOUNDARY_POLICY.md) to components.
-The current implementation provides public headers, one
-`libs/avatarRuntime` library, CMake installation/export support and contract
-tests. Registry/validation/diagnostics currently live inside that library.
-`adapters/vrm` now provides the optional installed `avatarVrmAdapter` target
-and owner-boundary tests; see the [scoped adapter](VRM_ADAPTER.md).
-`adapters/vrm-usd` provides the separate optional installed
-`avatarVrmUsdBinding` target for [schema Humanoid discovery](VRM_USD_BINDING.md).
-The same directory adds separate `avatarVrmLookAtUsdBinding` and
-`avatarVrmExpressionUsdBinding` targets for authored gaze and expression/output
-configuration, enabled with the VRM evaluator adapter.
-Registry/diagnostics library separation remains prospective. The opt-in
-`tools/avatarMotionCheck` host is implemented; inspect/replay/benchmark hosts,
-reusable publication adapters remain prospective. The motion-check host
-optionally consumes installed `Toon::AvatarState` for probe transport parity;
-it is not a renderer dependency of core or a resident-avatar binding. Do not create empty targets
-or rename working directories merely to match a responsibility sketch.
+The targets in this tree and how they ship. Registry and diagnostics live inside the
+core library. Do not create empty targets or rename working directories to match a sketch.
 
 ## Current targets
 
@@ -48,34 +32,9 @@ or rename working directories merely to match a responsibility sketch.
 All adapter targets are optional; linking/finding only core must not resolve
 OpenUSD, VRM, MMD, Hydra or renderer packages.
 
-## Target responsibility layout
-
-```text
-usd-avatar-runtime/
-  cmake/                         build support
-  docs/
-    architecture/ contracts/ design/ reference/ roadmap/ contributing/
-  include/avatarRuntime/         public C ABI and optional C++ convenience API
-  libs/
-    runtime/                     instances, contracts and frame orchestration
-    registry/                    providers and capability discovery
-    diagnostics/                 diagnostics and observation hooks
-  adapters/
-    motion/                      owner invocation and runtime input bridge
-    usd/                         runtime identity/layout/baseline binding
-    motion-usd/                  thin owner motion read/registration helper
-    vrm/ vrm-usd/ mmd/            owner semantics/configuration adapters
-    hydra/                       optional avatarImaging publication
-    openexec/                    optional execAvatar execution integration
-  tools/
-    inspect/ replay/ benchmark/   runtime hosts
-    avatarMotionCheck/            existing opt-in parity host
-  tests/
-    contracts/ parity/ replay/
-```
-
-Direct consumers need no runtime-side bridge target: a renderer-side host
-matches runtime targets to resident resources and its adapter reads retained
+Planned, with no target yet: `avatarImaging` for Hydra publication, `execAvatar` for OpenExec
+and inspect, replay and benchmark hosts. Direct consumers need no runtime-side bridge target: a
+renderer-side host matches runtime targets to resident resources and its adapter reads retained
 snapshots ([resident target matching](OUTPUT_PATHS.md#resident-target-matching)).
 
 ## Dependency placement
@@ -93,12 +52,11 @@ Existing motion/format packages may use OpenUSD value types internally.
 Dependency isolation must be demonstrated per target; the public C ABI does
 not erase a library's actual dependencies.
 
-## OST and packaging
+## Packaging
 
-Future OST workspace/composition declarations belong to the composition layer,
-separate from reusable libraries and headers. Published package identities,
-profiles, pins and formation names are decided with actual adoption/build
-evidence. The roadmap does not prescribe unverified OST configuration syntax.
+`openstrata.toml` names the release members. `libs/avatarRuntime` packages the core, and
+`libs/avatarVrmSession` packages the core with the session's adapters and pins their owners by
+digest. Other adapters stay source-built. See [how a release is cut](../releases/README.md).
 
 ## Tools and tests
 

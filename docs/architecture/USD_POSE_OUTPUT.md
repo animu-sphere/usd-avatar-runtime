@@ -12,7 +12,7 @@ inputs. It consumes a stage and an existing owner-validated
 [`SkeletonBinding`](USD_BINDING.md); it runs no motion, control or physics.
 The [live MMD host guide](../guides/live-mmd-physics.md) describes the first
 application consumer. Current evidence belongs to the
-[capability matrix](../reference/CAPABILITY_MATRIX.md#live-usdskel-and-usdview-mmd-evidence-2026-10-21).
+[capability matrix](../reports/evidence-log.md#live-usdskel-and-usdview-mmd-evidence-2026-10-21).
 
 ## Publication and lifetime
 

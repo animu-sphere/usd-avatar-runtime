@@ -1,27 +1,17 @@
-# usd-avatar-runtime
+# OpenUSD Avatar Runtime
 
 [![License: Apache-2.0](https://img.shields.io/github/license/animu-sphere/usd-avatar-runtime?label=license)](LICENSE)
 
-The format-independent avatar evaluation IR, lifecycle and orchestration layer
-for the animu-sphere ecosystem.
+`usd-avatar-runtime` is the format-independent avatar evaluation layer for OpenUSD. It
+decides which evaluator runs for which avatar, in what order, and publishes one resolved
+state that renderers and other consumers read.
 
-## Scope
-
-This repository defines how motion, avatar-format evaluators and external
-input participate in one runtime: evaluation order, frame lifecycle,
-per-avatar state, capability negotiation and publication of evaluated state.
-
-The adopted physics orchestration direction assigns shared-world barriers,
-clock/fixed-step coordination and reset/seek to this runtime. Hosts supply
-inputs and time requests; physics and format owners supply world stepping and
-bone/body or secondary-motion algorithms through optional adapters. See the
-[evaluator contract](docs/contracts/EVALUATOR.md#5-shared-world-physics-orchestration).
-
-Format repositories own VRM and MMD meaning; `usd-motion-plugins` owns generic
-motion mathematics; `motion-connectors` owns device and protocol intake;
-renderers own realization. See the [dependency boundary](docs/architecture/DEPENDENCIES.md).
-
-## Architecture
+It coordinates evaluation order, frame lifecycle, per-avatar state, capability negotiation,
+physics barriers and clocks. It does not interpret file formats or render. VRM and MMD
+meaning stay in their format repositories, generic motion mathematics in
+`usd-motion-plugins`, device intake in `motion-connectors`, solving in `usd-physics-plugins`
+and realization in renderers such as `hydra-toon`. See the
+[dependency boundary](docs/architecture/DEPENDENCIES.md).
 
 ```text
 external sources -> motion-connectors -> AvatarInputFrame
@@ -34,67 +24,40 @@ external sources -> motion-connectors -> AvatarInputFrame
                                    Hydra  fast API  recording
 ```
 
-The composed USD stage supplies authored state. Evaluation produces runtime
-state that can be published without writing the stage every frame. Hydra and
-the direct consumer API receive the same resolved state. See the
-[architecture](docs/architecture/OVERVIEW.md) and
-[output paths](docs/architecture/OUTPUT_PATHS.md).
+The composed USD stage supplies authored state. Evaluated state is published without
+writing the stage every frame.
 
-## Components
+## Status
 
-The reusable `avatarRuntime` target exposes common C contracts and owns
-lifecycle, state storage, scheduling, registration and diagnostics. Provider
-and USD integrations are separately optional targets:
+The runtime is experimental: the C ABI is at revision 5 and is not frozen.
 
-| Component | Responsibility |
-| --- | --- |
-| `avatarRuntime` | common contracts, instances, ordered evaluation, frame lifecycle, registry and diagnostics |
-| `avatarMotionAdapter` | owner sampling/retarget calls and selected-motion input bridge |
-| `avatarUsdBinding` / `avatarMotionUsdBinding` | runtime skeleton/baseline binding and direct owner motion-stage results; legacy StageClip compatibility |
-| `avatarVrmAdapter` / VRM USD binding targets | owner LookAt/expression evaluation and authored configuration |
-| `avatarVrmSpringUsdBinding` | optional canonical spring/collider stage snapshot into installed owner values |
-| `avatarVrmSpringAdapter` | optional secondary-phase owner evaluation with transactional instance-local history |
-| `avatarVrmSession` / `avatarVrmSessionCheck` | optional native VRM/clip host and pose-parity check over the core backend-free `FixedTickSession` |
-| `avatarMmdAdapter` | owner MMD pre/post control and coupling registration with a caller-owned world bridge |
-| `avatarStageRunnerSession` | optional Stage Runner clock and playback session over an existing runtime world |
-| `avatarMotionCheck` | opt-in real-asset adapter parity host |
+| Package | Contents | Dependencies |
+| --- | --- | --- |
+| `avatarRuntime` | the core: C contracts, instances, ordered evaluation, transactions, retained snapshots, physics barrier and fixed-tick session | none |
+| `avatarVrmSession` | the core and a native VRM and motion clip session with spring secondary motion | motion, VRM and OpenUSD packages, pinned by digest |
 
-Hydra, reusable `hydra-toon` publication, recording publication, OpenExec and
-inspect/replay/benchmark components remain planned. The optional motion-check
-host can validate resolved values through installed `Toon::AvatarState` probe
-resources. See
-[project layout](docs/architecture/PROJECT_LAYOUT.md) for current targets and
-the intended responsibility split.
+Both target `cy2026` / `usd` on Windows x86_64 and Linux x86_64. The VRM session evaluates
+pose and spring. Expression, LookAt and MMD adapters are source-built, and Hydra publication,
+recording and connector intake are not implemented. The
+[capability matrix](docs/reference/CAPABILITY_MATRIX.md) has the details, and the
+[roadmap](docs/roadmap/current.md) has what comes next.
 
-## Documentation
+## Use
 
-Start at [docs/](docs/README.md). The
-[design policy](docs/design/DESIGN_POLICY.md) preserves the supplied
-implementation direction. The adopted
-[boundary cleanup policy](docs/design/BOUNDARY_POLICY.md) adds motion validation
-and USD skeleton/rest ownership cleanup, thin adapters and recording publication
-rules. Motion validation delegation and input-bridge naming are implemented;
-USD skeleton/rest reading and direct owner-result host integration are implemented;
-publication work remains planned. The [near-term direction](docs/design/NEAR_TERM_PLAN.md)
-prioritizes real motion -> VRM -> evaluated state -> `hydra-toon` fast-path,
-then MMD validation of the shared scheduler/state model before ABI freeze.
-The 2026-10-20 [physics milestones](docs/roadmap/current.md#physics-orchestration-milestones)
-develop that MMD track through headless Jolt feedback and shared final-state
-consumers. The optional experimental physics table now supplies fixed ticks and a
-shared-world barrier over existing evaluator plans, with group reset and
-post-Step failure invalidation. The optional
-[MMD adapter](docs/architecture/MMD_ADAPTER.md) connects owner continuation and
-coupling to that barrier; generated headless Jolt evidence is recorded in the
-capability matrix. Broader host/render integration remains open; no ABI is frozen.
-Runtime Phases A/B overlap. The [roadmap](docs/roadmap/README.md) gives the
-implementation sequence and acceptance criteria; the
-[capability matrix](docs/reference/CAPABILITY_MATRIX.md) records what exists.
+Pin a package from the [release notes](docs/releases/README.md). A consumer pins one of the
+two, since both provide the `AvatarRuntime` CMake package:
+
+```cmake
+find_package(AvatarRuntime 0.2 REQUIRED)                         # the core
+find_package(AvatarRuntime 0.2 REQUIRED COMPONENTS vrm_session)  # the VRM session
+```
+
+The session's API is described in the [native VRM session](docs/architecture/VRM_SESSION.md).
 
 ## Build
 
-The experimental direct runtime builds without OpenUSD, Hydra, OpenExec or
-format libraries. It requires CMake 3.22+, a C++17 compiler and a C11 compiler
-for tests. On Windows, run in an x64 developer shell with Ninja available:
+The core needs CMake 3.22+, a C++17 compiler and, for tests, a C11 compiler. It needs no
+OpenUSD, Hydra or format library. On Windows, use an x64 developer shell with Ninja:
 
 ```sh
 cmake -S . -B build/direct -G Ninja -DCMAKE_BUILD_TYPE=Release
@@ -103,84 +66,25 @@ ctest --test-dir build/direct --output-on-failure
 cmake --install build/direct --prefix install
 ```
 
-Tests exercise separately compiled C provider/consumer libraries, transaction
-rollback, instance isolation, retained snapshots and an external build against
-the installed `AvatarRuntime::avatarRuntime` CMake target. See
-[the ABI](docs/contracts/ABI.md) and
-[capability matrix](docs/reference/CAPABILITY_MATRIX.md) for exact coverage.
-The headers are experimental revision 5; Runtime Phase A is still open.
-Revision 4 retains per-sample source time with each snapshot, including the
-pose sample a provider actually used, and adds a two-component material value
-type. It preserves revision 3's typed gaze observations and revision 2's
-retained layout/input/capability metadata. Revision-1–3 providers and
-consumers, including a renderer adapter that pins revision 3, must rebuild.
-An optional [VRM adapter](docs/architecture/VRM_ADAPTER.md) connects installed
-owner expression and both LookAt evaluator types to pose/morph/material
-snapshots, including world/joint-local point/direction input. Direction support
-requires an owner install with `VRMRIG_LOOKAT_DIRECTION_API`.
-Its constructed-rig tests do not establish real-avatar acceptance.
-An optional [motion clip pose adapter](docs/architecture/MOTION_ADAPTER.md)
-connects installed owner sampling/retargeting to runtime pose. Its host-side
-`MotionPoseInputBridge` (`InputAssembler` source alias) maps selected motion
-scalar channels and world gaze points
-to owned input frames, validating motion -> input -> VRM LookAt/Expression
-with constructed bindings. The motion component requires installed owner
-validation APIs and preserves owner reports through `MotionValidationError`
-and synchronous diagnostic sinks. An optional
-[USD skeleton binding](docs/architecture/USD_BINDING.md) reads authored
-joint/rest layout into owned baseline and motion-owner values with explicit
-Humanoid mappings, metre conversion and rigid placement. Multi-source input selection,
-connector adapters, Hydra, OpenExec and OST composition remain unimplemented.
-The optional [VRM USD Humanoid binding](docs/architecture/VRM_USD_BINDING.md)
-discovers the owner's applied schema, resolves its skeleton relationship and
-supplies standard role mappings to the generic binder. One privately supplied
-avatar validates skeleton/Humanoid binding and constructed motion-to-state
-parity. The optional [USD motion clip binding](docs/architecture/MOTION_USD_BINDING.md)
-connects installed `motionUsd` reading and source rest to pose evaluation.
-Its opt-in `avatarMotionCheck` tool validates seven real VRMA clips on that
-avatar with all-joint numeric parity, reset and retained snapshots. Real-avatar
-Representative captured VRMA expression/gaze and renderer evidence remain open. The optional
-[USD LookAt binding](docs/architecture/VRM_LOOKAT_USD_BINDING.md) now extracts
-owner range maps and head/eye/rest configuration into the VRM adapter. One
-private avatar's Expression-type LookAt has test-gaze owner-weight parity;
-the separate [Expression binding](docs/architecture/VRM_EXPRESSION_USD_BINDING.md)
-now extracts actual morph/material targets and supplies a complete baseline.
-That avatar's 18 expressions and 48 morph slots have test scalar/gaze owner
-parity; material targets have constructed-USD evidence. `avatarMotionCheck --vrm`
-now composes seven real motion clips with those actual bindings and explicit
-host gaze/expression probes, checking all pose/morph output and retained state.
-The source-clip adapter now accepts explicit owner-selected expression/gaze
-attributes, and the parity tool places clip gaze in runtime-world space.
-Generated native VRMA fixtures drive actual-avatar outputs without probes;
-representative captured expression/gaze and automatic native discovery remain
-open. See the [USD motion binding](docs/architecture/MOTION_USD_BINDING.md).
+Optional adapters are separate `AVATAR_BUILD_*` options built against installed owners. The
+[project layout](docs/architecture/PROJECT_LAYOUT.md) lists them.
 
-See [contributing](CONTRIBUTING.md) before adding code or changing a boundary.
+## Documentation
 
-With the motion-check tool and VRM adapter enabled, `AVATAR_MOTION_CHECK_TOON=ON`
-adds an installed `Toon` `AvatarState` dependency only to that host. Use a renderer
-install containing the additive `BaseColorRgb` binding. Run
-`avatarMotionCheck --vrm --toon <avatar> <motion> [motion ...]` to check retained
-state-to-palette/morph/material transport. The renderer install must be built
-for this runtime's ABI revision; the configure probe refuses other revisions. This constructs probe resources;
-actual avatar rendering and Hydra/direct parity remain open. See
-[output paths](docs/architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
-
-## Releases
-
-See the [release records](docs/releases/README.md) and [changelog](CHANGELOG.md).
-Releases publish the dependency-free core; adapters build from source.
+Start at the [documentation index](docs/README.md). [Contributing](CONTRIBUTING.md) explains
+ownership before adding code or changing a boundary, and the [changelog](CHANGELOG.md) lists
+released changes.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md)
-and the [Security Policy](SECURITY.md). Bug reports and feature requests have
+See [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md) and the
+[Security Policy](SECURITY.md). Bug reports and feature requests have
 [issue templates](.github/ISSUE_TEMPLATE/).
 
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE).
 
-Third-party dependencies and avatar, texture, motion and capture assets retain
-their own licenses. Use generated fixtures when possible; third-party assets
-require explicit redistribution permission before inclusion.
+Third-party dependencies and avatar, texture, motion and capture assets retain their own
+licenses. Use generated fixtures when possible; third-party assets require explicit
+redistribution permission before inclusion.

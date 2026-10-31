@@ -76,41 +76,7 @@ when bindings/layout change. Keep a binding copy alive while borrowing views.
 Failures throw `invalid_argument` containing `VRM_BINDING_*` or delegated
 `USD_BINDING_*` codes and a subject; the host supplies asset/binding provenance.
 
-## Evidence and remaining scope
+## Evidence
 
-`adapters.vrm_usd_humanoid` validates all motion vocabulary roles against the
-installed schema, partial/empty maps, custom-role reporting, scoped discovery,
-explicit selection, reference target remapping, forwarded relationships,
-malformed bindings, copy/stage lifetime and retained runtime state. When motion
-is enabled it compares root movement, head rotation and all joint TRS values
-with the owner retargeter at `1e-6`. `adapters.vrm_usd_installed` repeats the
-checks through a separately configured installed consumer.
-
-The same executable optionally accepts one local avatar path. With an
-installed VRM file-format plugin and its matching dependencies/resources, it
-opens the asset read-only, uses its default prim as the avatar root, builds
-the binding, releases the stage and evaluates retained state. The asset is
-not copied, authored, installed or included in default CTest runs.
-
-A privately supplied VRM was checked locally on 2026-10-05: 128 joints,
-51 standard roles, no unsupported roles, and constructed motion-to-state
-owner parity at `1e-6`. Asset identity/provenance stays in local build evidence;
-the private file is excluded from the repository. This is one real-avatar
-skeleton/Humanoid result, not real motion input or real-avatar
-LookAt/Expression conformance. Those bindings, output target extraction,
-connector intake, rendering, all evidence milestones and ABI freeze remain
-open in the [roadmap](../roadmap/current.md).
-
-Subsequent [USD motion binding](MOTION_USD_BINDING.md) evidence adds seven
-real VRMA clips driving this same avatar's Humanoid pose, with all-joint owner
-parity and reset/retention. The earlier constructed-clip result above remains
-scoped as recorded; real-avatar LookAt/Expression and rendering remain open.
-Subsequent [LookAt binding](VRM_LOOKAT_USD_BINDING.md) evidence adds this
-avatar's Expression-type gaze configuration and owner-weight parity with test
-gaze and constructed output sinks. Subsequent
-[Expression binding](VRM_EXPRESSION_USD_BINDING.md) evidence adds actual
-expression/morph target extraction and test-gaze/scalar output parity.
-The [motion checker](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) now composes
-real clip pose with actual LookAt/Expression bindings and explicit host probes;
-explicit native VRMA fixtures now use the owner-selected input handoff without
-probes. Representative captured expression/gaze remains open.
+Measured scope is in the [evidence log](../reports/evidence-log.md#vrm-usd-humanoid-binding-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

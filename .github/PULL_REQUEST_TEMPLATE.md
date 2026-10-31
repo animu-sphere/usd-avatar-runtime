@@ -8,7 +8,7 @@
      Format semantics, generic motion algorithms, device intake, physics solvers and rendering
      belong to their respective repositories; link to owner changes when needed.
      Follow docs/contributing/documentation.md: semantics/API in contracts; component/lifecycle
-     in architecture; implemented support/evidence in the capability matrix; open work in the roadmap.
+     in architecture; current state in the capability matrix; measurements in the evidence log; open work in the roadmap.
      Describe any ABI, provider/consumer compatibility or migration impact. -->
 
 ## Type of change

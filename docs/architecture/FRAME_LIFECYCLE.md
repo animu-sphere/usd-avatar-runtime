@@ -46,7 +46,7 @@ This describes a logical transaction. The scoped prototype rules below define
 buffer ownership and calls; final ABI freeze still needs provider conformance.
 Output adapters must not trigger evaluation again.
 
-In revision 4, `evaluate_frame` validates the input and starts a fresh authored
+In revision 5, `evaluate_frame` validates the input and starts a fresh authored
 baseline, then calls `begin_frame`/`evaluate` in plan order. Stateful providers
 stage private changes during these callbacks. `end_frame(commit=0)` runs in
 reverse begin order after any failure, including failure of `begin_frame`
@@ -122,7 +122,7 @@ outputs. Parallel scheduling remains later roadmap work.
 
 The 2026-10-20 physics orchestration direction assigns clock/fixed-step
 coordination, reset/seek and final publication to this runtime. This section
-defines lifecycle requirements. The optional experimental physics table now
+defines lifecycle requirements. The optional experimental physics table
 implements the bounded clock/group recovery described below. The optional
 [MMD adapter](MMD_ADAPTER.md) composes owner continuations with group reset;
 display interpolation and broader host integration remain open.

@@ -5,19 +5,13 @@ owner: usd-avatar-runtime
 
 # Cross-package ABI
 
-This document develops [design policy section 9](../design/DESIGN_POLICY.md).
 The direct implementation exposes experimental revision 5 through
 [`api.h`](../../include/avatarRuntime/api.h). `arGetApi` fills the caller's
 `ArRuntimeApi` core table. The additive `arGetPhysicsApi` entry point supplies
 the separate experimental [`physics.h`](../../include/avatarRuntime/physics.h)
 table; both tables require current core descriptor headers.
-This is a tested prototype, not an ecosystem ABI freeze. Owner motion/gaze mapping,
-checkpoint restore and real-provider conformance remain Runtime Phase A gates.
-Under the [near-term direction](../design/NEAR_TERM_PLAN.md#2-contract-validation-before-freeze),
-Phase A/B integration precedes freeze: real VRM and MMD evidence must inform
-the revision, phase model, state representation, capability meanings and
-lifecycle. Separately compiled synthetic providers alone do not establish
-a freeze candidate.
+This is a tested prototype, not an ecosystem ABI freeze; see the
+[freeze gates](../roadmap/current.md#abi-freeze).
 
 The optional physics table has its own query version, currently
 `AR_PHYSICS_API_VERSION == 1`; its descriptors/results use core revision-5
@@ -131,7 +125,7 @@ Runtime entry points catch allocation/implementation exceptions. Provider and
 diagnostic callbacks must not throw. Unexpected evaluator exceptions are caught
 as a defensive measure and abort the transaction. `end_frame` and destruction
 are contractually infallible; an exception during commit/abort poisons the
-instance and requires reset. Revision 4 does not promise recovery from an
+instance and requires reset. Revision 5 does not promise recovery from an
 arbitrary provider violating its lifecycle contract.
 
 ## 3. Compatibility and portability
@@ -143,8 +137,8 @@ before accessing data. Optional extensions are discoverable, not assumed.
 The contract tests compile the runtime, a C11 provider DLL and C11 consumer
 separately. An additional external CMake build uses only installed runtime
 headers, the exported package target and its shared library. A C++20 test also
-includes the public headers. Evidence currently covers Windows x64/MSVC only;
-it does not establish cross-toolchain or cross-platform compatibility (`RT-O7`).
+includes the public headers. Hosted CI runs these on Windows, Linux and macOS with
+one toolchain each; that does not establish cross-toolchain or cross-platform compatibility (`RT-O7`).
 Optional features are not inferred from ABI success. Unknown evaluator flags,
 state domains, typed material kinds and source-sample kinds/resolutions are rejected. Semantic capability
 versions are independent from `AR_ABI_VERSION` and use exact matching.

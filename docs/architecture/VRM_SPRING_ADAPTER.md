@@ -87,7 +87,7 @@ code. Runtime stamps evaluator/instance/frame/phase. No C ABI field is added.
 
 The evaluator validates supplied fixed instants; it owns no clock or accumulator.
 Generated evaluator conformance still uses direct requests. The separate
-[native VRM session](VRM_SESSION.md) now supplies a backend-free runtime clock,
+[native VRM session](VRM_SESSION.md) supplies a backend-free runtime clock,
 pause/catch-up/backlog, clip composition and scoped real-avatar pose delivery.
 Resident renderer delivery and Hydra/direct parity remain
 [roadmap work](../roadmap/current.md#vrm-secondary-motion-integration).
@@ -97,5 +97,5 @@ If a rigid-body world participates, its existing single-Step barrier and group
 failure/reset rules still apply; copying the spring solver does not roll back
 that world.
 
-The [capability matrix](../reference/CAPABILITY_MATRIX.md#vrm-spring-evaluator-evidence-2026-10-28)
+The [capability matrix](../reports/evidence-log.md#vrm-spring-evaluator-evidence-2026-10-28)
 records the generated source/installed tests and their scope.

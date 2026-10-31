@@ -110,15 +110,15 @@ the caller's solver, body resources or runtime.
 ## Scope
 
 This is a reusable host session for explicitly prepared worlds, validated by
-the [session evidence](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-session-evidence-2026-10-21)
-and [world-lifetime evidence](../reference/CAPABILITY_MATRIX.md#scoped-session-world-lifetime-evidence-2026-10-21).
-The [selective-unload evidence](../reference/CAPABILITY_MATRIX.md#scoped-selective-unload-evidence-2026-10-21)
+the [session evidence](../reports/evidence-log.md#scoped-stage-runner-session-evidence-2026-10-21)
+and [world-lifetime evidence](../reports/evidence-log.md#scoped-session-world-lifetime-evidence-2026-10-21).
+The [selective-unload evidence](../reports/evidence-log.md#scoped-selective-unload-evidence-2026-10-21)
 adds member removal with explicit host-owned body teardown.
 The optional [USD scene resource adapter](PHYSICS_USD_RESOURCES.md) supplies
 ordered constraint/body/shape construction and teardown over owner snapshots,
 and a whole-stage world scope using a caller-selected backend factory;
 it remains separate from this physics-free clock/session target.
-The separate [native MMD application session](MMD_SESSION.md) now composes this
+The separate [native MMD application session](MMD_SESSION.md) composes this
 clock session with installed owner bindings and Jolt for single-avatar native
 viewport and usdview hosts. Its scoped controls/resource lifetime do not provide
 general participant discovery or multi-avatar application lifecycle.

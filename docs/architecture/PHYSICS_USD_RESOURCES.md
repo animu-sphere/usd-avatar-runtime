@@ -137,9 +137,9 @@ See the [session contract](STAGE_RUNNER_SESSION.md) for those separate rules.
 
 ## Scope
 
-The [capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-physics-scene-resource-evidence-2026-10-21)
+The [capability matrix](../reports/evidence-log.md#scoped-physics-scene-resource-evidence-2026-10-21)
 records resource-set failure, installed-consumer and generated MMD/Jolt evidence.
-The [stage-world evidence](../reference/CAPABILITY_MATRIX.md#scoped-stage-world-binding-evidence-2026-10-21)
+The [stage-world evidence](../reports/evidence-log.md#scoped-stage-world-binding-evidence-2026-10-21)
 records the separate whole-stage scope. Automatic application discovery, backend
 selection, PMX/avatar configuration, selective unload with cross-avatar
 constraints, source-specific spring/material semantics, resident

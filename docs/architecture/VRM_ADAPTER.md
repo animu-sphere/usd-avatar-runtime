@@ -8,7 +8,7 @@ owner: usd-avatar-runtime
 The optional `avatarVrmAdapter` target connects the installed
 [`vrmRig` owner library](https://github.com/animu-sphere/usd-vrm-plugins/tree/main/libs/vrmRig)
 to the experimental revision-5 runtime. This document owns the implemented
-adapter boundary. It does not establish real-avatar or milestone acceptance.
+adapter boundary. It does not establish real-avatar acceptance.
 
 ## Build and installation
 
@@ -158,7 +158,7 @@ the collision. The owner resolver subsequently applies the rig's expression
 arbitration. Scalar look expressions remain usable when gaze is absent or
 unavailable. This is an explicit adapter policy, not a core arbitration rule.
 
-## Diagnostics and evidence limits
+## Diagnostics
 
 Diagnostics identify `usd-vrm-plugins.vrmRig` as origin; the runtime stamps the
 evaluator, instance, frame and phase. Adapter codes report layout, target,
@@ -167,25 +167,7 @@ clamped, suppressed and warning results are forwarded with their named subjects 
 warning text. Provider failure returns `AR_PROVIDER_ERROR` at the runtime
 boundary; the diagnostic retains the underlying adapter status.
 
-The tests exercise installed owner algorithms with constructed rigs and test
-input, numeric direct-owner parity at `1e-6`, isolation, reset, absence/zero,
-rollback/retry and retained output lifetime. A separately configured installed
-consumer repeats the boundary checks without source-tree include paths.
-Bone tests cover asymmetric inner/outer maps, both yaw signs, rotated head
-placement from an earlier evaluator, nonidentity rest rotations, preserved
-translation/scale, repeated-frame stability, one-eye diagnostics, stale and
-unavailable gaze, target-at-origin, invalid bindings, and rollback after eye
-writes when later material marshalling fails. An unordered same-phase pose
-writer is rejected as a write conflict at instance creation.
-Mapped-gaze tests cover both rig types, world/root/head/rotated-eye references,
-points versus directions, present/absent owner eye offsets, earlier head pose
-writes, reference-scale failure and same-frame retry. Owner API tests separately
-check direction yaw, outputs, invalid vectors and independence from placement,
-eye offsets and the point-only distance threshold.
-Versions and target evidence are recorded in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md).
+## Evidence
 
-Real VRM asset binding, Humanoid/motion/connector integration,
-actual connector gaze mappings, resolved expression/gaze records and renderer
-consumption remain in the [roadmap](../roadmap/current.md). No milestone,
-ABI freeze, pixel parity or renderer support follows from these tests.
+Measured scope is in the [evidence log](../reports/evidence-log.md#vrm-registration-adapter-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

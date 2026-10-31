@@ -5,14 +5,11 @@ owner: usd-avatar-runtime
 
 # Evaluated-state publication
 
-This document develops [design policy sections 11–12](../design/DESIGN_POLICY.md).
 All paths consume one [evaluated state](../contracts/EVALUATED_STATE.md).
 
-The [near-term direction](../design/NEAR_TERM_PLAN.md#6-first-renderer-consumer)
-selects `hydra-toon` direct/fast-path as the first renderer consumer. Connect it
-before full Hydra publication to validate state semantics and measure latency,
-copy cost and allocations without first freezing locators/Scene Index structure.
-This direct consumer work feeds Runtime Phase A/B contract correction.
+`hydra-toon` direct/fast-path is the first renderer consumer. It comes before full
+Hydra publication, to validate state semantics and measure latency, copy cost and
+allocations without first freezing locators or Scene Index structure.
 
 ```text
                      +-- fast/direct API -> hydra-toon (first consumer)
@@ -30,8 +27,7 @@ Published display state is separate from mutable solver state; renderer retries
 reuse retained CPU buffers without advancing simulation. Copy/packing
 optimizations must preserve that boundary.
 
-Under [boundary policy section 13](../design/BOUNDARY_POLICY.md#13-hydra-and-fast-path-boundary),
-fast-path transport may use zero/minimal-copy views, dirty masks, late
+Fast-path transport may use zero/minimal-copy views, dirty masks, late
 publication and GPU-friendly packed views with frame/generation identity.
 These are allowed optimizations, not current support claims; canonical values
 and semantics remain in evaluated state. GPU resource management, shaders,
@@ -39,7 +35,7 @@ draw submission and late-latching implementation stay with the renderer.
 
 ## 1. Hydra
 
-The scoped [live UsdSkel output](USD_POSE_OUTPUT.md) now publishes final joints
+The scoped [live UsdSkel output](USD_POSE_OUTPUT.md) publishes final joints
 through an anonymous session sublayer for usdview. This pose-only application
 path supplies no material/morph/visibility overlay or complete Scene Index and
 does not close the Hydra/direct parity gate. Its first consumer is the optional
@@ -71,10 +67,10 @@ requires binding invalidation; it is distinct from a value-only runtime update.
 Experimental `evaluate_frame`/`get_snapshot`/`retain_snapshot`/`release_snapshot`
 expose the complete resolved state through
 [`api.h`](../../include/avatarRuntime/api.h). Snapshot transport/lifetime are
-implemented and tested. The optional motion-check host now composes the
+implemented and tested. The optional motion-check host composes the
 installed `Toon::AvatarState` consumer over an explicit probe scene as described
 below. Actual resident-avatar binding, full consumer capability negotiation and
-Hydra/direct parity remain open; this does not complete Runtime Phase C.
+Hydra/direct parity remain open.
 
 ```text
 EvaluatedAvatarState -> direct consumer adapter -> renderer resources
@@ -114,7 +110,7 @@ bridge is needed for transport.
 
 This follows from ownership: the consumer maps resolved channels to its own
 resources, and the runtime manages no renderer resources
-([boundary policy section 13](../design/BOUNDARY_POLICY.md#13-hydra-and-fast-path-boundary)).
+([design policy](../design/DESIGN_POLICY.md#publication)).
 Resident-target description is also renderer-internal: its delegate API is not
 installed, so only code built with the renderer can call it. The planned
 `avatarHydraToonBridge` target is therefore withdrawn. The runtime still
@@ -197,7 +193,7 @@ membership changes use ordinary draw extraction, consistent with the renderer's
 fast-update boundary. This is explicit resource transport, not resident-avatar
 discovery, GPU rendering, Hydra parity or the complete physics MVP. Current
 measurements belong to the
-[capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-mmdtoon-evidence-2026-10-21).
+[capability matrix](../reports/evidence-log.md#scoped-mmdtoon-evidence-2026-10-21).
 
 ## 3. Recording, baking and export
 

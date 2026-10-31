@@ -9,7 +9,7 @@ The optional `avatarMotionAdapter` connects installed `motionSampling` and
 `motionRetarget` owner libraries to the revision-5 runtime. It validates a
 scoped RT-O3/RT-O4 path: immutable clip -> owner sampling -> explicit humanoid
 retarget map -> dense runtime rig pose -> ordered VRM LookAt/Expression.
-Constructed bindings do not establish real-avatar or milestone acceptance.
+Constructed bindings do not establish real-avatar acceptance.
 The same target also supplies host-side `MotionPoseInputBridge` for selected owner
 scalar channels and world gaze points, without changing the runtime C ABI.
 `InputAssembler` and `InputAssemblerConfig` remain source-compatible aliases.
@@ -83,7 +83,7 @@ configuration destruction. `Emit(sink)` forwards all report entries as C
 diagnostics with `AR_INVALID_ARGUMENT` and error severity. An optional
 `ClipPoseAdapter(config, sink)` sink receives the same report synchronously on
 rejection and is never retained. There is no runtime instance/frame/evaluator
-identity at construction. Revision 4 has no diagnostic owner-version field;
+identity at construction. Revision 5 has no diagnostic owner-version field;
 version remains in the exception envelope and evaluator descriptor. Runtime
 binding errors remain plain `invalid_argument`.
 
@@ -162,7 +162,7 @@ still pending.
 ## Host input assembly
 
 This helper is a runtime-owned repository-boundary bridge from `MotionPose` to
-`AvatarInputFrame`, following [boundary policy section 6](../design/BOUNDARY_POLICY.md#6-inputassembler-cleanup).
+`AvatarInputFrame`.
 The selected name is `MotionPoseInputBridge`; the legacy `InputAssembler.h`
 header provides source aliases for the class and configuration. Hosts rebuild
 against the experimental static adapter; this does not promise binary
@@ -204,7 +204,7 @@ Present gaze defaults to `AR_OBSERVATION_VALID`; the host may explicitly
 select `AR_OBSERVATION_STALE` to retain a point while suppressing VRM LookAt.
 Held/extrapolated status and lag do not implicitly classify validity. A null
 pose or missing point is absent, not an invented unavailable observation.
-Scalar validity is not representable in revision 4; hosts must explicitly
+Scalar validity is not representable in revision 5; hosts must explicitly
 select/drop scalar inputs according to their source policy.
 
 Configuration rejects duplicate native mappings, scalar/gaze identity
@@ -227,53 +227,21 @@ Later assemblies do not alter earlier views. Invalid assembly throws
 `invalid_argument` and advances no cursor/provider state. There is no
 cross-toolchain C++ ABI guarantee or asynchronous runtime retention.
 
-## Boundary cleanup status
+## Owner boundary
 
-Under [boundary policy section 5](../design/BOUNDARY_POLICY.md#5-clipposeadapter-cleanup),
-retain registration, phase/capability declarations, layout/version checks,
+The adapter retains registration, phase/capability declarations, layout/version checks,
 runtime joint lookup, owner/runtime parent mapping, owner diagnostic forwarding
 and `ArStateWriter` publication. Keep runtime clock and root-placement contract
 checks distinct from generic owner invariants.
 
 Clip timestamps/interpolation spans, owner quaternion/channel/confidence
 invariants, skeleton/source-rest hierarchy, root-motion mode and human-joint
-vocabulary validation now delegate to installed motion-owner validation APIs.
+vocabulary validation delegate to installed motion-owner validation APIs.
 The selected-motion bridge uses the same owner value report without validating
-fields it does not consume. USD skeleton/rest and StageClip ownership cleanup
-remain separate work; this migration does not complete all boundary workstreams.
-Sampling/retarget numerical correctness belongs to owner tests; runtime tests
+fields it does not consume. Sampling/retarget numerical correctness belongs to owner tests; runtime tests
 compare owner results to marshaled state, diagnostics and lifetime behavior.
 
-## Evidence and limits
+## Evidence
 
-[`tests.cpp`](../../adapters/motion/tests.cpp) compares runtime transforms with
-independent owner sampling/retarget calls at `1e-6`, including interpolation,
-clock scale/offset, root translation, undriven rest and reordered runtime slots.
-It covers held/empty clips, retained interpolated and before/after-range held
-pose samples with their mapped times, binding failures, source diagnostics,
-same-frame retry, downstream failure rollback, reset, instance isolation and
-retained snapshots past runtime destruction. The installed-consumer test repeats the
-checks using exported targets and installed headers/libraries.
-Input assembly tests cover owned/copy lifetime, origin/absence/zero, unclamped
-weights, explicit identity/clock/USD metadata, stale gaze, unmapped-field
-reporting, malformed bindings/values/context rejection and corrected retry.
-
-When VRM is enabled, the test supplies the owner's required-bone set and orders
-motion -> LookAt -> Expression despite reversed evaluator selection. It compares
-the resolved morphs with owner sampling/retarget/world-head/LookAt/resolver
-calls, using assembled motion scalar/gaze input. Tests cover gaze precedence
-over mapped look expressions, host-selected stale held gaze with usable
-scalars, absent input restoring the authored expression baseline, and an
-explicit zero clearing that baseline after reset.
-The partial rig intentionally emits missing-required-bone diagnostics.
-This proves owner-library composition with constructed input/bindings; it does
-not prove real clip/VRM asset correctness, connector intake/mapping, full Humanoid
-conformance, renderer output or ABI freeze. Package/toolchain evidence is in
-the [capability matrix](../reference/CAPABILITY_MATRIX.md).
-
-The separate [USD motion clip binding](MOTION_USD_BINDING.md) now connects
-actual owner-imported clips and source rest to this adapter. Its opt-in tool
-validates seven real clips on one real-avatar schema-derived Humanoid layout;
-its VRM mode additionally composes that pose with actual-avatar LookAt/Expression
-bindings and explicit host scalar/gaze probes. Native VRMA expression/gaze
-intake, connectors, rendering and milestone acceptance remain open.
+Measured scope is in the [evidence log](../reports/evidence-log.md#motion-adapters-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

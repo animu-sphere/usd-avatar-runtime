@@ -1,91 +1,62 @@
 # Documentation guidelines
 
-One concept, one owning repository, one canonical document. Documents are
-part of the implementation boundary and must remain consistent with the tree.
+One concept, one owning repository, one canonical document. Documents are part of the
+implementation boundary and must stay consistent with the tree.
 
 ## Categories
 
-| Category | Owns |
-| --- | --- |
-| root README | short scope, conceptual architecture, components and entry points |
-| docs index | subject ownership and navigation |
-| design | intended policy, rationale and unresolved proposals |
-| contracts | focused public input/output/evaluation/ABI boundaries |
-| architecture | components, responsibilities, dependencies and lifecycle |
-| reference | implemented capabilities and measured support in the current tree |
-| roadmap | incomplete runtime work and acceptance gates |
-| contributing | repository maintenance practices |
+| Category | Owns | Does not hold |
+| --- | --- | --- |
+| root README | short scope, status, entry points | adapter narratives, evidence |
+| docs index | navigation | status |
+| design | intent and rules | status, schedule, API shapes that contracts own |
+| contracts | public input, output, evaluation and ABI boundaries | measurements, schedule |
+| architecture | components, responsibilities, build and lifetime | measurements, schedule |
+| reference | current state, in the capability matrix | history, narratives |
+| reports | dated measurements, in the evidence log | current status |
+| roadmap | incomplete work and acceptance | completed work, measurements |
+| releases | one immutable record per actual release | later edits except fixing links |
+| guides | runnable, verified procedures | unverified commands |
+| contributing | maintenance practice | |
 
-Add guides only with runnable, verified procedures; releases only for actual
-releases; reports for dated evidence; archives for completed/superseded plans.
-Create their indexes when those categories first acquire content, rather than
-publishing empty sections or unverified commands now.
+## Keeping pages current
 
-## Authority and status
+- **When work lands,** remove it from the roadmap, update its capability matrix row and add
+  the measurement to the evidence log, in the same change. Do not leave "now implemented"
+  narratives anywhere. Say what a thing is, not how it came to be.
+- **When a plan is replaced,** replace it. Delete superseded pages rather than adding a
+  refinement document above them, and rely on git history for the old text. Keep one set of
+  labels: the roadmap is organized by release and gates.
+- **Implemented means implemented.** Accepted ownership is not evidence of working code, and
+  a conceptual API name is not an available one.
+- **The evidence log is append-only.** Fix links, not history. Its terms belong to its date.
 
-The adopted [design policy](../design/DESIGN_POLICY.md) preserves the original
-22 section numbers. Its conceptual structs and layout are not implemented
-interfaces. Focused proposals develop them and become binding only with
-reviewed decisions and implementation evidence.
+## Metadata
 
-The adopted [near-term direction](../design/NEAR_TERM_PLAN.md) refines the
-original phase sequence. The adopted
-[boundary cleanup policy](../design/BOUNDARY_POLICY.md) preserves its supplied
-21 sections and refines ownership and migration priorities. Keep both source
-documents' numbering stable. Cleanup workstreams A–F are distinct from Runtime
-Phases A–F and evidence milestones A/B/C. Keep integration priorities and freeze
-gates aligned without treating planned channels or migrations as implemented support.
-
-The 2026-10-20 physics orchestration direction is incorporated into existing
-owners: evaluator for DAG/barriers, lifecycle for clock/reset, evaluated state
-for final snapshots and output paths for consumer links. Keep its local physics
-milestones A–E in the roadmap, distinct from all other phase/workstream labels.
-Do not add another physics plan/status page or predeclare phase enums/ABI from
-the conceptual pipeline. Sibling stage attributes, physics APIs and renderer
-consumer representations stay in their owning contracts.
-
-Design, architecture and contract documents carry front matter with `owner`
-and `status`. Use `proposed` for unresolved target designs, `accepted` for
-adopted direction, and `binding` only for an implemented/validated contract.
-Superseded pages must link to their current owner/replacement. Status is scoped
-to the document's subject; accepted ownership is not evidence of working code.
-
-Current implementation facts live in the capability matrix. Plans live in the
-roadmap. Do not maintain release/status histories independently in the README
-or contract prose.
+Design, architecture and contract documents carry front matter with `owner` and `status`.
+Use `proposed` for unresolved target designs, `accepted` for adopted direction, and `binding`
+only for an implemented, validated contract. Status is scoped to the document's subject.
 
 ## Cross-repository references
 
-Link to a sibling's owning document for motion values, format semantics,
-connector behavior, imaging or rendering. Describe how this runtime consumes
-that boundary without copying the sibling's API, capability table or roadmap.
-Keep evidence with its producing repository and preserve provider diagnostic
-identities.
+Link to a sibling's owning document for motion values, format semantics, connector behavior,
+imaging or rendering. Describe how this runtime consumes that boundary without copying the
+sibling's API, capability table or roadmap. Keep evidence with its producing repository and
+preserve provider diagnostic identities.
 
-Where an integration conflicts with a sibling boundary, record an open question
-and resolve it with the owner. Do not silently redefine its semantics or claim
-that a future runtime API is already available upstream.
+Where an integration conflicts with a sibling boundary, record an open question and resolve it
+with the owner. Do not silently redefine its semantics or claim that a future runtime API is
+already available upstream.
 
 ## Form and validation
 
-Repository documents are in English. Use relative links inside this repository
-and canonical repository links for siblings. Keep code names in code spans.
-Do not commit machine-local paths, unverified build commands or assets without
-redistribution rights.
+Repository documents are in English. Use relative links inside this repository and canonical
+repository links for siblings. Keep code names in code spans. Do not commit machine-local paths,
+unverified build commands or assets without redistribution rights.
 
 For every documentation change, check:
 
-1. New pages appear in the docs index and relevant category index.
-2. Relative paths and section fragments resolve, including case/spelling.
-3. Proposal/implementation statements and metadata agree with the tree.
-4. Ownership and phase names are consistent; phase names use `Runtime Phase`.
-5. Contract changes update their open questions and acceptance criteria.
-6. Source-policy section numbers and existing cross-repository citations stay
-   stable when editing the adopted policy.
-7. Binding adapter pages retain current behavior and evidence while clearly
-   labeling planned owner migrations; conceptual API names are not advertised
-   as available upstream or in installed headers.
-
-When code lands, update implementation status and evidence in the same change.
-Keep completed work out of the active roadmap, preserving its decision or
-release/report provenance elsewhere as appropriate.
+1. New pages appear in the docs index.
+2. Relative paths and section fragments resolve, including case and spelling.
+3. Statements of intent, implementation and metadata agree with the tree.
+4. Contract changes update their open questions and the roadmap's open decisions.

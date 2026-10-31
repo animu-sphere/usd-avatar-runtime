@@ -6,8 +6,8 @@ owner: usd-avatar-runtime
 # Avatar input frame
 
 `AvatarInputFrame` is the logical, immutable input assembled for one avatar
-evaluation. It is renderer- and format-independent. This document develops
-[design policy section 5](../design/DESIGN_POLICY.md); it defines no final struct.
+evaluation. It is renderer- and format-independent. This document defines no final
+struct.
 
 The experimental [`input.h`](../../include/avatarRuntime/input.h) implements
 frame identity/generation, evaluation seconds, optional USD time mapping,
@@ -17,7 +17,7 @@ motion pose/clip values are still unimplemented; gaze descriptors have scoped
 revision-5 rules below, awaiting real-provider integration.
 The full logical contract and RT-O1/RT-O2 remain open.
 
-The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now selects scalar
+The optional [VRM adapter](../architecture/VRM_ADAPTER.md) selects scalar
 and gaze identities explicitly and marshals named expression weights to the
 owner's `MotionChannelSet`. Both LookAt types accept valid world/joint-local
 points and directions using current working rig transforms and the owner's
@@ -161,7 +161,7 @@ held boundary sample's own time. Actual motion/connector observation
 transport and actor selection remain open. This scoped path does not complete
 input composition.
 
-The same optional target now supplies host-side `MotionPoseInputBridge`
+The same optional target supplies host-side `MotionPoseInputBridge`
 (`InputAssembler` remains a source alias): explicit
 owner channel mappings produce attributed scalar inputs, and the owner's
 optional gaze point produces a world-point observation. It owns frame arrays
@@ -173,8 +173,7 @@ empty arrays; multi-source merging/arbitration, live connector intake and
 retained owner metadata remain open. See the
 [assembly boundary](../architecture/MOTION_ADAPTER.md#host-input-assembly).
 
-Under the adopted [boundary policy section 6](../design/BOUNDARY_POLICY.md#6-inputassembler-cleanup),
-this bridge remains runtime-owned under the selected name `MotionPoseInputBridge`. It maps
+This bridge, `MotionPoseInputBridge`, remains runtime-owned. It maps
 owner fields to runtime channels and source/actor attribution, owns input
 lifetime and reports unmapped fields. External device/network clock and actor
 normalization, protocol decoding and generic channel normalization stay with
