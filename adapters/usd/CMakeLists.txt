@@ -42,25 +42,27 @@ if(AVATAR_BUILD_TESTS)
         endif()
     endif()
     add_test(NAME adapters.usd_skeleton COMMAND usdBindingContracts)
-    add_test(NAME adapters.usd_installed COMMAND ${CMAKE_COMMAND}
-        -DROOT_BINARY=${PROJECT_BINARY_DIR}
-        -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
-        -DGENERATOR=${CMAKE_GENERATOR}
-        -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
-        -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-        -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DRC_COMPILER=${CMAKE_RC_COMPILER}
-        -DMT=${CMAKE_MT}
-        -DRETARGET_DIR=${motionRetarget_DIR}
-        -DMOTION_USD_DIR=${motionUsd_DIR}
-        -DSAMPLING_DIR=${motionSampling_DIR}
-        -DMOTION_DIR=${motionCore_DIR}
-        -DUSD_DIR=${pxr_DIR}
-        -DVRM_DIR=${vrmRig_DIR}
-        -DWITH_MOTION=${AVATAR_BUILD_MOTION_ADAPTER}
-        -DWITH_VRM=${AVATAR_BUILD_VRM_ADAPTER}
-        -DCONFIG=$<CONFIG>
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
+    if(PROJECT_IS_TOP_LEVEL)
+        add_test(NAME adapters.usd_installed COMMAND ${CMAKE_COMMAND}
+            -DROOT_BINARY=${PROJECT_BINARY_DIR}
+            -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
+            -DGENERATOR=${CMAKE_GENERATOR}
+            -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
+            -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+            -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DRC_COMPILER=${CMAKE_RC_COMPILER}
+            -DMT=${CMAKE_MT}
+            -DRETARGET_DIR=${motionRetarget_DIR}
+            -DMOTION_USD_DIR=${motionUsd_DIR}
+            -DSAMPLING_DIR=${motionSampling_DIR}
+            -DMOTION_DIR=${motionCore_DIR}
+            -DUSD_DIR=${pxr_DIR}
+            -DVRM_DIR=${vrmRig_DIR}
+            -DWITH_MOTION=${AVATAR_BUILD_MOTION_ADAPTER}
+            -DWITH_VRM=${AVATAR_BUILD_VRM_ADAPTER}
+            -DCONFIG=$<CONFIG>
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
+    endif()
     if(WIN32)
         add_custom_command(TARGET usdBindingContracts POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different

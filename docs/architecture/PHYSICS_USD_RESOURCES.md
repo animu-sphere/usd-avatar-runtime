@@ -24,7 +24,7 @@ No backend, format provider, Stage Runner or renderer is required by this
 target. Core-only and session-only package lookup import no physics target.
 
 ```cmake
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS physics_usd)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS physics_usd)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarPhysicsUsdResources)
 ```
 

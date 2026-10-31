@@ -16,7 +16,7 @@ session and physics USD resources. `AVATAR_BUILD_USDVIEW_MMD_PHYSICS` also
 builds it. Consumers use the installed package:
 
 ```cmake
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS mmd_session)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS mmd_session)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarMmdSession)
 ```
 

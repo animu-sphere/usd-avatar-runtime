@@ -1301,7 +1301,7 @@ and a reproducible archive digest. This is not an ABI freeze.
 ## VRM session against published owners (2026-10-31)
 
 Measured at `9f5b422` on Windows x86-64 / MSVC 19.51 / OpenUSD 26.08, for
-[v0.2.0](../roadmap/current.md#next-release-v020). Linux was not measured.
+[v0.2.0](../releases/v0.2.0.md). Linux was not measured.
 
 | Owner inputs | Result |
 | --- | --- |
@@ -1322,3 +1322,30 @@ assets [listed above](#vrm-fixed-tick-session-and-host-evidence-2026-10-29). All
 four runs passed exact reset replay and retained unload, and every error value
 equals the 2026-10-29 table. The renderer path and pinned package resolution were
 not exercised.
+
+## avatarVrmSession package (2026-11-01)
+
+Measured on Windows x86-64 / MSVC 19.51 / OpenUSD 26.08, with the published motion
+0.5.4 and VRM 0.12.0 pins that `libs/avatarVrmSession` declares. The VRM owners are
+digest-pinned packages here, so the motion 0.5.1 caveat in the
+[earlier section](#vrm-session-against-published-owners-2026-10-31) no longer applies.
+Linux evidence comes from the release workflow, not from this run.
+
+| Check | Result |
+| --- | --- |
+| `ost library build`, `test` and `package libs/avatarVrmSession` | builds; 12/12 CTests; two packagings give one digest |
+| Top-level configuration of the same adapters | 20/20 CTests, including every installed consumer at `AvatarRuntime` 0.2.0 |
+| `tools/check-vrm-session.ps1` on the packaged `avatarVrmSessionCheck`, with the published VRM product | all four runs pass; every error value equals the [2026-10-29 table](#vrm-fixed-tick-session-and-host-evidence-2026-10-29) |
+| `hydra-toon` at `1c17de7`: `toon-viewport-vrm` and `toon-vrm-runtime-test` from this prefix | both build; `toon-vrm-runtime-resident` passes with AliciaSolid and `VRMA_01` |
+
+The renderer used the `lookdev` runtime while this package and its owners were built
+for `usd`, the same pairing as the renderer's earlier report. The resident check
+exercises resident skin palettes without a window: no window was shown and no pixels
+were compared here. `toon-vrm-runtime-resident` omitted `vrmImaging`, which it did not
+need. The repository's own installed-consumer tests run only in a top-level
+configuration, because `ost library test` has no compiler environment.
+
+With `ost` 0.23.15, `ost library verify-consumer` resolves the runtime's `pxr` but then
+refuses `gf`, whose imported include directories name the host Python's `Include`. The
+package therefore declares no `package_contract`, and the hosted lanes link no consumer
+of it. Linking a consumer is Windows-only evidence here.

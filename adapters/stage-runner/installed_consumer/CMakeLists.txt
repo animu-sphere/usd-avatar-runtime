@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(StageRunnerInstalledConsumer LANGUAGES CXX)
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS stage_runner)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS stage_runner)
 foreach(unexpected IN ITEMS mmdControl::mmdControl physicsCore::physicsCore physicsJolt::physicsJolt
     Toon::AvatarState usd AvatarRuntime::avatarMmdAdapter
     AvatarRuntime::avatarPhysicsUsdResources physicsUsd::physicsUsd)

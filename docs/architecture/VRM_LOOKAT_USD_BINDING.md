@@ -23,7 +23,7 @@ Schema resources and dependency DLL discovery remain the host's responsibility.
 Installed hosts request the target explicitly:
 
 ```cmake
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS vrm_lookat_usd)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS vrm_lookat_usd)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarVrmLookAtUsdBinding)
 ```
 

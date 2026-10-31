@@ -4,11 +4,12 @@
 # lanes never updates this file and a green pull request says nothing about it.
 #
 # Pushing a tag `vX.Y.Z` -- equal to VERSION, with a dated CHANGELOG section --
-# builds and verifies the dependency-free `avatarRuntime` core on Windows and
-# Linux, pushes it to ghcr.io/animu-sphere/usd-avatar-runtime tagged
+# builds and verifies the dependency-free `avatarRuntime` core and the
+# `avatarVrmSession` closure on Windows and Linux, pushes them to
+# ghcr.io/animu-sphere/usd-avatar-runtime tagged
 # `<library>-<version>-<target>`, generates the consumer pin table from the push
 # results and assembles a DRAFT GitHub release. Publishing the draft is a human
-# decision. The optional adapters ship only in the source archive; see
+# decision. The other optional adapters ship only in the source archive; see
 # docs/releases/README.md.
 #
 # `workflow_dispatch` is a dry run: the same lanes, uploaded as workflow artifacts,
@@ -101,7 +102,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.23.14 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.15 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -112,7 +113,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no release cell for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.14"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.15"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$(sha256sum "$asset" | cut -d' ' -f1)"
@@ -139,8 +140,8 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.23.14" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.23.14', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.23.15" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.23.15', got '$version'" ; exit 1
           fi
       - name: Pull, verify and materialize the pinned runtime SDK
         shell: bash
@@ -165,28 +166,34 @@ jobs:
       - name: Run the root suite, including the installed consumer
         shell: bash
         run: ost test --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-      - name: Build, test, verify and package the library, twice
+      - name: Build, test and package the libraries, twice
         shell: bash
         run: |
           set -euo pipefail
-          library=libs/avatarRuntime
-          ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-          ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-          ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-          ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/avatarRuntime.json
-          ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/avatarRuntime-second.json
-          first="$(jq -er '.data.archive_digest' .ost-ci/avatarRuntime.json)"
-          second="$(jq -er '.data.archive_digest' .ost-ci/avatarRuntime-second.json)"
-          if [ "$first" != "$second" ]; then
-            echo "::error title=release packaging::two packagings of avatarRuntime disagree ($first, $second)" ; exit 1
-          fi
+          ost library pull --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          for name in avatarRuntime avatarVrmSession; do
+            library="libs/$name"
+            ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+            ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+            # avatarVrmSession declares no package contract; see its descriptor.
+            if [ "$name" = "avatarRuntime" ]; then
+              ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+            fi
+            ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name.json"
+            ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name-second.json"
+            first="$(jq -er '.data.archive_digest' ".ost-ci/$name.json")"
+            second="$(jq -er '.data.archive_digest' ".ost-ci/$name-second.json")"
+            if [ "$first" != "$second" ]; then
+              echo "::error title=release packaging::two packagings of $name disagree ($first, $second)" ; exit 1
+            fi
+          done
       - name: Stage the release artifacts
         shell: bash
         run: |
           set -euo pipefail
           version="${{ needs.preflight.outputs.version }}"
           mkdir -p release-stage/packages
-          for name in avatarRuntime; do
+          for name in avatarRuntime avatarVrmSession; do
             json=".ost-ci/$name.json"
             archive="$(jq -er '.data.archive' "$json")"
             digest="$(jq -er '.data.archive_digest' "$json")"
@@ -240,12 +247,12 @@ jobs:
         with:
           pattern: release-*
           path: staged
-      - name: Bootstrap ost 0.23.14 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.15 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
           asset="ost-cli-x86_64-unknown-linux-musl.tar.xz"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.14"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.15"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$(sha256sum "$asset" | cut -d' ' -f1)"

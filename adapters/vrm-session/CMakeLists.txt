@@ -21,16 +21,19 @@ if(AVATAR_BUILD_TESTS)
     target_compile_definitions(vrmSessionContracts PRIVATE AR_VRM_SESSION_TEST_ENTRY)
     target_link_libraries(vrmSessionContracts PRIVATE avatarVrmSession)
     add_test(NAME hosts.vrm_session COMMAND vrmSessionContracts ${CMAKE_CURRENT_BINARY_DIR}/fixtures)
-    add_test(NAME hosts.vrm_session_installed COMMAND ${CMAKE_COMMAND}
-        -DROOT_BINARY=${PROJECT_BINARY_DIR}
-        -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
-        -DGENERATOR=${CMAKE_GENERATOR} -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
-        -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DRC_COMPILER=${CMAKE_RC_COMPILER} -DMT=${CMAKE_MT}
-        -DMOTION_DIR=${motionCore_DIR} -DRETARGET_DIR=${motionRetarget_DIR}
-        -DSAMPLING_DIR=${motionSampling_DIR} -DMOTION_USD_DIR=${motionUsd_DIR}
-        -DUSD_DIR=${pxr_DIR} -DSCHEMA_DIR=${vrmSchema_DIR} -DVRM_DIR=${vrmRig_DIR}
-        -DCONFIG=$<CONFIG> -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
+    avatar_register_vrm_schema(hosts.vrm_session)
+    if(PROJECT_IS_TOP_LEVEL)
+        add_test(NAME hosts.vrm_session_installed COMMAND ${CMAKE_COMMAND}
+            -DROOT_BINARY=${PROJECT_BINARY_DIR}
+            -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
+            -DGENERATOR=${CMAKE_GENERATOR} -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
+            -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM} -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DRC_COMPILER=${CMAKE_RC_COMPILER} -DMT=${CMAKE_MT}
+            -DMOTION_DIR=${motionCore_DIR} -DRETARGET_DIR=${motionRetarget_DIR}
+            -DSAMPLING_DIR=${motionSampling_DIR} -DMOTION_USD_DIR=${motionUsd_DIR}
+            -DUSD_DIR=${pxr_DIR} -DSCHEMA_DIR=${vrmSchema_DIR} -DVRM_DIR=${vrmRig_DIR}
+            -DCONFIG=$<CONFIG> -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
+    endif()
     if(WIN32)
         add_custom_command(TARGET vrmSessionContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:vrmSessionContracts>)

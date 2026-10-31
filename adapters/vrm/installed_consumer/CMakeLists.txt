@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(InstalledVrmAdapter LANGUAGES CXX)
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS vrm)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS vrm)
 enable_testing()
 # Reuse conformance inputs, but obtain every header/library from installed targets.
 add_executable(installedVrmAdapter ../tests.cpp)
