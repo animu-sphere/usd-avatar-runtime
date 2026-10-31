@@ -12,6 +12,12 @@ the C ABI revision are separate numbers.
 - The VRM session selects expressions and LookAt through `SessionConfig`, with host
   observations passed to a new `Session::Advance` overload. `avatarVrmSessionCheck --face`
   compares the results with the owner.
+- The VRM session reads expressions and gaze from the clip through
+  `SessionConfig::clipExpressions` and `clipGaze`, sampled at each tick time.
+  `avatarVrmSessionCheck --clip-expression` and `--clip-gaze` compare them with the owner.
+- `FixedTickSession::Advance` accepts a `FixedTickObservations` source that selects
+  observations for each evaluation, as catch-up cannot share one held set of tick-dependent
+  values. The C ABI is unchanged.
 
 ### Changed
 

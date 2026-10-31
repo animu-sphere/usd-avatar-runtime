@@ -18,10 +18,10 @@ owners. **Package** ships in the `avatarVrmSession` package and the session sele
 | --- | --- | --- | --- | --- |
 | Motion clip pose | yes; seven real clips on one avatar | yes | `hydra-toon` resident check, headless; no pixels compared | broader avatars and motion |
 | Spring secondary motion | yes; owner parity on real VRM 0.x and 1.0 avatars | yes | through pose, as above | scaled spring rigs are refused; shared-world composition |
-| Expression | yes; owner parity on real VRM 0.x and 1.0 avatars with generated weights | yes, selected explicitly | probe transport only | clip-authored channels; real-avatar material binds; shared-mesh targets |
-| LookAt | yes; owner parity with bone and Expression types on real avatars with a generated gaze point | yes, selected explicitly | probe transport only | clip-authored gaze; captured gaze |
+| Expression | yes; owner parity on real VRM 0.x and 1.0 avatars with generated weights and generated clip channels | yes, selected explicitly, from the host or the clip | probe transport only | captured channels; real-avatar material binds; shared-mesh targets |
+| LookAt | yes; owner parity with bone and Expression types on real avatars with a generated gaze point and generated clip gaze | yes, selected explicitly, from the host or the clip | probe transport only | captured gaze |
 | Node constraints | no | no | no | not started |
-| Native input expression and gaze | explicit attribute selection; generated fixtures | no | no | captured input; automatic discovery |
+| Native input expression and gaze | explicit attribute selection; generated fixtures | yes, sampled per tick in the session | no | captured input; automatic discovery |
 | Live UsdSkel pose, morph, UV, material output | yes | yes, optional for hosts | usdview | discardable session layer, not stage authoring |
 | MMD control and coupling | yes; generated PMX/VMD/Jolt | no | probe transport | owner library unpublished; representative assets |
 | Native MMD session | yes; bounded private-asset headless runs | no | `hydra-toon` viewport, [generated material delivery](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/111-2026-10-29-live-mmd-materials.md) | full-motion and representative acceptance; several avatars |

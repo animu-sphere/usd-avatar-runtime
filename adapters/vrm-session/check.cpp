@@ -104,6 +104,23 @@ public:
         frame.input_revision = tick + 1;
         return frame;
     }
+    // What the clip states at this tick, sampled separately from the session: channels
+    // named vrm:<expression> and the placed gaze, which is stale outside the clip.
+    void ObserveClip(const openstrata::motion::MotionClip& clip, const ArTransform& p, bool gaze, double seconds) {
+        const auto sample = openstrata::motion::SampleClip(clip, seconds);
+        require(bool(sample), "Owner clip sample");
+        scalars_.clear();
+        for (size_t i = 0; i < names_.size(); ++i)
+            if (const auto* value = sample.pose->channels.Find("vrm:" + names_[i])) {
+                ArScalarInput s{"check", "actor", channels_[i].c_str()};
+                s.value = *value; s.source_seconds = seconds; s.clock_scale = 1; scalars_.push_back(s);
+            }
+        hasGaze_ = gaze && sample.pose->lookAtTarget && sample.status != openstrata::motion::PoseSampleStatus::Held;
+        if (!hasGaze_) return;
+        const pxr::GfQuatd rotation(p.rotation[3], {p.rotation[0],p.rotation[1],p.rotation[2]});
+        const pxr::GfVec3f target(rotation.Transform(pxr::GfVec3d(*sample.pose->lookAtTarget)) + pxr::GfVec3d(p.translation));
+        for (int k = 0; k < 3; ++k) gaze_.value[k] = target[k];
+    }
     // Resolves the last observation over the animated pose; returns replaced eyes.
     std::map<uint32_t, pxr::GfQuatd> Resolve(const ArStateView& animated) {
         openstrata::motion::MotionChannelSet weights;
@@ -196,12 +213,20 @@ private:
 int avatarVrmSessionCheck(int argc, char** argv) {
     try {
         bool springs = true, faces = false;
-        require(argc >= 5, "Usage: avatarVrmSessionCheck avatar.vrm clip.vrma fixed_seconds ticks [--no-springs] [--face]");
+        require(argc >= 5, "Usage: avatarVrmSessionCheck avatar.vrm clip.vrma fixed_seconds ticks [--no-springs] [--face] "
+            "[--clip-expression name-attribute value-attribute]... [--clip-gaze attribute]");
+        openstrata::motion::MotionStageReadOptions clipInputs;
         for (int i = 5; i < argc; ++i) {
             const std::string option = argv[i];
-            require(option == "--no-springs" || option == "--face", "Unknown option " + option);
-            (option == "--face" ? faces : springs) = option == "--face";
+            if (option == "--no-springs") springs = false;
+            else if (option == "--face") faces = true;
+            else if (option == "--clip-expression" && i + 2 < argc) { clipInputs.channels.push_back({argv[i+1], argv[i+2], "vrm:"}); i += 2; }
+            else if (option == "--clip-gaze" && i + 1 < argc) clipInputs.lookAtTargetAttributePath = argv[++i];
+            else require(false, "Unknown or incomplete option " + option);
         }
+        const bool clipGaze = !clipInputs.lookAtTargetAttributePath.empty();
+        const bool clipFace = clipGaze || !clipInputs.channels.empty();
+        require(!(faces && clipFace), "--face generates the observations that --clip-* reads");
         auto stage = pxr::UsdStage::Open(argv[1]); auto clipStage = pxr::UsdStage::Open(argv[2]);
         require(bool(stage) && bool(clipStage), "Cannot open avatar/clip");
         pxr::SdfPath clipSkeleton;
@@ -209,7 +234,7 @@ int avatarVrmSessionCheck(int argc, char** argv) {
             require(clipSkeleton.IsEmpty(), "Clip skeleton is ambiguous"); clipSkeleton = prim.GetPath();
         }
         require(!clipSkeleton.IsEmpty() && bool(stage->GetDefaultPrim()), "Missing clip skeleton/avatar default prim");
-        const auto clip = avatarMotionUsd::ReadStageClip(clipStage, clipSkeleton);
+        const auto clip = avatarMotionUsd::ReadStageClip(clipStage, clipSkeleton, clipInputs);
         require(!clip.clip.samples.empty(), "Empty clip"); clipStage.Reset();
         const double dt = std::stod(argv[3]);
         const auto ticks = std::stoull(argv[4]);
@@ -221,11 +246,20 @@ int avatarVrmSessionCheck(int argc, char** argv) {
         if (faces) {
             face.emplace(stage, config.avatar);
             config.expressions = config.lookAt = true; config.expressionInputs = face->Inputs(); config.gaze = face->Gaze();
+        } else if (clipFace) {
+            face.emplace(stage, config.avatar);
+            config.expressions = config.lookAt = true; config.clipGaze = clipGaze;
+            if (!clipGaze) config.gaze = face->Gaze();
+            std::set<std::string> channels;
+            for (const auto& sample : clip.clip.samples) for (const auto& entry : sample.channels.entries)
+                if (entry.name.rfind("vrm:", 0) == 0) channels.insert(entry.name);
+            for (const auto& channel : channels) config.clipExpressions.push_back({channel, channel.substr(4)});
         }
         avatarVrmSession::Session session(stage, clip, config);
         const auto binding = session.Binding();
         auto motionConfig = config; motionConfig.secondaryMotion = false;
-        motionConfig.expressions = motionConfig.lookAt = false; motionConfig.expressionInputs.clear();
+        motionConfig.expressions = motionConfig.lookAt = motionConfig.clipGaze = false;
+        motionConfig.expressionInputs.clear(); motionConfig.clipExpressions.clear();
         avatarVrmSession::Session animated(stage, clip, motionConfig);
         std::unique_ptr<avatarVrmUsd::SpringBoneBinding> springBinding;
         vrmRig::SpringBoneSolver direct;
@@ -239,7 +273,8 @@ int avatarVrmSessionCheck(int argc, char** argv) {
         avatarUsd::SkeletonPoseOutput output(stage, binding);
         ArDiagnosticSink sink{nullptr, diagnostic};
         const auto advance = [&](double elapsed, uint64_t tick) {
-            if (!face) return session.Advance(elapsed, &sink);
+            if (clipFace) face->ObserveClip(clip.clip, binding.RootPlacement(), clipGaze, config.clock.startSeconds + double(tick)*dt);
+            if (!face || clipFace) return session.Advance(elapsed, &sink);
             return session.Advance(elapsed, face->Observe(tick, config.clock.startSeconds + double(tick)*dt), &sink);
         };
         ok(advance(0, 0)); ok(animated.Advance(0, &sink));
@@ -359,9 +394,10 @@ int avatarVrmSessionCheck(int argc, char** argv) {
         require(!changedMotion.empty(), "Clip did not move avatar");
         if (springs) require(!changedSpring.empty(), "No secondary motion observed");
         if (face) {
-            require(!face->ExpectsMorphs() || !face->MorphChanged().empty(), "No morph weight observed");
-            require(!face->ExpectsMaterials() || !face->MaterialChanged().empty(), "No material override observed");
-            require(!face->BoneType() || !changedEyes.empty(), "No eye rotation observed");
+            // A clip drives what it authors, so only generated observations must reach everything.
+            require((clipFace && config.clipExpressions.empty()) || !face->ExpectsMorphs() || !face->MorphChanged().empty(), "No morph weight observed");
+            require(clipFace || !face->ExpectsMaterials() || !face->MaterialChanged().empty(), "No material override observed");
+            require((clipFace && !clipGaze) || !face->BoneType() || !changedEyes.empty(), "No eye rotation observed");
         }
         Retained final{session.Api(), session.Snapshot()}; ok(final.api.retain_snapshot(final.handle));
         session.Pause(); const auto last = session.Snapshot();

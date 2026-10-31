@@ -1661,3 +1661,46 @@ written.
 `session ci` run `41223153985` on pull request #65 passed `hosts.vrm_session` and
 `installed.vrm_session` on hosted Windows and Linux, including the `--face` check on the
 generated bone and expression fixtures. Real avatars remain measured on Windows only.
+
+## VRM session with clip expressions and gaze (2026-11-01)
+
+Measured on Windows x86-64 / MSVC 19.51 / OpenUSD 26.08, with the published motion 0.5.4 and
+VRM 0.12.0 pins and the VRM file-format plugins built from `usd-vrm-plugins` `3c6bd56`.
+`avatarVrmSessionCheck` ran at 60 Hz for 60 ticks on two format-owner fixtures: `expressive_face.vrma`
+selecting `happy` and `relaxed` with `--clip-expression`, and `gazing_head.vrma` selecting its
+target with `--clip-gaze`. These are generated clips, not captured performance. The seven
+MotionPack clips [author neither input](#usd-motion-clip-binding-summary), so they cannot serve here.
+
+| Avatar | LookAt | Clip | Springs | Max motion error | Max spring or eye quaternion error | Max morph and material error | Morphs driven | Eyes driven |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |
+| AliciaSolid (VRM 0.x) | bone | expressions | on | 0 | `2.95474e-8` | 0 | 10 | 0 |
+| AliciaSolid (VRM 0.x) | bone | expressions | off | 0 | `2.22045e-16` | 0 | 10 | 0 |
+| AliciaSolid (VRM 0.x) | bone | gaze | on | 0 | `2.95474e-8` | 0 | 0 | 2 |
+| AliciaSolid (VRM 0.x) | bone | gaze | off | 0 | `2.22045e-16` | 0 | 0 | 2 |
+| VRM1 Constraint Twist Sample (VRM 1.0) | bone | expressions | on | `5.59634e-8` | `4.12225e-8` | 0 | 14 | 0 |
+| VRM1 Constraint Twist Sample (VRM 1.0) | bone | expressions | off | `5.59634e-8` | `5.59634e-8` | 0 | 14 | 0 |
+| VRM1 Constraint Twist Sample (VRM 1.0) | bone | gaze | on | `5.59634e-8` | `4.12225e-8` | 0 | 0 | 2 |
+| VRM1 Constraint Twist Sample (VRM 1.0) | bone | gaze | off | `5.59634e-8` | `5.59634e-8` | 0 | 0 | 2 |
+| Seed-san (VRM 1.0) | expression | expressions | off | `7.05842e-8` | `7.05842e-8` | 0 | 3 | 0 |
+| Seed-san (VRM 1.0) | expression | gaze | off | `7.05842e-8` | `7.05842e-8` | 0 | 6 | 0 |
+
+The tolerance is `1e-6`. All runs passed exact reset replay and retained unload. No real avatar
+here drives a material, so material parity rests on the generated fixture. The fixtures' body
+motion is nearly still (one joint changed), so these runs test the face against a little
+animated pose; the [earlier runs](#vrm-session-with-expression-and-lookat-2026-11-01) cover a
+moving head with generated observations. The fixture SHA-256 values are
+`1d9ad9e3ab44f988c08f68225ccc7c3ed614900ff0257afd11399f41e59f11e5` and
+`118895e4f040322bae36a4c64d2a9e64ad6f846ab3a48f2536a11fcd092e528a`.
+
+`contracts.fixed_tick_session` covers the per-evaluation source: one call per evaluation with
+its own frame and time, none when nothing evaluates, `AR_BUSY` on re-entry, and a refused or
+throwing source leaving the tick due with its backlog and output. `hosts.vrm_session` runs the
+same check on a generated clip with sparse channels past the end of the clip, on bone and
+expression fixtures with and without springs. It compares four-tick catch-up with single ticks
+for 96 ticks with exact equality, and covers source samples, stale gaze, a mix of clip and host
+inputs and seven refused configurations. 15/15 library tests passed. `hosts.vrm_session` failed,
+as it should, under each of four temporary session changes: sampling a fixed time, omitting gaze
+placement, leaving held gaze valid and keeping the restamped time of a held sample.
+
+This is headless: no renderer received these values. Linux was not measured when this was
+written, and the installed consumer runs in the pull request lane.

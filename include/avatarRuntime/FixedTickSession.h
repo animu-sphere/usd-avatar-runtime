@@ -1,5 +1,6 @@
 #pragma once
 #include "avatarRuntime/api.h"
+#include <functional>
 #include <memory>
 
 namespace avatarRuntime {
@@ -14,6 +15,11 @@ struct FixedTickStats {
     double simulationSeconds = 0, pendingSeconds = 0;
     bool initialized = false;
 };
+// Selected observations and input revision for one evaluation, given its frame
+// ID and evaluation seconds. Arrays stay valid until the next call or the end of
+// the request. Runs as a callback: runtime calls return AR_BUSY. Must be a pure
+// function of its arguments for replay to hold.
+using FixedTickObservations = std::function<ArInputFrame(uint64_t frameId, double evaluationSeconds)>;
 
 // Experimental native runtime surface; no new C table, phase or backend.
 // Binds one fresh/reset instance exclusively. Runtime/provider code outlives
@@ -33,6 +39,12 @@ public:
     // survive. Paused requests discard elapsed and do not process backlog.
     AR_EXPORT ArStatus Advance(uint64_t requestId, double elapsedSeconds, bool paused,
         const ArInputFrame&, const ArDiagnosticSink* = nullptr);
+    // As above, but observations are selected for each evaluation, including the
+    // seed, and nothing is selected for a request that evaluates nothing. They are
+    // validated per evaluation, after elapsed is accepted: a refusal or a throw
+    // from the source leaves that tick due, as an evaluator failure does.
+    AR_EXPORT ArStatus Advance(uint64_t requestId, double elapsedSeconds, bool paused,
+        const FixedTickObservations&, const ArDiagnosticSink* = nullptr);
     // Recreates provider state, clears clock/output and declares a new seed.
     // Generation must increase. Failure preserves the previous state/output.
     AR_EXPORT ArStatus Reset(uint64_t generation, double startSeconds);
