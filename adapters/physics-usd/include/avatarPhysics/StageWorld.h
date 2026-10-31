@@ -15,7 +15,8 @@ public:
 
   StageWorld(const pxr::UsdStageRefPtr &stage, WorldFactory factory,
              SceneResources::BodyPolicy policy = {},
-             SceneResources::JointPolicy jointPolicy = {});
+             SceneResources::JointPolicy jointPolicy = {},
+             SceneResources::JointAdmission jointAdmission = {});
   ~StageWorld();
   StageWorld(const StageWorld &) = delete;
   StageWorld &operator=(const StageWorld &) = delete;

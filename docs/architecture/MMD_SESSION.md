@@ -39,8 +39,19 @@ refuse. The Python wrapper exposes copied `dampingNormalizations` dictionaries,
 and usdview reports them on construction and successful Reset. This is applied
 source policy, separate from `UnappliedMetadata()` spring gaps.
 
+The session selects installed owner `ReadJointAdmission` for enabled MMD
+`spring6Dof` joints. Two `followBone` endpoints preserve their USD declaration
+but allocate no solver constraint. `InertJoints()` and Python `inertJoints`
+expose owned source paths (Python returns copies); usdview reports them on
+construction and successful Reset. Copy native records before a rebuild.
+Successful Reset replaces admission records. Generic descriptor validation
+and owner spring validation still apply to omitted joints. Invalid endpoint
+metadata refuses, and repaired Reset admission can be retried. World/non-MMD
+joint endpoints remain outside the owner's scoped policy. Source edits that
+change the coupling layout still require session reconstruction.
+
 Configuration and installed `mmd_session` lookup require owner
-`SOURCE_BODY_PROPERTIES_VERSION=1`, core `DAMPING_RESPONSE_VERSION=1` and
+`SOURCE_BODY_PROPERTIES_VERSION=1`, `JOINT_ADMISSION_VERSION=1`, core `DAMPING_RESPONSE_VERSION=1` and
 `physicsJolt_PRIOR_VELOCITY_CLEARING_AVAILABLE`. Rebuild the complete physics
 core/backend/USD bridge and runtime consumer closure for the descriptor change;
 matching product versions alone do not establish compatibility.

@@ -387,7 +387,40 @@ void stageWorld() {
   CHECK(rejected);
 }
 
+void jointAdmission() {
+  World world;
+  int calls = 0;
+  {
+    Resources resources(world, scene(), {}, {}, [&](const auto &joint) {
+      CHECK(world.creates == 0 && joint.enabled); ++calls;
+      return joint.path == "/Asset/world";
+    });
+    CHECK(calls == 2 && world.constraints.size() == 1 && world.bodies.size() == 3);
+    CHECK(!world.constraints.begin()->second.firstBody);
+  }
+  CHECK(world.constraints.empty() && world.bodies.empty() && world.shapes.empty());
+  BareWorld bare;
+  { Resources resources(bare, scene(), {}, {}, [](const auto &) { return false; }); }
+  CHECK(bare.bodies.empty());
+  // Omitted joints still undergo conversion and policy validation.
+  for (int failure = 0; failure < 3; ++failure) {
+    auto input = scene();
+    if (failure == 0) input.joints[1].limits[0] = {true, 1, 1};
+    bool rejected = false;
+    const int before = world.creates;
+    try {
+      Resources resources(world, input, {}, [&](const auto &, auto &d) {
+        if (failure == 1) d.firstBody = core::BodyHandle(99);
+      }, [&](const auto &) {
+        if (failure == 2) throw std::runtime_error("admission failure");
+        return false;
+      });
+    } catch (const std::exception &) { rejected = true; }
+    CHECK(rejected && world.creates == before);
+  }
+}
+
 int main() {
-  lifetime(); failures(); validation(); jointPolicy(); stageWorld();
+  lifetime(); failures(); validation(); jointPolicy(); stageWorld(); jointAdmission();
   std::cout << "Scene resource construction, rollback and selective lifetime passed\n";
 }

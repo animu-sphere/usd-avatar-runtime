@@ -13,6 +13,7 @@ public:
     }
     py::dict advance(double elapsed) { Advance(elapsed); return stats(); }
     py::list warnings() const { py::list rows; for (const auto& w : UnappliedMetadata()) rows.append(w); return rows; }
+    py::list inertJoints() const { py::list rows; for (const auto& path : InertJoints()) rows.append(path); return rows; }
     py::list dampingNormalizations() const {
         py::list rows;
         for (const auto& n : DampingNormalizations()) {
@@ -43,5 +44,6 @@ PXR_BOOST_PYTHON_MODULE(_native) {
         .def("reset", &Session::Reset).def("close", &Session::Close)
         .add_property("stats", &Session::stats).add_property("unappliedMetadata", &Session::warnings)
         .add_property("dampingNormalizations", &Session::dampingNormalizations)
+        .add_property("inertJoints", &Session::inertJoints)
         .add_property("bodyStates", &Session::bodyStates);
 }

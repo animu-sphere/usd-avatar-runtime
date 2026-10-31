@@ -37,7 +37,7 @@ The caller creates the solver with its chosen world settings and passes a
 `PhysicsScene` value. All bodies in that snapshot form one resource set. Body
 paths must be unique absolute prim paths. Each enabled joint resolves its
 nonempty endpoints within that set; an empty endpoint denotes world. Joints
-between resource sets reject before world mutation. Enabled joints require
+between resource sets reject before world mutation. Admitted joints require
 the optional neutral `SixDofConstraints` capability, including fixed joints
 whose local frames must be preserved. Disabled joints create no constraint.
 Joint conversion delegates to the owner's `toSixDofConstraint`.
@@ -55,12 +55,17 @@ or other neutral properties but cannot change endpoint handles. The adapter
 validates its result, then replaces provisional endpoints with the actual
 body handles during resource creation. Disabled joints skip this callback.
 Policy failure creates no resources; callbacks and descriptors are not retained
-after construction. `StageWorld` forwards both optional policies. Format
+after construction. Optional `JointAdmission` runs after conversion and
+descriptor/policy validation; false omits only solver allocation. It never
+changes the source snapshot, bypasses malformed declarations or retains
+callbacks. Disabled joints skip admission. Admission exceptions create no
+resources. With no callback, all enabled joints retain existing behavior.
+`StageWorld` forwards all three optional policies. Format
 semantics and experimental opt-in selection remain the caller's responsibility.
 
 Bookkeeping allocation, path/endpoint validation, descriptor preparation and
 owner conversion precede backend mutation. Construction then creates shapes,
-bodies and enabled constraints. A backend exception or invalid returned handle
+bodies and admitted constraints. A backend exception or invalid returned handle
 rolls back resources already created by this constructor, leaving other sets
 alone. This relies on the backend's exception-safety and live-handle destruction
 contract, and on exclusive host access. The constructor retains no snapshot,

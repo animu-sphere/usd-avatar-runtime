@@ -1,6 +1,6 @@
 find_package(physicsJolt 0.1 CONFIG REQUIRED)
 find_package(mmdPhysicsAdapter 0.2 CONFIG REQUIRED)
-foreach(api IN ITEMS INITIAL_POSE BODY_PROPERTIES JOINT_SPRINGS SOURCE_BODY_PROPERTIES)
+foreach(api IN ITEMS INITIAL_POSE BODY_PROPERTIES JOINT_SPRINGS SOURCE_BODY_PROPERTIES JOINT_ADMISSION)
     if(NOT mmdPhysicsAdapter_${api}_VERSION EQUAL 1)
         message(FATAL_ERROR "MMD session requires installed mmdPhysicsAdapter ${api} API version 1")
     endif()

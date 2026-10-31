@@ -49,6 +49,8 @@ class Controller(QtCore.QObject):
         return self.session
 
     def reportDampingNormalizations(self):
+        for path in self.session.inertJoints:
+            Tf.Warn("MMD inert joint preserved without a solver constraint: " + path)
         for row in self.session.dampingNormalizations:
             Tf.Warn("MMD source damping normalized: {} original={} coefficient={}".format(
                 row["attributePath"], row["original"], row["coefficient"]))
