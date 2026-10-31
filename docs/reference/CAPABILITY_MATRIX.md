@@ -1329,13 +1329,16 @@ Measured on Windows x86-64 / MSVC 19.51 / OpenUSD 26.08, with the published moti
 0.5.4 and VRM 0.12.0 pins that `libs/avatarVrmSession` declares. The VRM owners are
 digest-pinned packages here, so the motion 0.5.1 caveat in the
 [earlier section](#vrm-session-against-published-owners-2026-10-31) no longer applies.
-Linux evidence comes from the release workflow, not from this run.
+The Linux row below comes from the release workflow. `ost library verify-consumer`
+passes on Windows and fails on Linux, because its consumer hides the system prefix from
+the X11 lookup in OpenUSD's MaterialX dependency.
 
 | Check | Result |
 | --- | --- |
 | `ost library build`, `test`, `verify-consumer` and `package libs/avatarVrmSession` with `ost` 0.23.16 | builds; 12/12 CTests; a generated consumer links `avatarVrmSession::Session`; two packagings give one digest |
 | Top-level configuration of the same adapters | 20/20 CTests, including every installed consumer at `AvatarRuntime` 0.2.0 |
 | `tools/check-vrm-session.ps1` on the packaged `avatarVrmSessionCheck`, with the published VRM product | all four runs pass; every error value equals the [2026-10-29 table](#vrm-fixed-tick-session-and-host-evidence-2026-10-29) |
+| Release lane on hosted Linux | 12/12 CTests; the repository's installed consumer builds against the packaged prefix and runs the session's generated fixtures |
 | `hydra-toon` at `1c17de7`: `toon-viewport-vrm` and `toon-vrm-runtime-test` from this prefix | both build; `toon-vrm-runtime-resident` passes with AliciaSolid and `VRMA_01` |
 
 The renderer used the `lookdev` runtime while this package and its owners were built
