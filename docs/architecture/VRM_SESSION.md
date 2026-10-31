@@ -10,7 +10,9 @@ clip through `avatarVrmSession::Session`. Enable the USD, VRM USD, spring USD,
 spring evaluator, motion USD and motion adapter options too. Installed consumers
 request `AvatarRuntime` component `vrm_session` and link
 `AvatarRuntime::avatarVrmSession`. This imports installed owner packages without
-Jolt, Stage Runner, expression/LookAt evaluation or a renderer.
+Jolt, Stage Runner, expression/LookAt evaluation or a renderer. The published
+`avatarVrmSession` package holds these targets and the core in one prefix; pin it
+with its owners from the [release notes](../releases/README.md).
 
 The host snapshots Humanoid/skeleton, spring/collider values and the clip's
 coherent source rest. Input stages can be destroyed after construction. Motion

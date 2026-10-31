@@ -33,7 +33,7 @@ cmake --install build/vrm --prefix install/vrm
 Consumers request the optional installed component explicitly:
 
 ```cmake
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS vrm)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS vrm)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarVrmAdapter)
 ```
 

@@ -25,8 +25,8 @@ Runtime Phases A–F remain open. The adopted
 [near-term direction](../design/NEAR_TERM_PLAN.md) refines the original phase
 sequence: A/B overlap, early direct consumer work from C validates the state,
 and full Hydra publication follows real-provider evidence. The first
-[release](../releases/README.md) publishes the core only and closes none of
-these phases.
+[releases](../releases/README.md) publish the core and the VRM session, and close
+none of these phases.
 Related provider work is tracked by its owner; this page tracks runtime
 integration and the evidence needed here.
 
@@ -40,27 +40,12 @@ the evaluation DAG, shared-world barrier and clock/reset coordination. The
 [physics milestones](#physics-orchestration-milestones) extend the MMD track;
 their acceptance gates do not replace Runtime Phases or imply a frozen ABI.
 
-## Next release: v0.2.0
+## Next release
 
-v0.2.0 publishes the [native VRM session](../architecture/VRM_SESSION.md), the first
-package with a real consumer. The MMD path follows later: it spans three owner
-repositories and its representative acceptance is still open. The ABI stays at
-experimental revision 5 unless the work below requires a change.
-
-**Package shape.** A second library, `avatarVrmSession`, joins `avatarRuntime` as a
-release member. It holds the core and the session's adapters in one prefix and
-provides the same `AvatarRuntime` CMake package, so
-`find_package(AvatarRuntime COMPONENTS vrm_session)` is unchanged. A consumer pins
-one of the two packages, not both. `avatarRuntime` stays dependency-free.
-
-| Step | Work | Owner | Gate |
-| --- | --- | --- | --- |
-| 1 | release VRM v0.12.0: publish `vrmRig` and a header-carrying `vrmSchema` library on the `usd` lane, with the workspace's motion pins moved to 0.5.4 | VRM ([measurement](../reference/CAPABILITY_MATRIX.md#vrm-session-against-published-owners-2026-10-31)) | digest pins exist for Windows and Linux |
-| 2 | add `libs/avatarVrmSession` with those pins and motion 0.5.4; keep its compiler-dependent installed-consumer tests out of `ost library test` | runtime | `ost library build`, `test` and `package` pass, with a reproducible digest |
-| 3 | add an adapter CI lane and the second release member | runtime | Windows and Linux pass; this is the session's first Linux measurement |
-| 4 | build `toon-viewport-vrm` from the published pins | renderer | the [resident VRM check](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/110-2026-10-29-live-vrm-springs.md) passes without a local owner prefix |
-
-Publishing the tag and the draft release remains a human decision.
+[v0.2.0](../releases/v0.2.0.md) publishes the native VRM session. The MMD path comes
+later: it spans three owner repositories and its representative acceptance is still
+open. The session still needs a pull request lane; only the release workflow builds
+it today, so a regression can reach `main` unnoticed until the next dry run.
 
 ## Boundary cleanup workstreams
 

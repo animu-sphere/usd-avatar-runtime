@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(AvatarInstalledConsumer LANGUAGES C)
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED)
 foreach(owner_target IN ITEMS AvatarRuntime::avatarStageRunnerSession runtimeCore::runtimeCore
     AvatarRuntime::avatarUsdBinding AvatarRuntime::avatarVrmUsdBinding
     AvatarRuntime::avatarMotionAdapter AvatarRuntime::avatarVrmAdapter AvatarRuntime::avatarMotionUsdBinding

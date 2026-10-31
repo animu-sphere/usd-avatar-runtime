@@ -21,7 +21,7 @@ target sits above the unchanged revision-5 core and experimental physics table.
 It does not freeze a cross-toolchain C++ ABI or publish a dependency pin.
 
 ```cmake
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS stage_runner)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS stage_runner)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarStageRunnerSession)
 ```
 

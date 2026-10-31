@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(PhysicsUsdInstalledConsumer LANGUAGES CXX)
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS physics_usd)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS physics_usd)
 foreach(unexpected IN ITEMS mmdControl::mmdControl physicsJolt::physicsJolt
     Toon::AvatarState runtimeCore::runtimeCore AvatarRuntime::avatarMmdAdapter)
     if(TARGET ${unexpected})

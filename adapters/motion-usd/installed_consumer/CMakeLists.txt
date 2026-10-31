@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(InstalledMotionUsdConsumer LANGUAGES CXX)
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS motion_usd)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS motion_usd)
 if(TARGET vrmSchema::vrmSchema OR TARGET vrmRig::vrmRig OR TARGET motionSampling::motionSampling)
     message(FATAL_ERROR "Source clip binding must not import format evaluators or sampling")
 endif()

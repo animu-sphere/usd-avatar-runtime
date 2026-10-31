@@ -1,18 +1,21 @@
 [project]
 name = "usd-avatar-runtime"
 # Mirrors the repository-root VERSION file.
-version = "0.1.0"
+version = "0.2.0"
 
 [requires]
 platform = "cy2026"
 profile = "usd"
 
-# Only the dependency-free core is a release member. The optional adapters are
-# source-built against installed owners; see docs/releases/README.md.
+# The dependency-free core and the VRM session are release members. The other
+# optional adapters are source-built against installed owners; see
+# docs/releases/README.md.
 [workspace]
 members = [
   "libs/avatarRuntime",
+  "libs/avatarVrmSession",
 ]
 release_members = [
   "avatarRuntime",
+  "avatarVrmSession",
 ]

@@ -27,24 +27,27 @@ if(AVATAR_BUILD_TESTS)
         target_compile_definitions(vrmSpringUsdBindingContracts PRIVATE AR_TEST_SPRING_ADAPTER)
     endif()
     add_test(NAME adapters.vrm_spring_usd COMMAND vrmSpringUsdBindingContracts)
-    add_test(NAME adapters.vrm_spring_usd_installed COMMAND ${CMAKE_COMMAND}
-        -DROOT_BINARY=${PROJECT_BINARY_DIR}
-        -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
-        -DGENERATOR=${CMAKE_GENERATOR}
-        -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
-        -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-        -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DRC_COMPILER=${CMAKE_RC_COMPILER}
-        -DMT=${CMAKE_MT}
-        -DRETARGET_DIR=${motionRetarget_DIR}
-        -DMOTION_USD_DIR=${motionUsd_DIR}
-        -DMOTION_DIR=${motionCore_DIR}
-        -DUSD_DIR=${pxr_DIR}
-        -DSCHEMA_DIR=${vrmSchema_DIR}
-        -DVRM_DIR=${vrmRig_DIR}
-        -DSPRING_ADAPTER_TEST=${AVATAR_BUILD_VRM_SPRING_ADAPTER}
-        -DCONFIG=$<CONFIG>
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
+    avatar_register_vrm_schema(adapters.vrm_spring_usd)
+    if(PROJECT_IS_TOP_LEVEL)
+        add_test(NAME adapters.vrm_spring_usd_installed COMMAND ${CMAKE_COMMAND}
+            -DROOT_BINARY=${PROJECT_BINARY_DIR}
+            -DCONSUMER_SOURCE=${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer
+            -DGENERATOR=${CMAKE_GENERATOR}
+            -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
+            -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+            -DCXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DRC_COMPILER=${CMAKE_RC_COMPILER}
+            -DMT=${CMAKE_MT}
+            -DRETARGET_DIR=${motionRetarget_DIR}
+            -DMOTION_USD_DIR=${motionUsd_DIR}
+            -DMOTION_DIR=${motionCore_DIR}
+            -DUSD_DIR=${pxr_DIR}
+            -DSCHEMA_DIR=${vrmSchema_DIR}
+            -DVRM_DIR=${vrmRig_DIR}
+            -DSPRING_ADAPTER_TEST=${AVATAR_BUILD_VRM_SPRING_ADAPTER}
+            -DCONFIG=$<CONFIG>
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/installed_consumer/run.cmake)
+    endif()
     if(WIN32)
         add_custom_command(TARGET vrmSpringUsdBindingContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:vrmSpringUsdBindingContracts>)

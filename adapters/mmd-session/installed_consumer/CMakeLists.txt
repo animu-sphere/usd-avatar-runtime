@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(MmdSessionInstalledConsumer LANGUAGES CXX)
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS mmd_session)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS mmd_session)
 add_executable(mmdSessionConsumer main.cpp)
 target_link_libraries(mmdSessionConsumer PRIVATE AvatarRuntime::avatarMmdSession)
 if(WIN32)

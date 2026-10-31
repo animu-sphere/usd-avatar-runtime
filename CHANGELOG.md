@@ -5,6 +5,37 @@ Notable changes to the released runtime. The format follows
 0.x, a minor version may change the public API or ABI. The package version and
 the C ABI revision are separate numbers.
 
+## [0.2.0] - 2026-11-01
+
+Publishes the native VRM session for `cy2026` / `usd` on Windows x86_64 and Linux
+x86_64. The C ABI stays at experimental revision 5 and is not frozen.
+
+### Added
+
+- The `avatarVrmSession` package: the core and the session's motion, USD, VRM USD
+  and spring adapters in one prefix, with `avatarVrmSessionCheck`. It pins motion
+  0.5.4 and VRM 0.12.0 by digest. `find_package(AvatarVrmSession)` is equivalent to
+  requesting the `vrm_session` component of `AvatarRuntime`.
+
+### Changed
+
+- The release lane and source CI move to `ost` 0.23.16, whose `verify-consumer`
+  resolves the runtime's OpenUSD and Python, so it links a consumer of the session on
+  each target.
+- The `AvatarRuntime` CMake package version moves to 0.2. `SameMinorVersion`
+  refuses a `find_package(AvatarRuntime 0.1)` request.
+- Installed-consumer tests register only when this repository is the top-level
+  project, because `ost library test` runs without a compiler environment.
+- Tests that open a VRM stage register the installed schema themselves.
+
+### Known limitations
+
+- `avatarRuntime` and `avatarVrmSession` provide the same CMake package and the same
+  files for the core. A consumer pins one of them.
+- The session selects pose only. Expressions, gaze and node constraints are not
+  evaluated, and scaled spring rigs are refused.
+- The session has no pull request lane; only the release workflow builds it.
+
 ## [0.1.0] - 2026-10-31
 
 The first versioned release. It publishes the dependency-free `avatarRuntime`

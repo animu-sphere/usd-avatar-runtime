@@ -39,7 +39,7 @@ test. The VRM install requirements remain in [its adapter page](VRM_ADAPTER.md).
 Consumers request the installed component explicitly:
 
 ```cmake
-find_package(AvatarRuntime 0.1.0 EXACT CONFIG REQUIRED COMPONENTS motion)
+find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS motion)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarMotionAdapter)
 ```
 
