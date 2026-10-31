@@ -19,9 +19,9 @@ x86_64. The C ABI stays at experimental revision 5 and is not frozen.
 
 ### Changed
 
-- The release lane and source CI move to `ost` 0.23.16, whose `verify-consumer`
-  resolves the runtime's OpenUSD and Python, so it links a consumer of the session on
-  each target.
+- The release lane and source CI move to `ost` 0.23.16. The lane checks a consumer of
+  the session with `verify-consumer` on Windows and with the repository's installed
+  consumer on Linux, where `verify-consumer` cannot find OpenUSD's X11 dependency.
 - The `AvatarRuntime` CMake package version moves to 0.2. `SameMinorVersion`
   refuses a `find_package(AvatarRuntime 0.1)` request.
 - Installed-consumer tests register only when this repository is the top-level
