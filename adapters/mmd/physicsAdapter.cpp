@@ -33,6 +33,14 @@ template<class T> bool forward(const ArEvaluationContext& c, const mmd::Result<T
     if (result.fatal()) send(*result.fatal(), AR_PROVIDER_ERROR);
     return bool(result);
 }
+// Layouts normally repeat binding order: try the next slot first so per-tick
+// identity checks stay linear. Any other valid order resolves by full search.
+template<class Match> uint32_t findSlot(uint32_t count, uint32_t& next, const Match& match) {
+    if (next < count && match(next)) return next++;
+    for (uint32_t i = 0; i < count; ++i)
+        if (match(i)) { next = i + 1; return i; }
+    return count;
+}
 using MaterialValues = std::array<std::array<double, 4>, 9>;
 constexpr uint32_t materialTypes[]{AR_VALUE_VEC4, AR_VALUE_VEC3, AR_VALUE_SCALAR,
     AR_VALUE_VEC3, AR_VALUE_VEC4, AR_VALUE_SCALAR, AR_VALUE_VEC4, AR_VALUE_VEC4, AR_VALUE_VEC4};
@@ -135,10 +143,11 @@ struct PhysicsAdapter::Impl {
         const auto& v = *c.working;
         if (!v.layout_id || config.layoutId != v.layout_id || config.layoutVersion != v.layout_version)
             return failure(c, "MMD_ADAPTER_LAYOUT", "Bound layout identity/version mismatch");
+        out.reserve(config.joints.size());
+        uint32_t next = 0;
         for (const auto& b : config.joints) {
-            uint32_t i = 0;
-            for (; i < v.joint_count; ++i)
-                if (b.skeleton == v.joints[i].skeleton_id && b.joint == v.joints[i].joint_id) break;
+            const auto i = findSlot(v.joint_count, next, [&](uint32_t n) {
+                return b.joint == v.joints[n].joint_id && b.skeleton == v.joints[n].skeleton_id; });
             if (i == v.joint_count)
                 return failure(c, "MMD_ADAPTER_JOINT", "Canonical joint binding is absent");
             const auto parent = b.parent < 0 ? -1 : int32_t(out[b.parent]);
@@ -161,7 +170,7 @@ struct PhysicsAdapter::Impl {
         std::vector<uint32_t> morphIndices, visibilityIndices;
         std::vector<mmd::control::MorphChannel> channels;
         std::vector<uint32_t> uvIndices;
-        auto uvs = config.baseUvs;
+        std::vector<std::array<double, 2>> uvs;
         std::vector<uint32_t> materialIndices;
         std::vector<std::array<double, 4>> materialValues;
         if (final) {
@@ -184,6 +193,9 @@ struct PhysicsAdapter::Impl {
                     if (!bound)
                         return failure(c, "MMD_ADAPTER_MATERIAL", "Reached material has no complete output binding");
                 }
+                materialIndices.reserve(config.materials.size());
+                materialValues.reserve(config.materials.size());
+                uint32_t next = 0;
                 for (const auto& b : config.materials) {
                     const auto field = static_cast<uint32_t>(b.field);
                     auto value = b.base;
@@ -198,9 +210,8 @@ struct PhysicsAdapter::Impl {
                     for (double x : value)
                         if (!std::isfinite(x) || std::abs(x) > std::numeric_limits<float>::max())
                             return failure(c, "MMD_ADAPTER_MATERIAL", "Final material value is nonfinite or exceeds float range");
-                    uint32_t i = 0;
-                    for (; i < v.material_count; ++i)
-                        if (b.target == v.materials[i].material_id && b.input == v.materials[i].input_id) break;
+                    const auto i = findSlot(v.material_count, next, [&](uint32_t n) {
+                        return b.input == v.materials[n].input_id && b.target == v.materials[n].material_id; });
                     if (i == v.material_count || v.materials[i].value_type != materialTypes[field])
                         return failure(c, "MMD_ADAPTER_MATERIAL", "Material output identity or type mismatch");
                     materialIndices.push_back(i); materialValues.push_back(value);
@@ -209,15 +220,21 @@ struct PhysicsAdapter::Impl {
             if (!config.baseUvs.empty()) {
                 auto deltas = config.evaluator.EvaluateUvMorphs(pose.channels);
                 if (!forward(c, deltas)) return AR_PROVIDER_ERROR;
+                uvs = config.baseUvs;
                 for (const auto& delta : deltas.value()) {
                     if (delta.channel || delta.vertex < 0 || size_t(delta.vertex) >= uvs.size())
                         return failure(c, "MMD_ADAPTER_UV", "Unsupported UV channel or vertex");
                     for (int a = 0; a < 2; ++a) uvs[delta.vertex][a] += delta.delta[a];
                 }
                 uvIndices.assign(uvs.size(), UINT32_MAX);
+                // Records sharing an address share identity bytes; compare each once.
+                const char* boundMesh = nullptr;
                 for (uint32_t i = 0; i < v.vertex_uv_count; ++i) {
                     const auto& uv = v.vertex_uvs[i];
-                    if (config.uvMesh != uv.mesh_id) continue;
+                    if (uv.mesh_id != boundMesh) {
+                        if (config.uvMesh != uv.mesh_id) continue;
+                        boundMesh = uv.mesh_id;
+                    }
                     if (uv.vertex_index >= uvs.size() || uvIndices[uv.vertex_index] != UINT32_MAX)
                         return failure(c, "MMD_ADAPTER_UV", "Changed UV vertex layout");
                     uvIndices[uv.vertex_index] = i;
@@ -229,10 +246,10 @@ struct PhysicsAdapter::Impl {
                         return failure(c, "MMD_ADAPTER_UV", "Final UV is nonfinite or exceeds float range");
                 }
             }
+            uint32_t nextMorph = 0;
             for (const auto& m : config.morphs) {
-                uint32_t i = 0;
-                for (; i < v.blend_shape_count; ++i)
-                    if (m.mesh == v.blend_shapes[i].mesh_id && m.target == v.blend_shapes[i].target_id) break;
+                const auto i = findSlot(v.blend_shape_count, nextMorph, [&](uint32_t n) {
+                    return m.target == v.blend_shapes[n].target_id && m.mesh == v.blend_shapes[n].mesh_id; });
                 if (i == v.blend_shape_count)
                     return failure(c, "MMD_ADAPTER_MORPH", "Bound morph output is absent");
                 morphIndices.push_back(i);

@@ -541,8 +541,8 @@ including scoped controls and whole-world teardown. Broader B/E lifecycle,
 representative material output, private-avatar Hydra/direct parity and representative acceptance
 remain open. The renderer's
 [viewport report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/107-2026-10-27-live-mmd-viewport.md)
-records display evidence and the current performance limit. This does not close
-milestone D or the physics MVP.
+records display evidence; the [tick identity evidence](../reference/CAPABILITY_MATRIX.md#dense-live-mmd-tick-identity-cost-evidence-2026-10-31)
+records the current per-tick cost. This does not close milestone D or the physics MVP.
 
 Owning documents now record scoped prototype choices for clocks/channels, dense
 output, retained source-sample time, two-component material values, lifecycle,

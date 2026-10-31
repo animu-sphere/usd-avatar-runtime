@@ -194,8 +194,13 @@ struct State {
         for (uint32_t i = 0; i < v.material_count; ++i) {
             auto m = v.materials[i]; m.material_id = copyId(m.material_id); m.input_id = copyId(m.input_id); materials.push_back(m);
         }
+        // Dense layouts repeat one mesh identity per vertex; adjacent records
+        // share one owned string, which validation can then recognize by address.
+        uvs.reserve(v.vertex_uv_count);
         for (uint32_t i = 0; i < v.vertex_uv_count; ++i) {
-            auto uv = v.vertex_uvs[i]; uv.mesh_id = copyId(uv.mesh_id); uvs.push_back(uv);
+            auto uv = v.vertex_uvs[i];
+            uv.mesh_id = i && !std::strcmp(uv.mesh_id, v.vertex_uvs[i - 1].mesh_id) ? uvs.back().mesh_id : copyId(uv.mesh_id);
+            uvs.push_back(uv);
         }
         for (uint32_t i = 0; i < v.visibility_count; ++i) {
             auto x = v.visibility[i]; x.target_id = copyId(x.target_id); visibility.push_back(x);
@@ -252,14 +257,24 @@ void validateState(const ArStateView& v, Diagnostics& d) {
     // Dense source layouts normally arrive in identity order. Keep all
     // duplicate checks without allocation for ordered IDs; unordered IDs use
     // one contiguous allocation and no per-vertex string copies.
+    // A repeated address is the same bytes already validated in this view, so
+    // identity order then depends only on the vertex index.
     using UvIdentity = std::pair<std::string_view, uint32_t>;
     bool orderedUvs = true;
     UvIdentity previousUv;
+    const char* checkedMesh = nullptr;
     for (uint32_t i = 0; i < v.vertex_uv_count; ++i) {
-        const auto& uv = v.vertex_uvs[i]; requireId(uv.mesh_id, d);
-        const UvIdentity identity{uv.mesh_id, uv.vertex_index};
-        if (i && !(previousUv < identity)) orderedUvs = false;
-        previousUv = identity;
+        const auto& uv = v.vertex_uvs[i];
+        if (checkedMesh && uv.mesh_id == checkedMesh) {
+            if (uv.vertex_index <= previousUv.second) orderedUvs = false;
+            previousUv.second = uv.vertex_index;
+        } else {
+            requireId(uv.mesh_id, d);
+            const UvIdentity identity{uv.mesh_id, uv.vertex_index};
+            if (i && !(previousUv < identity)) orderedUvs = false;
+            previousUv = identity;
+            checkedMesh = uv.mesh_id;
+        }
         for (double x : uv.value) if (!std::isfinite(x))
             d.fail(AR_INVALID_STATE, "runtime.state.uv", "Non-finite vertex UV", uv.mesh_id);
     }

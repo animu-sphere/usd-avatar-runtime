@@ -785,6 +785,26 @@ void denseUvIdentities() {
     CHECK(api.destroy_instance(f.runtime, id) == AR_OK);
     uvs.back() = uvs.front();
     CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_DUPLICATE_ID);
+
+    // Identity is the bytes: a repeated address only skips re-reading them.
+    const std::string same = "dense.same", copy = "dense.same";
+    ArVertexUv repeated[]{{same.c_str(), 0, {0, 0}}, {same.c_str(), 1, {0, 0}}, {same.c_str(), 2, {0, 0}}};
+    desc.initial_state.vertex_uvs = repeated; desc.initial_state.vertex_uv_count = 3;
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_OK);
+    CHECK(api.destroy_instance(f.runtime, id) == AR_OK);
+    repeated[1].vertex_index = 0; // adjacent duplicate through one address
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_DUPLICATE_ID);
+    repeated[1].vertex_index = 2; repeated[2].vertex_index = 1; // out of order, still unique
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_OK);
+    CHECK(api.destroy_instance(f.runtime, id) == AR_OK);
+    repeated[2].vertex_index = 2; repeated[2].mesh_id = copy.c_str(); // duplicate through equal bytes
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_DUPLICATE_ID);
+    repeated[2].vertex_index = 3; repeated[2].mesh_id = "\x01"; // each new address is validated
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_INVALID_ARGUMENT);
+    repeated[2].mesh_id = same.c_str(); repeated[2].value[1] = std::numeric_limits<double>::infinity();
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) == AR_INVALID_STATE); // values always scanned
+    repeated[2].value[1] = 0; repeated[0].mesh_id = nullptr; // no address is trusted before validation
+    CHECK(api.create_instance(f.runtime, &desc, nullptr, &id) != AR_OK);
 }
 
 int main() {

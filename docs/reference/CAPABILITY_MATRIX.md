@@ -1247,3 +1247,43 @@ layers without changing source-file hashes. The owner's
 records revisions, environment, commands, identities, timing and limits.
 World/non-MMD endpoint policy, published packages, full-motion coverage,
 representative L3, renderer parity and final interactive acceptance remain open.
+
+## Dense live MMD tick identity cost evidence (2026-10-31)
+
+Per-tick layout checks stay complete but stop re-reading identities. The MMD
+adapter tries each binding's expected slot first and keeps its full identity
+search for any other order, so joint, material and morph matching are linear for
+layouts in binding order. Instance construction shares one owned string among
+adjacent UV records of a mesh. State validation and adapter UV matching treat a
+repeated address as the bytes already read in that scan, and compare bytes again
+at every other address. Pre-physics writes no longer copy base UVs. No ABI,
+value, ordering, tick or snapshot semantics change.
+
+On Windows/MSVC with the optimized package closure, the private PMX/VMD pair of
+the [inert-joint evidence](#inert-mmd-joint-admission-evidence-2026-10-31), with
+135,135 UV records, 461 joints and 624 material inputs, measured 952 ticks with
+no USD publication or rendering. Two runs each gave:
+
+| Stage, ms/tick | Before | After |
+| --- | ---: | ---: |
+| Session total | 11.57–11.67 | 4.06–4.12 |
+| State validation | 3.74 | 0.63 |
+| Joint matching, pre and post | 2.91 | 0.05 |
+| Post-physics evaluator with output matching | 4.65 | 1.54 |
+| Pre-physics evaluator | 1.72 | 0.31 |
+| Physics step including kinematic targets and body reads | 1.11 | 1.09 |
+
+The stage rows come from a local timed build; its "before" pre-physics row already
+excludes the removed 0.26 ms base-UV copy. A hash of every joint, morph, UV,
+material and visibility value and identity over all 952 ticks after Reset is
+identical before and after (`995ae268054d8e77`). Remaining measured work is state
+copy (0.51), UV morph evaluation/matching (0.84) and base-UV copy (0.26).
+
+Generated tests cover the repeated-address paths: adjacent duplicates and
+out-of-order indices through one address, duplicates through equal bytes at
+another address, invalid and null identities, and a joint absent at its expected
+slot. Removing the repeated-address order check fails `contracts.runtime`. All
+18 configured CTests pass, including `adapters.mmd_jolt` and the native session
+checks. The renderer's
+[displayed result](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/116-2026-10-31-live-mmd-identity-cost.md)
+is separate evidence; representative acceptance remains open.
