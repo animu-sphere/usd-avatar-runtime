@@ -15,7 +15,7 @@ evidence belong to the [capability matrix](../reference/CAPABILITY_MATRIX.md).
 
 ## Build and installation
 
-Enable `AVATAR_BUILD_MMD_ADAPTER` with installed `mmdPhysicsAdapter` 0.2 and
+Enable `AVATAR_BUILD_MMD_ADAPTER` with installed `mmdPhysicsAdapter` 0.3 and
 OpenUSD 26.08 available through `CMAKE_PREFIX_PATH`. The owner package must
 provide `Evaluator::BeginPhysics`, `ResumePhysics`, `ResolveMorphChannels`,
 `EvaluateUvMorphs`, `EvaluateMaterialMorphs` and `physics::Adapter`;

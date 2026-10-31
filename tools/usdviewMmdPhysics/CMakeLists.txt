@@ -1,5 +1,5 @@
 find_package(physicsJolt 0.1 CONFIG REQUIRED)
-find_package(mmdPhysicsAdapter 0.2 CONFIG REQUIRED)
+find_package(mmdPhysicsAdapter 0.3 CONFIG REQUIRED)
 if(NOT mmdPhysicsAdapter_INITIAL_POSE_VERSION EQUAL 1)
     message(FATAL_ERROR "Live MMD preview requires installed mmdPhysicsAdapter initial-pose API version 1; rebuild/install the MMD owner package")
 endif()

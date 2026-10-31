@@ -14,17 +14,21 @@ target_link_libraries(runtimeContracts PRIVATE avatarRuntime)
 # This also checks public header compatibility with the C++20 `requires` keyword.
 target_compile_features(runtimeContracts PRIVATE cxx_std_20)
 add_test(NAME contracts.runtime COMMAND runtimeContracts)
-add_test(NAME contracts.installed_consumer COMMAND ${CMAKE_COMMAND}
-    -DROOT_BINARY=${PROJECT_BINARY_DIR}
-    -DCONSUMER_SOURCE=${PROJECT_SOURCE_DIR}/tests/installed_consumer
-    -DGENERATOR=${CMAKE_GENERATOR}
-    -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
-    -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-    -DC_COMPILER=${CMAKE_C_COMPILER}
-    -DRC_COMPILER=${CMAKE_RC_COMPILER}
-    -DMT=${CMAKE_MT}
-    -DCONFIG=$<CONFIG>
-    -P ${PROJECT_SOURCE_DIR}/tests/installed_consumer/run.cmake)
+# `ost library test` runs CTest without a compiler environment; `ost library
+# verify-consumer` covers the isolated library's installed consumer instead.
+if(PROJECT_IS_TOP_LEVEL)
+    add_test(NAME contracts.installed_consumer COMMAND ${CMAKE_COMMAND}
+        -DROOT_BINARY=${PROJECT_BINARY_DIR}
+        -DCONSUMER_SOURCE=${PROJECT_SOURCE_DIR}/tests/installed_consumer
+        -DGENERATOR=${CMAKE_GENERATOR}
+        -DPLATFORM=${CMAKE_GENERATOR_PLATFORM}
+        -DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+        -DC_COMPILER=${CMAKE_C_COMPILER}
+        -DRC_COMPILER=${CMAKE_RC_COMPILER}
+        -DMT=${CMAKE_MT}
+        -DCONFIG=$<CONFIG>
+        -P ${PROJECT_SOURCE_DIR}/tests/installed_consumer/run.cmake)
+endif()
 
 if(WIN32)
     add_custom_command(TARGET cAbiConsumer POST_BUILD

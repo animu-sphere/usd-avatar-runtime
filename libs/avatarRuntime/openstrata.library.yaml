@@ -1,0 +1,18 @@
+schema: openstrata.library/v1alpha1
+library:
+  id: avatarRuntime
+  # Mirrors VERSION.
+  version: 0.1.0
+cmake:
+  package: AvatarRuntime
+  target: AvatarRuntime::avatarRuntime
+package:
+  standalone: true
+  aggregate_member: true
+package_contract:
+  package_name: AvatarRuntime
+  exported_targets: [AvatarRuntime::avatarRuntime]
+  public_headers: [include/avatarRuntime/**]
+  consumer:
+    include: avatarRuntime/api.h
+    symbol: arGetApi
