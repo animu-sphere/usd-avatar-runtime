@@ -98,6 +98,17 @@ not declare. Different inputs may have different sources: host observations pass
 join the clip's for every tick of that request. Unlike held input, they are validated per tick,
 so an invalid host record refuses at the first due tick, after elapsed is accepted.
 
+## Node constraints
+
+The session does not evaluate node constraints, and v0.3.0 does not add them. `VrmConstraintAPI`
+is authored data in the owner's schema: neither `vrmRig` nor `execVrm` evaluates it, so there is
+no owner evaluator to select, and writing a solver here would break the ownership rule.
+
+An avatar that authors constraints is neither refused nor diagnosed. It loads and runs, and a
+joint a constraint would drive holds what motion, LookAt and spring produce for it, so twist and
+other constrained joints can look wrong. A host that needs to know checks for the schema itself.
+The work to integrate them is on the [roadmap](../roadmap/current.md#vrm-node-constraints).
+
 ## Clock and lifetime
 
 `Snapshot()` borrows the latest committed tick state. It is 0 before the first seed, after a
