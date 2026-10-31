@@ -1287,3 +1287,13 @@ slot. Removing the repeated-address order check fails `contracts.runtime`. All
 checks. The renderer's
 [displayed result](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/116-2026-10-31-live-mmd-identity-cost.md)
 is separate evidence; representative acceptance remains open.
+
+## Hosted CI and first package (2026-10-31)
+
+Hosted plain-CMake jobs build the core and pass its contract tests on Windows
+x64 (windows-2022), Linux x64 (ubuntu-24.04) and macOS arm64 (macos-15).
+Generated OpenStrata cells do the same on Windows and Linux against the pinned
+CY2026 `usd` runtime. These are the first non-Windows measurements of the core;
+adapter evidence in this matrix remains local. The [release lane](../releases/README.md)
+packages `avatarRuntime` for Windows and Linux and verifies an installed consumer
+and a reproducible archive digest. This is not an ABI freeze.
