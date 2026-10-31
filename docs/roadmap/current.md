@@ -55,7 +55,7 @@ one of the two packages, not both. `avatarRuntime` stays dependency-free.
 
 | Step | Work | Owner | Gate |
 | --- | --- | --- | --- |
-| 1 | publish `vrmRig` and a header-carrying `vrmSchema` library on the `usd` lane, with `vrmRig` pinned to motion 0.5.4 | VRM ([measurement](../reference/CAPABILITY_MATRIX.md#vrm-session-against-published-owners-2026-10-31)) | digest pins exist for Windows and Linux |
+| 1 | release VRM v0.12.0: publish `vrmRig` and a header-carrying `vrmSchema` library on the `usd` lane, with the workspace's motion pins moved to 0.5.4 | VRM ([measurement](../reference/CAPABILITY_MATRIX.md#vrm-session-against-published-owners-2026-10-31)) | digest pins exist for Windows and Linux |
 | 2 | add `libs/avatarVrmSession` with those pins and motion 0.5.4; keep its compiler-dependent installed-consumer tests out of `ost library test` | runtime | `ost library build`, `test` and `package` pass, with a reproducible digest |
 | 3 | add an adapter CI lane and the second release member | runtime | Windows and Linux pass; this is the session's first Linux measurement |
 | 4 | build `toon-viewport-vrm` from the published pins | renderer | the [resident VRM check](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/110-2026-10-29-live-vrm-springs.md) passes without a local owner prefix |
