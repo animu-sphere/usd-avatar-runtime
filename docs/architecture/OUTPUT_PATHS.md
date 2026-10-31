@@ -120,7 +120,8 @@ generated resources, not real-avatar matching.
 
 The initial retained-snapshot adapter updates resolved pose, morph/deformation,
 expression effects, appearance and visibility. Gaze arrives as resolved
-pose/expression effects and result metadata under the state contract. Consumers
+pose/expression effects under the
+[consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract). Consumers
 do not interpret VRM LookAt, expression arbitration, MMD morph semantics, IK
 or retargeting. Test layout change versus value-only update explicitly; a reset
 generation alone must not imply changed topology. Measure latency, bytes/copies

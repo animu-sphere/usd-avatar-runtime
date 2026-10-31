@@ -44,7 +44,7 @@ These ship in both packages and have no external provider dependency.
 | `FixedTickSession` | seeding, bounded catch-up and backlog, pause, reset, transactional retry, retained output | | [lifecycle](../architecture/FRAME_LIFECYCLE.md#native-backend-free-fixed-tick-session) |
 | ABI | revision and size validation, scoped handles, retain and release, separately built C provider and consumer | freeze; cross-toolchain evidence | [ABI](../contracts/ABI.md) |
 | Capabilities and diagnostics | exact-version intersection, required support, ordered bounded diagnostics, provider provenance | semantic vocabulary; output negotiation; retained diagnostics | [capabilities and diagnostics](../contracts/CAPABILITIES_AND_DIAGNOSTICS.md) |
-| Direct consumer API | retained snapshots with layout and value identity; renderer-side [resident matching](../architecture/OUTPUT_PATHS.md#resident-target-matching) | consumer cost measurements | [output paths](../architecture/OUTPUT_PATHS.md) |
+| Direct consumer API | retained snapshots with layout and value identity, under the [consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract); renderer-side [resident matching](../architecture/OUTPUT_PATHS.md#resident-target-matching) | consumer cost measurements | [output paths](../architecture/OUTPUT_PATHS.md) |
 
 Several independent instances are tested under serial execution. Parallel scheduling is
 not implemented.

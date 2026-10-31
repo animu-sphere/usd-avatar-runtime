@@ -18,6 +18,8 @@ the C ABI revision are separate numbers.
 - `FixedTickSession::Advance` accepts a `FixedTickObservations` source that selects
   observations for each evaluation, as catch-up cannot share one held set of tick-dependent
   values. The C ABI is unchanged.
+- The evaluated-state contract states what a consumer can rely on: identity, units, spaces,
+  absent values, gaze and snapshot lifetime. `hosts.vrm_session` checks it.
 
 ### Changed
 

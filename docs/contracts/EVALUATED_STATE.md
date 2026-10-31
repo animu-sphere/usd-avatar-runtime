@@ -7,7 +7,9 @@ owner: usd-avatar-runtime
 
 `EvaluatedAvatarState` is the logical resolved result for one avatar and frame.
 It is the common boundary for Hydra, direct consumers and capture, following
-the [design policy](../design/DESIGN_POLICY.md#evaluated-state).
+the [design policy](../design/DESIGN_POLICY.md#evaluated-state). A consumer starts
+at the [consumer contract](#4-consumer-contract), which states what exists now; the
+sections before it also hold target requirements.
 
 Experimental [`state.h`](../../include/avatarRuntime/state.h) implements a
 complete snapshot subset: parent-local rig transforms, blend-shape weights,
@@ -53,13 +55,10 @@ they fit; specify an explicit final-layout view where they do not (`RT-O4`).
 
 Target identifiers must distinguish skeletons, joints, meshes, morph targets,
 materials and visibility targets without exposing renderer resource handles.
-Binding changes invalidate the layout explicitly. Sparse/dense representation,
-units, transform space and update semantics must be chosen before ABI freeze.
-Contract review must explicitly distinguish local/model/world transforms,
-missing joints from identity transforms, and skeleton layout/version changes
-from configuration/reset generations. The first ABI prioritizes clear
-semantics over internal efficiency; the scoped prototype choice below remains
-subject to real-provider conformance.
+Binding changes invalidate the layout explicitly. The first ABI prioritizes clear
+semantics over internal efficiency; the choices of representation, units, spaces
+and update semantics below, summarized in the [consumer contract](#4-consumer-contract),
+remain subject to real-provider conformance.
 
 Revision 5 binds a dense array of all rig joints, including auxiliary joints.
 Each carries `(skeleton_id, joint_id)`, a parent index (`-1` or an earlier joint
@@ -84,7 +83,7 @@ rigs, including undriven nonidentity rest. The optional
 [USD skeleton binding](../architecture/USD_BINDING.md) preserves authored
 joint layout, converts rest translations to metres and folds rigid skeleton
 placement into baseline roots. Motion applies the same explicit placement
-once after owner retargeting. Constructed USD composition is tested; actual
+once after owner retargeting. Constructed USD composition is tested.
 The optional [VRM USD binding](../architecture/VRM_USD_BINDING.md) supplies
 schema-derived Humanoid mappings with one local real-avatar skeleton result.
 Complete real-avatar expression/LookAt/output conformance remains open under RT-O4.
@@ -278,3 +277,100 @@ Validation covers finite transforms/values, channel type/shape, target layout
 and version compatibility. Unsupported effects are diagnosed via
 [capability negotiation](CAPABILITIES_AND_DIAGNOSTICS.md), rather than dropped
 silently by an output adapter. Output view retention is the [ABI](ABI.md)'s.
+
+## 4. Consumer contract
+
+This section is what a consumer can rely on when it reads a snapshot, under
+experimental ABI revision 5. It is implemented and checked by `hosts.vrm_session`;
+it is not frozen. Where a row says "VRM session", it describes the output of
+[`avatarVrmSession::Session`](../architecture/VRM_SESSION.md), and another binding host
+may choose differently within the same rules.
+
+A consumer reads resolved values. It evaluates nothing: no retargeting, expression
+arbitration, LookAt, spring or constraint solving. It maps every layout entry it receives
+to its own resources or refuses at binding, rather than dropping an output.
+
+### Identity
+
+| Field | Meaning | What a consumer does |
+| --- | --- | --- |
+| `instance` | one runtime instance; never recycled while the library is loaded | binds to it; a new instance needs a new binding |
+| `layout_id`, `layout_version` | channel identities and order, joint parents and value types | with the same instance, reuses array slots without comparing identities; a changed tuple needs a new binding |
+| `generation` | raised by each reset, with the same instance and layout | keeps its binding and refuses older generations |
+| `frame_id` | nonzero and strictly increasing within a generation; restarts at 1 after a session reset | orders snapshots by `(generation, frame_id)`, never by `frame_id` alone |
+| `evaluation_seconds` | the evaluated instant, not a production time or a display time | derives input age from [`samples`](#source-sample-provenance) instead |
+| `input_revision` | an opaque echo of the selected input; 0 means unspecified; the frame ID when the session samples clip inputs | does not order snapshots by it |
+| `capabilities` | the active set, sorted by ID and fixed for the instance | negotiates at binding |
+
+### Channels
+
+Every array is complete in every snapshot, and its layout does not change within a layout
+tuple. There are no deltas and no dirty flags: a consumer that wants to skip unchanged
+values compares them itself. Each frame starts from the authored baseline, so a channel
+nothing wrote returns to baseline rather than holding its last value.
+
+| Group | Record and identity | Units and space | Not driven, or input absent |
+| --- | --- | --- | --- |
+| Pose | dense `ArJoint`, one per rig joint including auxiliary joints; `(skeleton_id, joint_id)` with `parent_index` -1 or an earlier joint. VRM session: skeleton prim path and joint token | translation in metres; rotation a unit quaternion in x,y,z,w; scale a factor. Each joint is parent-local. Each root is in runtime world, with the avatar's rigid placement already included. +Y up, +Z forward: the session refuses a stage that is not Y-up, converts stage units to metres, and takes +Z forward as the caller's assertion, which USD cannot state | always present. A joint nothing drives holds its rest transform, not identity. Consumers must not add placement again |
+| Morph | `ArBlendShape`, `(mesh_id, target_id)`. VRM session: mesh prim path and its `skel:blendShapes` token, for targets some expression drives | a weight without units, finite. The runtime does not clamp it | a target outside the layout stays with the consumer's authored data. A target in the layout has no absent value: it is 0 at baseline, and explicit zero is also 0 |
+| Material | `ArMaterialInput`, `(material_id, input_id)` with `value_type` fixed by the layout. VRM session: material prim path and canonical input name, for inputs some expression drives, as `AR_VALUE_VEC3` colours and `AR_VALUE_SCALAR` alpha | the canonical input's own meaning. Unused components are zero | `overridden = 0` means use the authored value and ignore `value`. `overridden = 1` is an override even when it equals the authored value |
+| Visibility | `ArVisibility`, `target_id`. VRM session: empty | `visible` is 0 or 1 | always present when in the layout |
+| Vertex UV | [`ArVertexUv`](#primary-vertex-uvs), `(mesh_id, vertex_index)`. VRM session: empty | absolute `st` | always present when in the layout |
+
+An empty array means that group is not an output of this layout, not that its values are
+zero. The consumer keeps its authored data for it.
+
+### Expression and gaze
+
+The state has no expression or gaze fields. Both arrive once, as resolved effects in the
+channels above, and consumers must not apply them again.
+
+| Input | Effect in the state |
+| --- | --- |
+| Expression | morph weights and material overrides after owner arbitration. Names, per-expression weights and arbitration outcomes are not published |
+| Bone LookAt | the eye joints' parent-local rotation, replacing the animated rotation. Spring reads that result |
+| Expression LookAt | morph weights and material overrides through the same resolver. Eye joints are untouched |
+
+Absence is visible in effects and in `samples`, which distinguish these cases:
+
+| Input in the frame | Record in `samples` | Effect |
+| --- | --- | --- |
+| absent | none | none |
+| expression with weight 0 | yes | morph 0, and `overridden = 1` on the materials it binds |
+| expression with a weight | yes | resolved values |
+| valid gaze | yes, `AR_OBSERVATION_VALID` | eye rotation or morph weights |
+| stale or unavailable gaze | yes, with that validity | none; eyes keep their animated rotation |
+
+A sample record states that the input was selected, not that it changed anything: arbitration
+can still suppress it. A provider's own resolved sample, such as the session's `motion:pose`,
+is always recorded. Clamping and arbitration are reported, where the owner reports them, only
+through the synchronous diagnostic sink. Snapshots do not retain them.
+
+### Lifecycle
+
+These are the states of `Session::Snapshot()`, which `FixedTickSession` provides.
+
+| Event | Handle | Identity | Consumer |
+| --- | --- | --- | --- |
+| before the first `Advance`, after `Reset` or `Close` | 0, and `get_snapshot` returns `AR_INVALID_HANDLE` | none | has no new state; it keeps what it retained |
+| seed: the first accepted `Advance`, even paused | new | frame 1 at the start time | binds from this view, because `Binding().Baseline()` holds only the skeleton and has no instance |
+| one or more due ticks | new | the last tick only; catch-up can skip frame IDs | draws the latest; there is no display interpolation |
+| paused or no tick due | unchanged | unchanged | nothing to do |
+| refused input, evaluator or sampling failure | unchanged | the last committed frame | keeps drawing; the host retries with `Advance(0)` when a tick stayed due |
+| `Reset` | see above, then a new seed | same instance and layout, next generation, frame 1 | keeps its binding |
+| a new session, for any change of binding or selection | new | new instance | binds again |
+
+`Snapshot()` is borrowed until the next committed evaluation, successful reset or close.
+Call `retain_snapshot` through `Api()` to keep it; each retain needs one `release_snapshot`.
+A retained view's identity, strings and values do not change through later frames, reset,
+close or runtime destruction, and it borrows nothing from a provider or a stage. Keep the
+runtime library loaded until the last release. Session calls and borrowed output use one
+exclusive thread, and the host coordinates release with its readers
+([ABI](ABI.md#2-lifetime-and-calls)).
+
+### Not in this revision
+
+Typed expression and gaze result records, retained diagnostics, provenance of mapping and
+arbitration, tick/display interpolation identity and other deformation channels remain open
+under RT-O2 and RT-O4 before an ABI freeze. A consumer has no substitute for them today and
+must not infer them from channel values.
