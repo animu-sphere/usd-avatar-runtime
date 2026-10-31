@@ -20,7 +20,6 @@ requests do not need prior permission.
 ## Ownership and design
 
 Read the [design policy](docs/design/DESIGN_POLICY.md),
-[boundary cleanup policy](docs/design/BOUNDARY_POLICY.md),
 [dependency boundary](docs/architecture/DEPENDENCIES.md) and
 [documentation guidelines](docs/contributing/documentation.md) first.
 
@@ -40,7 +39,7 @@ Changes should resolve a named open question or include an explicit rationale
 and acceptance evidence. A draft is not a published ABI.
 
 Implementation changes should update the owning architecture/contract page,
-the capability matrix and the open roadmap work together. Keep renderer and
+the capability matrix, the evidence log and the open roadmap work together. Keep renderer and
 OpenExec dependencies out of reusable evaluator logic. Begin with serial,
 ordered evaluation and instance-local state.
 
@@ -54,7 +53,7 @@ command without evidence from that target or artifact.
 The [README build instructions](README.md#build) cover the dependency-free
 runtime configure, build and test commands. Run the focused tests for the
 boundary you change, including optional adapters when affected. The
-[capability matrix](docs/reference/CAPABILITY_MATRIX.md) records validation
+[evidence log](docs/reports/evidence-log.md) records validation
 coverage and limits; do not claim checks that you could not run.
 
 For documentation changes, verify relative links and fragments, metadata,

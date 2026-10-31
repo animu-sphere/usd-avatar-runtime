@@ -5,12 +5,11 @@ owner: usd-avatar-runtime
 
 # Recording and replay
 
-This proposal develops [design policy section 13](DESIGN_POLICY.md). It adds
+This proposal adds
 runtime evaluation provenance around motion recording, not a parallel motion
 format.
 
-The adopted [boundary policy section 12](BOUNDARY_POLICY.md#12-recording-boundary)
-makes recording a publication boundary:
+Recording is a publication boundary:
 
 ```text
 EvaluatedAvatarState -> RecordingPublicationAdapter -> motion owner recorder

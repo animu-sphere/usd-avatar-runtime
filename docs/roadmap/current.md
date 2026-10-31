@@ -1,595 +1,224 @@
-# Current implementation roadmap
+# Roadmap
 
-Immediate implementation priority is the live single-avatar usdview path under
-the [physics milestones](#physics-orchestration-milestones), followed by
-representative PMX/VMD visual checks using owner-side property and spring semantics.
+Adopted 2026-11-01 from v0.2.0. This page holds incomplete work only: what comes
+next, in what order and how it is accepted. What exists is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md). Version assignments are
+targets; recheck them against the code and released owners when work starts.
 
-The [mode-1 feedback correction](../reference/CAPABILITY_MATRIX.md#mmd-mode-1-feedback-correction-2026-10-25)
-adds generated position/rotation publication and private bone/IK preview evidence.
-The [start-pose correction](../reference/CAPABILITY_MATRIX.md#mmd-start-pose-initialization-2026-10-25)
-adds frame-zero world initialization and matching Reset coverage.
-Representative spring/contact behavior and full-motion intake remain open.
+The next release is about **completing the VRM session and connecting it to a
+renderer**, not about adding evaluators. A later MMD session then shows that nothing
+VRM-specific leaked into the runtime.
 
-The [keyed-input check](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)
-adds generated VMD-to-physics replay coverage. Private intake exposes the next
-requirements: complete non-bone morph outputs through the owner/runtime/publication
-boundary beyond the [resolved vertex/group slice](../reference/CAPABILITY_MATRIX.md#live-mmd-resolved-group-evidence-2026-10-24),
-including additional UV channels and representative live/rendered material checks.
-Continue from the [inert-joint admission evidence](../reference/CAPABILITY_MATRIX.md#inert-mmd-joint-admission-evidence-2026-10-31)
-with representative scene and renderer acceptance. The scoped private pair now
-enters without damping or joint overrides under explicit owner policies.
-Keep source values intact and resolve those requirements before
-claiming full PMX/VMD or L3 acceptance.
+## Priorities
 
-Runtime Phases A–F remain open. The adopted
-[near-term direction](../design/NEAR_TERM_PLAN.md) refines the original phase
-sequence: A/B overlap, early direct consumer work from C validates the state,
-and full Hydra publication follows real-provider evidence. The first
-[releases](../releases/README.md) publish the core and the VRM session, and close
-none of these phases.
-Related provider work is tracked by its owner; this page tracks runtime
-integration and the evidence needed here.
+Order: pull request CI -> VRM session integration -> direct rendering end to end ->
+Hydra/direct agreement -> MMD session -> external input and bindings.
 
-The adopted 2026-10-06 [boundary cleanup policy](../design/BOUNDARY_POLICY.md)
-adds ownership cleanup ahead of further integration. Current APIs and existing
-evidence remain in place until owner replacements and runtime conformance are
-validated; this roadmap does not claim the migrations are complete.
-
-The physics orchestration direction supplied on 2026-10-20 assigns runtime
-the evaluation DAG, shared-world barrier and clock/reset coordination. The
-[physics milestones](#physics-orchestration-milestones) extend the MMD track;
-their acceptance gates do not replace Runtime Phases or imply a frozen ABI.
-
-## Next release
-
-[v0.2.0](../releases/v0.2.0.md) publishes the native VRM session. The MMD path comes
-later: it spans three owner repositories and its representative acceptance is still
-open. The session still needs a pull request lane; only the release workflow builds
-it today, so a regression can reach `main` unnoticed until the next dry run.
-
-## Boundary cleanup workstreams
-
-These preserve the supplied cleanup sequence A–F, separately from the original
-Runtime Phases A–F and evidence milestones A/B/C. Start with motion and
-USD/motion ownership cleanup, then validate state with VRM and MMD, complete
-publication and stabilize the ABI. Early fast-path work still supplies feedback
-before freeze; owner API work stays in its owning repository.
-
-| Workstream | Remaining work | Acceptance gate | Original Runtime Phase |
+| Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
-| C: state validation | complete real-motion VRM LookAt/Expression intake, real material/morph evidence, retained snapshots and fast-path parity | actual input rather than host probes drives real bindings; owner results, retained state and fast-path values agree; layout/value changes and snapshot lifetime pass | A/B and early C |
-| D: MMD second provider | extend the scoped MMD owner registration to representative control/IK, retarget input and host/renderer composition through the remaining physics milestones | real MMD frames use the same scheduler/state/lifecycle without core format branches or duplicated IK/control; representative final output satisfies the common contract | A/B |
-| E: publication | finish the Hydra adapter, support the renderer-side fast-path host's resident target matching, recording publication adapter and inspect/replay hosts | Hydra/direct consume identical resolved values and identity; recording delegates formats/resampling/compression/clip construction to motion owner; replay host composes owner algorithms; no renderer resource logic in runtime | C/E |
-| F: ABI stabilization | review C/provider/consumer ABI revisions and capability versions; broaden installed-consumer and OST composition validation | real VRM/MMD and consumer evidence supports freeze; dependency-free core installation/import still passes; actual package composition is reproducible | A with C/E and packaging evidence |
+| P0 | [VRM session pull request lane](#a-package-quality) | only the release workflow builds the session | Windows and Linux check the install tree and a consumer on every pull request |
+| P0 | [VRM session integration](#b-vrm-end-to-end) | pose and spring; expression and LookAt adapters exist but the session does not select them | a real VRM goes from input through evaluation to a committed snapshot with pose, expression, LookAt and spring |
+| P0 | [`hydra-toon` direct consumer](#c-renderer-consumer) | `toon-viewport-vrm` builds from the package; the resident check is headless and pose-only | one real VRM renders, updates, resets and tears down soundly |
+| P1 | [Hydra/direct agreement](#renderer-paths) | no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
+| P1 | [MMD session trial package](#mmd-session) | source-only session | a real PMX/VMD loads, plays, resets and feeds physics back from a package |
+| P1 | [Package design](#a-package-quality) | two packages provide the same CMake package and core files | choosing core or session is clear and duplicate installs cannot collide |
+| P1 | Diagnosability | bounded diagnostics, an opt-in parity host | trace, capability dump and deterministic replay locate the phase, failure and reproduction conditions |
+| P2 | [Connector path](#input-and-recording) | not started | external input reaches `AvatarInputFrame` with latency, loss and timestamps explicit |
+| P2 | [Recording and publication](#input-and-recording) | not started | frame sequences reproduce and remain compatible |
+| P2 | [Python, JavaScript and Web](#bindings-and-web) | not started | begins only after the native ABI is stable |
 
-Completion requires a provider/OpenUSD/renderer-independent core, no generic
-motion algorithms or motionUsd domain logic here, one shared VRM/MMD scheduler
-and state, identical Hydra/fast-path source state, recording through adapters,
-and preserved owner diagnostic identity/version/subject. Adapter validation
-tests cover invocation/mapping/lifetime; generic numerical correctness tests
-remain with the owner. Code changes must update the capability matrix with
-evidence rather than marking work complete from this documentation alone.
+## v0.3.0
 
-Workstream A's scoped motion registration/input bridge gate is validated:
-generic clip/rig and selected-observation checks call installed owner APIs,
-runtime binding checks remain, and `MotionPoseInputBridge` supplies compatible
-`InputAssembler` source aliases. The
-[capability matrix](../reference/CAPABILITY_MATRIX.md) records report forwarding,
-owned version/lifetime and installed-consumer evidence. The remaining
-workstreams above and the retained owner-version C ABI review under F remain
-open; this does not close Runtime Phase A or an evidence milestone.
+**Goal:** a real VRM goes into one session, motion, LookAt, expression and spring
+evaluate there, and the committed state reaches at least one independent renderer
+consumer and appears on screen.
 
-Workstream B consumes typed owner results: installed `motionUsd::ReadMotionSkeleton`
-with the `Generic` role supplies the validated skeleton and separate placement;
-`ReadCanonicalMotionStage` supplies the clip, descriptor and semantic source rest
-together. Runtime binders retain identity/baseline/placement and owned owner
-refusals without rebuilding descriptors or rest. WS-O4 is resolved upstream.
-The parity host now consumes the owner value from `ReadStageClip` directly for
-motion registration and input assembly. `StageClip` is a compatibility wrapper
-over that same entry point. Source/installed tests and owner parity validate the
-scoped workstream B gate, including stage/copy lifetime, selected inputs and
-diagnostic retention; details remain in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md). This does not close
-Runtime Phase A or freeze the ABI.
+### Definition of done
 
-## Near-term implementation sequence
+- [ ] The published session builds and runs from a clean install tree.
+- [ ] Windows and Linux CI repeat the same end-to-end test.
+- [ ] With a real VRM and motion, pose, LookAt, expression and spring appear in committed state.
+- [ ] A renderer consumer receives the values, and drawing and post-reset display have no serious breakage.
+- [ ] Owner semantics and session values are compared automatically.
+- [ ] Public documents state supported and unsupported capabilities and their limits.
+- [ ] Existing core-only consumers keep working.
 
-The first slice is connector/test input -> `AvatarInputFrame` -> owner motion
-evaluation -> VRM Humanoid -> LookAt -> Expression -> `EvaluatedAvatarState`
--> `hydra-toon` fast-path. Use direct serial execution; OpenExec, a Scene Index,
-full physics, parallel scheduling, Web/WASM/XR packaging, comprehensive replay
-tooling and a stable frozen ABI are not prerequisites.
+**Out of scope:** format-specific solvers in core, every rendering engine, a permanent
+ABI freeze and bindings for several languages at once.
 
-| Step | Work | Acceptance evidence | Runtime Phase |
-| --- | --- | --- | --- |
-| 1 | contract hardening | settle pose representation, gaze space/validity and expression identity/arbitration; validate snapshot/layout identity with real adapters; identify real-provider gaps (RT-O1–RT-O4/RT-O7) | A with B feedback |
-| 2 | VRM adapter | callable owner evaluators, Humanoid binding, LookAt and Expression work with a real VRM avatar; test input may bring up the adapter | A/B |
-| 3 | motion integration | map owner motion values without a competing vocabulary; connect connector input, actor/time mappings and motion evaluation to VRM | A/B |
-| 4 | `hydra-toon` fast-path | consume retained snapshots for pose/morph/expression/appearance/visibility; distinguish layout change from value update; measure latency, copies and allocations | early C feeding A/B |
-| 5 | MMD adapter | real bone morph/control/IK evidence under the same model; validate owner dependency order first, then the headless coupling/Jolt/final-state path through the physics milestones | A/B |
-| 6 | Phase A freeze candidate | review C ABI revision, phases, state, capabilities and lifecycle using separately versioned VRM/MMD provider evidence and all Phase A gates | A |
-| 7 | Hydra publication | Scene Index/overlay adapter over fast-path-validated semantics and shared frame/state identity; resolved output parity | C |
+### A. Package quality
 
-Registration adapters must not expose provider-private types in core ABI.
-A scoped first [VRM registration adapter](../architecture/VRM_ADAPTER.md)
-now executes owner LookAt -> Expression using test input and
-constructed bindings. It validates bone-type eye pose and expression-type
-morph/material effects and the retained snapshot boundary;
-complete real-avatar LookAt/Expression integration remains step 2/3
-work, and the evidence milestones below are still open.
-World/joint-local points and directions now reach both LookAt types, including
-ordered working-pose transforms and the owner's additive direction entry point.
-This is constructed-binding evidence, not actual connector/asset mapping evidence.
-The optional [motion clip pose adapter](../architecture/MOTION_ADAPTER.md) now
-samples and retargets immutable owner clips into dense rig pose, with explicit
-clock/joint/parent bindings and constructed motion -> VRM LookAt/Expression
-numeric parity. Complete avatar binding and
-connectors remain step 2/3 work; this does not close
-milestone A.
-Host-side motion input assembly now explicitly maps selected owner scalar
-channels and world gaze points into owned `AvatarInputFrame` arrays. Constructed
-motion -> assembled input -> VRM composition validates clocks, absence/zero,
-LookAt precedence and host-selected stale gaze; real capture/avatar bindings,
-connector intake and multi-source selection remain open. Revision 4 retains
-each selected input's and the clip provider's pose sample time with the
-snapshot; mapping/arbitration provenance remains open.
-A USD binding adapter builds instance configuration for avatar root,
-skeleton/joint mapping, format identity, expression bindings, LookAt
-configuration and material/deformation targets. Integration diagnostics must
-identify missing joints, unsupported expressions, invalid gaze spaces, stale
-input, capability/layout mismatch and unsupported outputs with provider
-provenance. These are adapter/state tasks, not renderer semantics.
-The optional [scoped USD skeleton binding](../architecture/USD_BINDING.md)
-now reads authored joint/rest layout, converts translations to metres and
-provides explicit owner Humanoid mappings and rigid skeleton placement.
-Constructed USD -> motion -> VRM bone LookAt parity and installed-consumer
-ownership checks are implemented. The separate
-[VRM USD Humanoid binding](../architecture/VRM_USD_BINDING.md) now discovers
-the applied owner schema, resolves its skeleton relationship and maps standard
-roles without joint-name inference. One private avatar validates 128 joints,
-51 roles and constructed motion-to-state parity; affine matrix roundoff from
-that asset is covered by generic binder regression tests. Expression and
-material/deformation discovery now have the scoped evidence below; this
-does not establish complete real-avatar evaluation evidence.
+- [ ] Run `verify-consumer` for the session on Linux. `ost` 0.23.17 allows host X11 only for a runtime that declares it, and the pinned runtime declares nothing ([open-strata#289](https://github.com/animu-sphere/open-strata/issues/289), [measurement](../reports/evidence-log.md#ost-02317-and-the-session-consumer-on-linux-2026-11-01)). This needs either an `ost` change or a runtime that declares both packages, with the owners rebuilt against it. Keep the repository's consumer step until then.
+- [ ] Add a session pull request lane with an install-tree consumer on Windows and Linux.
+- [ ] File the package and target collisions as issues; decide targets and components.
 
-The optional [USD motion clip binding](../architecture/MOTION_USD_BINDING.md)
-now connects owner-imported semantic clips and source rest to motion evaluation.
-An opt-in parity tool validates seven real VRMA clips on the same private
-avatar: all target joint TRS, source/runtime clock mapping, boundary holds,
-reset and retained snapshots. The target's missing `upperChest` mapping is
-reported by the owner. This closes the scoped real-clip-to-Humanoid pose gap;
-representative captured VRMA expression/gaze, connectors and rendering
-remain open, and milestone A is not yet complete.
+### B. VRM end to end
 
-The optional [VRM USD LookAt binding](../architecture/VRM_LOOKAT_USD_BINDING.md)
-now extracts both owner rig types, raw range maps and explicit head/eye/rest
-configuration. Constructed USD tests cover owner quaternion/weight parity,
-stage lifetime and installed consumers. The same private avatar's
-Expression-type LookAt has test-gaze owner-weight parity with constructed
-output sinks. Real-avatar bone-eye
-conformance and representative captured VRMA gaze remain step 2/3 work; host-test gaze
-against a real motion pose has the scoped evidence below.
+- [ ] Confirm phase order and owner boundaries for pose -> LookAt -> expression -> spring.
+- [ ] Select expression and LookAt in the session and publish the channels consumers need.
+- [ ] Decide what happens to node constraints: integrate them, or defer them explicitly.
+- [ ] Document the state contract consumers rely on: views, units, spaces, lifetime and the absent representation for pose, morph, material and gaze.
+- [ ] Add a redistributable small VRM, motion and expected state to CI. Private assets stay as additional evidence.
+- [ ] Test import failure, evaluator failure, reset, pause/resume, destroy/recreate, snapshot retention and several avatars.
 
-The optional [VRM USD Expression binding](../architecture/VRM_EXPRESSION_USD_BINDING.md)
-now extracts owner definitions, mesh blend-shape identities and canonical material
-baseline inputs. Constructed USD tests cover all six colour slots and indexed
-binds; the same private avatar supplies 18 expressions and 48 morph slots with
-test scalar/gaze -> actual LookAt/Expression -> retained state owner parity.
-The opt-in `avatarMotionCheck --vrm` now checks those actual bindings while
-seven real clips drive the working pose, with explicit host scalar/world-gaze
-probes and separate owner pose/head/LookAt/Expression comparisons. Zero/absence,
-stale holds, reset and active/held snapshot retention pass. This closes the
-scoped real-motion-pose + host-test-input composition gap.
+### C. Renderer consumer
 
-Explicit native expression/gaze intake now forwards owner-selected attributes
-through the strict motion reader. The parity host places clip gaze once using
-avatar root placement; generated VRMA expression/keyed/default gaze fixtures
-drive actual-avatar output without probes. All seven private clips have no
-native expression/gaze attributes in their imported stages; direct source
-JSON inspection also confirms absent `VRMC_vrm_animation.expressions` and
-`lookAt`. They cannot supply that acceptance evidence. Add representative captured expression/gaze input
-and format-owner automatic attribute discovery. Material binds on real avatars,
-additional rigs/shared-mesh targets, connector intake and renderer consumption
-remain open; milestone A is not closed by probe evidence.
-The shared motion USD gaze boundary and explicit handoff from
-[usd-motion-plugins issue #37](https://github.com/animu-sphere/usd-motion-plugins/issues/37)
-are consumed by the scoped runtime adapter; representative capture and full
-milestone acceptance remain open.
+- [ ] Settle the `hydra-toon` direct input contract, with no evaluation logic reimplemented there.
+- [ ] Render one real VRM and confirm motion and expression changes.
+- [ ] Build the state comparison that Hydra agreement will use.
 
-## Evidence milestones
+### D. Release decision
 
-The optional motion-check `--toon` mode now validates installed consumer
-transport with real-motion/actual-avatar values and explicit probe resources,
-including reset, rebinding and independent snapshot retention. Actual avatar
-resident mesh/material binding and rendering, consumer cost measurements and
-Hydra/direct parity remain workstream C/E and RT-O9 work. Probe transport does
-not complete milestone B. See [output paths](../architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
-Runtime-to-resident target matching belongs to a renderer-side host rather than
-a runtime bridge ([resident target matching](../architecture/OUTPUT_PATHS.md#resident-target-matching)).
-Renderer installations pinning ABI revisions 1–4 must be rebuilt for revision 5,
-including two-component texture inputs, before `--toon` runs against this tree.
-The optional host's header probe checks ABI compatibility; installed-consumer
-evidence belongs to the capability matrix.
+- [ ] Review the definition of done.
+- [ ] Design the MMD session's package boundary and fixtures.
+- [ ] Classify ABI change candidates, and decide whether to keep deferring the freeze.
 
-These milestones describe end-to-end evidence, not completion of the similarly
-lettered Runtime Phases:
+## After v0.3.0
 
-| Milestone | Required evidence |
-| --- | --- |
-| A | real VRM avatar + real motion input -> Humanoid/LookAt/Expression -> `EvaluatedAvatarState` |
-| B | `hydra-toon` fast-path consumes the same state and renders in real time |
-| C | real MMD evaluator works on the same scheduler and state contract |
+### MMD session
 
-Successful integration keeps format semantics out of core, GPU realization in
-the renderer and input acquisition in connectors. It requires no per-frame
-stage authoring, renderer callbacks into evaluators or format branches in
-runtime core/renderer. Future Hydra and direct outputs share evaluated values
-and identity; freeze is based on real-provider evidence.
+Prove the runtime is not VRM-shaped through outside use of an MMD session: the minimal
+vertical path through PMX/VMD, morph, IK, append, physics feedback, shared world and
+reset. Publish a supported subset with fixtures and the capability matrix; do not claim
+full MMD compatibility. The owner library must be published first.
 
-## Validation tiers
+Also open for this track: complete non-bone morph output, including additional UV
+channels; resident UV mapping and coherent tangents; representative private-asset,
+spring and contact checks; and a world/non-MMD endpoint policy for joints.
 
-| Tier | Required coverage | Gate |
-| --- | --- | --- |
-| 1: core contract | ABI size/revision, lifetime, rollback, reset, instance isolation, capability negotiation and dependency validation; preserve synthetic tests | A |
-| 2: real provider | motion -> runtime; VRM Humanoid/LookAt/Expression; MMD morph/control/IK and real bindings | A/B before freeze |
-| 3: end-to-end | input -> evaluator -> retained state -> `hydra-toon` fast-path; numeric pose/expression/gaze parity and update/lifetime behavior | milestones A/B; early C feedback |
-| 4: output parity | fast-path versus Hydra resolved state, identities and negotiated channels | C after fast-path validation |
+### Renderer paths
 
-Pixel parity is separate renderer evidence. Record actual assets (with usable
-rights), provider versions, configuration, tolerances and diagnostics for each
-integration result. Do not infer provider correctness from a successful C call.
+Hydra and direct consume the same evaluated result. Compare at least transforms, morph
+weights, material overrides and lifetime/reset numerically, and make unsupported
+channels explicit. Exact pixel equality is not expected across shaders and rendering;
+it needs its own criterion if it is ever required. Also measure consumer latency, copies
+and allocations.
 
-## Runtime Phase A — freeze contracts
+### Input and recording
 
-Define and review input frames, evaluated-state views, evaluator phases,
-capabilities, diagnostics and the compact registration/execution ABI.
-The [contract drafts](../README.md#contracts) are the starting point.
+Connect connector input, recording, replay and remote transport in adapters and hosts,
+without growing core. Do not carry arrival order or loss implicitly into the runtime:
+state timestamps and interpolation policy. Representative captured expression and gaze,
+multi-source selection and automatic native attribute discovery belong here. See
+[recording and replay](../design/RECORDING_AND_REPLAY.md).
 
-Acceptance requires:
+### Bindings and Web
 
-- Explicit clock/space mappings, channel identity, absence/zero semantics,
-  final rig representation and output snapshot/update rules.
-- An ordered evaluator plan validated against motion, VRM and MMD dependencies,
-  including MMD bone morph/IK ordering and expression-based LookAt arbitration.
-- Defined input/output ownership, handle lifetime, errors, reset/restore and
-  stateful commit/abort behavior.
-- Version/size negotiation, capability meanings and diagnostic aggregation
-  rules, with a compilable C boundary and separately built provider/consumer
-  compatibility evidence.
-- Minimal direct execution evidence independent of Hydra/OpenExec, with
-  deterministic state from specified inputs/configuration/prior state.
-- Real VRM and MMD adapters on the same scheduler/state model, plus owner
-  motion input and binding evidence. Synthetic tests alone cannot freeze ABI,
-  phase order, state representation or capability meanings.
-- Resolution or explicitly scoped deferral of the decisions below. Blocking
-  ABI and phase-order questions cannot be deferred past freeze.
+Develop Python and JavaScript/Wasm after the ABI and session use cases settle. The host
+owns the browser UI and draw loop. Measure Wasm size, load time and ABI differences.
+Native support does not establish browser support, and device adapters and WebGPU
+realization stay with their owners.
 
-Documentation adoption alone does not satisfy this phase. Use contract design
--> synthetic tests -> real provider integration -> contract correction -> ABI
-freeze, rather than blocking provider integration on an already frozen ABI.
+### Execution and scheduling
 
-The first implementation supplies experimental C headers, direct serial
-execution, typed gaze observations with explicit space/validity/clocks,
-capability/plan validation, transactional provider state, immutable
-snapshots, reset and separately compiled/installed C provider-consumer evidence.
-These completed foundations are recorded in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md); they are not ABI freeze.
-
-Remaining implementation/review work before Phase A acceptance:
-
-- Validate the scoped owner clip-to-pose and channel/gaze input assembly with
-  real bindings; extend explicit multi-source selection and connector intake;
-  validate the revision-3 gaze spaces and
-  observation validity against actual connector/motion/VRM mappings;
-  establish semantic intent/mapping precedence using real bindings (RT-O1/RT-O2).
-- Validate actual motion/VRM/MMD adapters against phase dependencies, particularly
-  atomic MMD control and full motion-to-VRM flow (RT-O3). The optional VRM
-  adapter's atomic expression-driven gaze-to-expression sequence is tested
-  with the real owner library, constructed rigs and one actual avatar's
-  expression/morph bindings with test scalar/gaze input; complete real-motion
-  composition remains unvalidated. Bone-type LookAt now has constructed-rig
-  pose parity and ordered working-head evidence with explicit eye/rest bindings;
-  actual avatar joint/rest conformance remains open. Owner motion clip sampling
-  and retargeting now precede VRM in constructed-rig tests; this is not real
-  clip/LookAt/Expression asset evidence. Schema-derived Humanoid mapping and
-  constructed motion-to-state parity now have one private-avatar result.
-- Extend scoped USD skeleton/rest/placement and owner schema/Humanoid
-  conformance beyond the single local avatar; validate expression/output
-  discovery on additional rigs, including material binds and shared-mesh targets.
-  The generic binder still uses explicit role
-  mappings, with the optional VRM schema adapter supplying them (RT-O4).
-- Prove rig/material/deformation layout conformance with those adapters;
-  negotiate effects outside the current dense snapshot subset, including
-  explicit expression/gaze results and mapping/arbitration provenance. Retained
-  source-sample time and vec2 material values are implemented in revision 4;
-  validate them with captured connector input (RT-O4).
-- Add provider checkpoint restore and test discontinuities with real stateful
-  evaluators; current reset/commit/abort are implemented (RT-O5).
-- Review/freeze the experimental ABI and semantic capability meanings with
-  separately versioned real providers. Current evidence is synthetic Windows
-  x64/MSVC, not cross-toolchain or Web support (RT-O7).
-
-## Runtime Phase B — integrate current repositories
-
-Add adapters for generic motion evaluation, VRM LookAt/expressions, MMD
-morph/control/IK evaluation and connector input assembly. Compose providers
-through registration and explicit per-avatar bindings. Preserve owner libraries
-and extend missing boundaries with their owners instead of copying algorithms.
-
-First complete the motion and USD/motion ownership cleanup above. Runtime
-input assembly remains a bridge; generic skeleton conversion and motion
-invariants do not become runtime responsibilities merely because existing
-optional adapters currently validate them locally.
-
-Begin this work during Phase A. VRM Humanoid/LookAt/Expression is the first
-family; motion completes that slice, then MMD challenges scheduler generality.
-
-The optional adapters implement owner clip sampling/retarget-to-pose and
-expression effects/both LookAt types through installed owner libraries.
-Constructed motion-to-VRM composition is tested, including owned USD skeleton
-baseline and rigid placement from explicit bindings. Remaining VRM work includes
-additional expression/material asset conformance, representative captured VRMA
-expression/gaze beyond generated fixtures, real-avatar eye/rest conformance,
-actual connector gaze mapping and typed resolved expression/gaze state.
-Do not count constructed rigs as the representative real-avatar evidence required here.
-
-Acceptance: representative motion-to-VRM and motion-to-MMD frames use one
-runtime lifecycle; format-specific writes are consolidated once; connector
-actors/time mappings and missing channels are diagnosed. Direct calls work
-without a renderer/OpenExec dependency. Record actual package versions and
-composition evidence when adopted.
-
-## Runtime Phase C — output paths
-
-Connect the retained direct snapshot API to `hydra-toon` first, using the
-same resolved state as evaluation. This work starts before Phase A freeze
-to validate state semantics and measure consumer cost. Implement the evaluation
-Scene Index/overlay after the fast-path and real-provider evidence.
-
-Acceptance: state parity for pose, deformation, appearance and visibility;
-value-only dirtiness and structural rebinding checks; supported/unsupported
-output negotiation; snapshot lifetime checks; no mandatory stage writeback.
-Renderer pixels are separate evidence; measure fast-path latency, copy cost and
-allocations without treating them as proof of resolved state parity.
-
-## Runtime Phase D — OpenExec
-
-Wrap stable cores in optional execution integration. Preserve the direct
-fallback and consume existing motion/format nodes from their owners.
-
-Acceptance: equivalent input/configuration/prior state gives equivalent state
-and diagnostics through direct and OpenExec paths; driver invalidation/time
-behavior follows the owner's execution contract. Disabling OpenExec leaves
-direct frame evaluation functional.
-
-## Runtime Phase E — runtime quality
-
-Add deterministic capture/replay, inspection, phase/provider profiling,
-structured negotiation and multi-avatar execution/scheduling. Capability and
-error basics are already required in Phase A; this phase expands their tooling
-and runtime coverage.
-
-Acceptance: reproduce captured evaluation from initial state/checkpoints;
-separate evaluation replay from output replay; demonstrate instance isolation;
-exercise failure/reset/rebinding; measure instrumentation overhead. Parallelism
-needs explicit state dependencies and shared-resource lifetime evidence.
-
-## Runtime Phase F — Web / XR / application runtime
-
-Develop a reduced runtime profile, WASM-friendly packaging, WebXR input
-composition and a WebGPU-capable consumer integration.
-
-Acceptance: actual target builds and runtime evidence, optional-dependency
-selection, host-memory/lifetime checks and preserved contract semantics.
-Device adapters stay with `motion-connectors`; WebGPU realization stays with
-the renderer. Native support does not establish browser support.
+OpenExec wrappers, inspect/replay/benchmark hosts and parallel scheduling follow stable
+evaluator cores. Direct evaluation must stay functional with OpenExec disabled and give
+equivalent state and diagnostics through both. Parallelism needs explicit state
+dependencies and shared-resource lifetime evidence.
 
 ## Physics orchestration milestones
 
-The first visual priority is live single-avatar usdview playback. The optional
-[MMD host](../guides/live-mmd-physics.md) supplies a generated contact-free
-pendulum path through Play/Pause/Reset/Stop and final UsdSkel publication.
-The installed MMD owner now supplies filter/contact/damping conversion to the
-live host, with generated response and refusal checks recorded in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md#live-mmd-body-properties-evidence-2026-10-21).
-The [spring evidence](../reference/CAPABILITY_MATRIX.md#live-mmd-spring-evidence-2026-10-21)
-adds owner conversion through independent experimental opt-ins.
-Next validate representative PMX/VMD inputs
-without replacing the runtime clock or owner controls. Broad
-application binding, resident Toon resources and Hydra/direct parity remain
-separate gates below.
+Remaining gates for runtime-coordinated physics, which the MMD session needs. Rules are
+in the [evaluator contract](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration)
+and [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities).
 
-This is the 2026-10-20 MMD-first physics integration track. Its A–E labels are
-local to this track, separate from Runtime Phases A–F, cleanup workstreams A–F
-and evidence milestones A/B/C. Implementation status stays in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md); this table tracks
-remaining work. Scheduling rules belong to the
-[evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration),
-clock/invalidation to the
-[lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities).
+| Gate | Remaining work |
+| --- | --- |
+| Evaluator dependencies | validate DAGs against MMD pre/post control, morph, append, IK and model-specific post-physics IK before adding any generic phase value |
+| World integration | connect the session to application and stage lifecycle with automatic world and participant binding; selective unload with cross-avatar constraints |
+| Final-state consumers | Hydra and direct consume the same final joint and morph values, layout and spaces; no Step or IK in rendering |
+| Several avatars and seek | two avatars in one world with exactly one Step per tick for zero, one or several ticks per display request; coherent pause, reset, loop-wrap and unload; physics-disabled static and motion-only paths stay valid |
 
-| Milestone | Work and acceptance gate | Runtime Phase |
-| --- | --- | --- |
-| A: evaluator dependency validation | validate existing evaluator DAGs against MMD pre/post control, morph/append/IK and model-specific post-physics IK; document any required extension before adding generic phase enum values | A/B |
-| B: world integration and barrier | connect the scoped reusable session to application/stage lifecycle and automatic world binding; retain explicit held-input policy, shared non-avatar objects, group reset and post-Step recovery guarantees | A/B |
-| D: final snapshot + fast-path consumer | publish retained CPU snapshots using the existing evaluated-state contract and renderer-owned consumer; verify joint/morph contract agreement with the Hydra path; no Physics Step or IK in rendering | A/B and C |
-| E: multiple avatars, seek and VRM extension | exercise shared-world membership and reset/seek scope, extend discontinuity coverage and integrate owner VRM secondary motion under the same orchestration using the [bounded sequence below](#vrm-secondary-motion-integration); arbitrary-time complete replay is outside MVP | B/E |
+Seek must declare invalidation or a supported checkpoint, not promise complete replay to
+any time. Core stays free of mandatory MMD, Jolt and renderer packages. Normal CI covers
+core units and headless smoke; heavy real-asset, backend and render checks stay opt-in.
 
-The physics MVP must demonstrate:
+## VRM secondary-motion integration
 
-- One PMX + VMD -> pre-pose -> Jolt -> final-pose headless smoke.
-- Two avatars in one shared world with exactly one Step per physics tick;
-  zero/one/multiple ticks per display request must not change that invariant.
-- Coherent pause, reset, loop-wrap and unload behavior, including generation,
-  retained snapshots and safe world membership/resource changes.
-- Physics-disabled static and motion-only paths still producing valid state.
-- Hydra and `hydra-toon` fast-path consuming the same final joint/morph values
-  and layout/space conventions; exact pixel equality is not required. The
-  existing triangle-probe transport check alone does not establish this parity.
+Spring runs in the session through the owner solver, under the
+[owner's policy](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/docs/design/VRM_MOTION_POLICY.md#10-spring-bones-on-a-rig).
+Do not write a substitute solver here or in a renderer. Open: scaled spring rigs, changing
+spring mode without rebuilding session and consumer bindings, composition with the
+shared-world barrier, resident rendering and Hydra/direct agreement. Reset, seek and
+loop-wrap initialize from the declared animated pose; a time jump is never passed as one
+large or negative step.
 
-Seek handling must declare invalidation/reinitialization or a supported
-checkpoint, rather than promise complete replay to any requested time. Exact
-shared-world recovery and tick/display metadata remain RT-O5/RT-O6/RT-O4
-acceptance decisions. Milestone E extends the MVP's two-avatar and discontinuity
-coverage; it does not defer those basic MVP gates.
+## ABI freeze
 
-Keep core independent of mandatory MMD, Jolt and renderer packages. Add optional
-adapters/build options only with owner boundaries and installed-consumer checks.
-Normal CI targets core units and headless smoke for enabled integrations;
-heavy real-asset/backend/render end-to-end validation stays opt-in. No new
-mandatory physics package is introduced. The experimental core barrier/clock
-slice has `contracts.physics` coverage. The scoped C headless gate now has
-generated MMD/Jolt and installed-adapter evidence in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md#scoped-mmdjolt-evidence-2026-10-21).
-Representative post-physics IK, reusable host/renderer integration and the
-other gates above remain open; this does not complete the physics MVP.
+The ABI stays experimental until all of these hold, and the decision is revisited at each
+release. Versions, struct sizes and capabilities carry extension meanwhile, with old
+consumers still checked.
 
-The separately opt-in
-[MMD/Toon transport check](../reference/CAPABILITY_MATRIX.md#scoped-mmdtoon-evidence-2026-10-21)
-now exercises the final generated MMD/Jolt snapshots through the installed
-renderer adapter with explicit probe resources. Milestone D still requires
-resident-avatar host integration and Hydra agreement; probe transport does not
-close that gate or MMD's composed-consumer acceptance.
+- Two formats and two kinds of external consumer use the same scheduler and state.
+- Install-tree CI, failure recovery and public examples exist.
+- Clock and space mappings, channel identity, absence versus zero, final rig
+  representation and snapshot rules are specified: ownership, buffer lifetime, retention,
+  absent channels and multi-instance identity.
+- Plan order is validated against motion, VRM and MMD dependencies.
+- Provider checkpoint restore is implemented, or explicitly deferred with a reason.
+- Compatibility is checked with separately versioned real providers across toolchains.
+- Capability negotiation makes unsupported channels observable, without forcing
+  format-specific elements on another format.
+- Core ABI, session API, renderer transport and owner adapters each have a stated
+  compatibility policy.
+- The [open decisions](#open-decisions) are resolved or explicitly deferred. ABI and
+  phase-order questions cannot be deferred past the freeze.
 
-The [Stage Runner clock smoke](../reference/CAPABILITY_MATRIX.md#scoped-stage-runner-clock-evidence-2026-10-21)
-validates installed host clock -> runtime-owned ticks -> MMD/Jolt -> Toon probe
-transport, including held inputs, a shared non-avatar body and group recovery.
-The optional [host session](../architecture/STAGE_RUNNER_SESSION.md) now replaces
-test-private clock/playback handling with an installed reusable target over
-explicit world bindings. Milestone B still requires application/stage lifecycle
-and automatic world construction; D still requires resident-avatar resources
-and Hydra agreement. No physics MVP or composed-consumer completion is implied.
-The [world-lifetime check](../reference/CAPABILITY_MATRIX.md#scoped-session-world-lifetime-evidence-2026-10-21)
-adds owned registration and whole-world close before instance/solver teardown.
-The [selective-unload check](../reference/CAPABILITY_MATRIX.md#scoped-selective-unload-evidence-2026-10-21)
-adds a membership extension and session operation, with explicit generated-host
-body teardown while the surviving avatar and non-avatar body continue. Automatic
-stage/body binding and application teardown, including cross-avatar constraints,
-remain in B/E. The separate [scene resource adapter](../architecture/PHYSICS_USD_RESOURCES.md)
-now supplies construction and ordered teardown over owner-read snapshots, plus
-a [whole-stage world scope](../architecture/PHYSICS_USD_RESOURCES.md#whole-stage-world-binding)
-that delegates settings discovery to the owner and backend construction to a
-caller factory. Application-driven discovery, runtime participant binding and
-selective unload with cross-avatar constraints remain in B/E, with resident
-output work still in D.
+Synthetic tests alone cannot freeze a contract.
 
-### VRM secondary-motion integration
+## Quality gates
 
-The next VRM integration candidate is owner-evaluated secondary motion under
-physics milestone E. This sequence prepares runtime integration; it does not
-change the live MMD priority above or establish a live SpringBone host.
-The [VRM owner's track](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/docs/roadmap/springbone-track.md)
-owns its prerequisites and solver delivery. Follow that order before changing
-stage intake or registering a solver. Do not implement a substitute solver in
-runtime or the renderer while waiting for the installed owner API.
+| Gate | Must be checked |
+| --- | --- |
+| Core | ABI revision, struct sizes, evaluator order, read/write domain conflicts, transactions and snapshot retention |
+| Session | clean-install consumer, dependency closure, package metadata, capability negotiation |
+| VRM | real-asset pose, expression, LookAt and spring against the owner; reset and replay |
+| MMD | morph, IK, physics feedback and shared world against the owner; reset and replay |
+| Rendering | same state delivered, resource lifetime, transform and expression updates, device-reset equivalent |
+| Cross-platform | Windows and Linux build and run, dependency agreement, reproducible packages |
+| Negative | bad input, evaluation failure, partial failure, destroy/recreate, interference between avatars |
 
-The [owner policy](https://github.com/animu-sphere/usd-vrm-plugins/blob/main/docs/design/VRM_MOTION_POLICY.md#10-spring-bones-on-a-rig)
-owns spring structure, root expansion, end-of-chain rules, collider response,
-units and reset mathematics. Runtime owns binding, execution and publication.
-Keep the first solver in the owner's `vrmRig`. Any later extraction of proven
-format-neutral behavior belongs to the physics owner's
-[secondary-motion contract](https://github.com/animu-sphere/usd-physics-plugins/blob/main/docs/design/SECONDARY_MOTION_CONTRACT.md);
-runtime consumes the resulting owner API rather than relocating algorithms.
-The optional [spring stage binding](../architecture/VRM_SPRING_USD_BINDING.md)
-now admits the installed owner API and reads generated canonical declarations
-without importing expression evaluation or motion sampling. Its
-[evidence](../reference/CAPABILITY_MATRIX.md#vrm-spring-stage-binding-evidence-2026-10-28)
-covers source/installed configuration, owned values and explicit older-owner
-refusal. The separate [stateful spring evaluator](../architecture/VRM_SPRING_ADAPTER.md)
-now registers owner calls with transactional trial history, current animated
-pose mapping and exact fixed-instant validation. Generated source/installed
-[evidence](../reference/CAPABILITY_MATRIX.md#vrm-spring-evaluator-evidence-2026-10-28)
-covers both declaration shapes, retries after downstream failures, reset replay,
-instance isolation and retained snapshots. It introduces no accumulator.
-The next two slices now have scoped headless evidence; renderer acceptance stays
-separate:
+Record results separately as `unit`, `adapter integration`, `installed-package consumer`
+and `real-asset end-to-end`, and do not state success more broadly than the category.
+Record actual assets with usable rights, provider versions, configuration and tolerances.
+A successful C call does not show that a provider is correct.
 
-| Slice | Runtime work | Acceptance gate |
-| --- | --- | --- |
-| Fixed-tick session | implemented by core `FixedTickSession`, with seed-at-start and retained committed snapshots | generated source/installed tests pass zero/one/multiple ticks, pause/resume, bounded catch-up, backlog, downstream failure retry, partial-request commit, reset and consumer retry without evaluation |
-| Host and output | optional native VRM/clip session and check host; construction selects spring or motion-only mode; play/pause/reset/close and pose transport implemented | both generated declaration shapes and one admitted real avatar from each VRM version pass owner parity, exact reset replay and retained unload; resident renderer delivery and Hydra/direct parity remain open |
+## Risks
 
-The [native session contract](../architecture/FRAME_LIFECYCLE.md#native-backend-free-fixed-tick-session)
-records the scoped clock decision without changing either C table or adding a phase:
+| Risk | Response |
+| --- | --- |
+| The session grows format-specific | keep session composition apart from owner evaluators; no format algorithms in core |
+| Adapters and the shipped session drift apart | the matrix tracks owner, session and renderer state per feature |
+| Hydra and direct diverge in meaning | committed state is the single truth; only transport differs |
+| Partial physics failure leaves bad state | invalidation and reset contract, world ownership, shared-step tests |
+| CMake packages collide | namespaces, components and install-tree tests |
+| The ABI freezes early | stay experimental until the gates above hold |
+| Tests lean on private assets | more redistributable fixtures and golden state comparisons |
 
-- **Clock without a rigid-body world.** The current
-  [Stage Runner session](../architecture/STAGE_RUNNER_SESSION.md) requires an
-  explicit world registration. A VRM spring solver does not require one.
-  Core `FixedTickSession` owns the backend-free single-instance accumulator and
-  uses existing transactional evaluation. It seeds the declared animated pose
-  before due ticks, with exclusive membership and observable backlog. No dummy
-  backend or host/adapter accumulator is used. Rigid-body participants continue
-  to use the existing world clock/barrier. Composing VRM with that barrier and
-  measuring its dependency relative to Step remain open.
+## Measures of success
 
-The [host](../architecture/VRM_SESSION.md) and
-[2026-10-29 evidence](../reference/CAPABILITY_MATRIX.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29)
-record installed consumption and headless limits. Seed-san's non-unit joint scale
-is refused in spring mode; it passes motion-only delivery. Scaled spring rigs,
-live enable/disable without reconstructing session/consumer bindings, resident
-rendering, hosted runtime lanes and shared-world VRM integration remain open.
+- **Adoption:** a short, repeatable path from installed packages to a drawn avatar.
+- **Correctness:** owner values and session values agree within declared tolerances.
+- **Independence:** VRM and MMD owners and several consumers work with no core change.
+- **Recovery:** no regressions in reset, replay, evaluator failure, destroy/recreate or several avatars.
+- **Sustainability:** package CI and the matrix explain what each release can really do.
 
-Regression evidence must include a later evaluator/publication-validation
-failure after a solver call, retry against a clean control run, reset followed
-by identical replay, two-instance isolation, and retained snapshot lifetime
-after reset and destruction. Reset/seek/loop-wrap initialize from the declared
-animated pose; a time jump is never passed as one large or negative step.
-Consumer delivery failure after commit retries the retained snapshot.
-
-Start with generated redistributable inputs and direct owner-value parity.
-Reference trajectory correctness remains the solver owner's gate. Add real
-avatar and renderer evidence only when measured, update the capability matrix
-with its limits, and keep broader physics MVP and ABI-freeze gates open.
+The lasting value is not absorbing VRM or MMD. It is letting each keep its own meaning
+while composing safely under a common time, state and evaluation model.
 
 ## Open decisions
 
-The installed [native MMD session](../architecture/MMD_SESSION.md) now supplies
-single-avatar original PMX/VMD/Jolt snapshots to the dedicated renderer viewport,
-including scoped controls and whole-world teardown. Broader B/E lifecycle,
-representative material output, private-avatar Hydra/direct parity and representative acceptance
-remain open. The renderer's
-[viewport report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/107-2026-10-27-live-mmd-viewport.md)
-records display evidence; the [tick identity evidence](../reference/CAPABILITY_MATRIX.md#dense-live-mmd-tick-identity-cost-evidence-2026-10-31)
-records the current per-tick cost. This does not close milestone D or the physics MVP.
+IDs are stable. Resolving one updates the owning contract and records the evidence.
+These are runtime design questions, not reported upstream bugs.
 
-Owning documents now record scoped prototype choices for clocks/channels, dense
-output, retained source-sample time, two-component material values, lifecycle,
-plan order and C layout. Resident target matching for direct renderers is
-assigned to a renderer-side host. IDs below stay open until the full
-acceptance evidence, including actual provider adapters, is available.
-
-Physics orchestration ownership is adopted: runtime coordinates the DAG,
-shared-world barrier, fixed ticks and reset/seek; hosts submit time requests.
-RT-O6 remains open for broader host interfaces, non-avatar participation and
-integration evidence under the aligned sibling ownership.
-
-IDs remain stable; resolution updates the owning contract and records the
-decision/evidence. These are runtime design questions, not claims of upstream
-bugs or requests already sent to another project.
-
-| ID | Decision | Owner here | Gate |
+| ID | Decision | Owner here | Needed by |
 | --- | --- | --- | --- |
-| RT-O1 | evaluation seconds, source clock, USD time-code mapping and gaze space descriptors | [input](../contracts/INPUT_FRAME.md) | A |
-| RT-O2 | minimal semantic intent vocabulary, custom/native channel names, mapping precedence and resolved expression identity/arbitration/provenance/availability | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) | A |
-| RT-O3 | existing DAG fit for MMD morph/append/control/IK, model-specific pre/post-physics dependencies, gaze and expressions before any phase extension | [evaluator](../contracts/EVALUATOR.md) | A |
-| RT-O4 | final rig pose/spaces, target/layout/version identities, complete/sparse/delta semantics, gaze results, snapshot input revision/capabilities and retained source-sample provenance | [state](../contracts/EVALUATED_STATE.md) | A |
-| RT-O5 | stateful evaluator reset/checkpoint/commit/abort, shared-world discontinuity scope, post-Step recovery and publication-failure handling | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | A; world recovery before physics integration |
-| RT-O6 | world binding/handles and pre/post callbacks, fixed-tick/catch-up policy, tick/display separation, shared participants/lifetime and sibling alignment under adopted runtime orchestration | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), [dependencies](../architecture/DEPENDENCIES.md#3-integration-questions) | before physics integration |
-| RT-O7 | C layout/calling convention, strings, allocator ownership, handles, provider lifetime and ABI negotiation | [ABI](../contracts/ABI.md) | A |
-| RT-O8 | capture envelope/checkpoint encoding and motion-recording reuse | [recording/replay](../design/RECORDING_AND_REPLAY.md) | E; lifetime prerequisites in A |
-| RT-O9 | direct-consumer binding/update costs, later Hydra locators/dirtiness and output parity tolerances | [output paths](../architecture/OUTPUT_PATHS.md) | early C feedback in A/B; full parity in C |
-
-Primary UV transport now has a scoped generated live USD check in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md#live-primary-uv-evidence-2026-10-25).
-The [direct-consumer check](../reference/CAPABILITY_MATRIX.md#mmd-primary-uv-direct-consumer-evidence-2026-10-26)
-adds explicit UV transport through the installed renderer. Continue with
-automatic resident UV mapping, coherent tangent regeneration, additional
-UV/material realization and composed renderer/Hydra agreement; this does not
-close physics milestone D or Runtime Phase A/C.
-
-Material morphs have scoped generated
-[live-session evidence](../reference/CAPABILITY_MATRIX.md#live-mmd-material-evidence-2026-10-29)
-for automatic direct-PMX binding, canonical USD inputs and independent sampled
-texture/sphere/toon coefficients. Continue with representative private assets,
-composed Hydra/direct agreement and broader material discovery. These remain
-workstream C/E and physics milestone D integration gates.
+| RT-O1 | evaluation seconds, source clock, USD time-code mapping and gaze space descriptors | [input](../contracts/INPUT_FRAME.md) | ABI freeze |
+| RT-O2 | semantic intent vocabulary, custom and native channel names, mapping precedence; resolved expression identity, arbitration, provenance and availability | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) | v0.3.0 for what the session publishes; ABI freeze |
+| RT-O3 | whether the DAG fits MMD morph, append, control and IK, model-specific pre/post-physics dependencies, gaze and expressions, before any phase extension | [evaluator](../contracts/EVALUATOR.md) | v0.3.0 for VRM; MMD session |
+| RT-O4 | final rig pose and spaces, layout and version identity, complete/sparse/delta semantics, gaze results, snapshot provenance | [state](../contracts/EVALUATED_STATE.md) | v0.3.0 for the consumer contract; ABI freeze |
+| RT-O5 | reset, checkpoint, commit and abort for stateful evaluators; shared-world discontinuity scope, post-Step recovery, publication failure | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | ABI freeze; world recovery for the MMD session |
+| RT-O6 | world handles and callbacks, fixed-tick and catch-up policy, tick/display separation, shared participants and sibling alignment | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), [dependencies](../architecture/DEPENDENCIES.md#3-integration-questions) | MMD session |
+| RT-O7 | C layout and calling convention, strings, allocator ownership, handles, provider lifetime and negotiation | [ABI](../contracts/ABI.md) | ABI freeze |
+| RT-O8 | capture envelope, checkpoint encoding and reuse of motion recording | [recording and replay](../design/RECORDING_AND_REPLAY.md) | recording; lifetime prerequisites by ABI freeze |
+| RT-O9 | direct-consumer binding and update costs, later Hydra locators and dirtiness, parity tolerances | [output paths](../architecture/OUTPUT_PATHS.md) | v0.3.0 for direct; Hydra agreement for the rest |

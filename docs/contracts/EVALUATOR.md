@@ -5,23 +5,19 @@ owner: usd-avatar-runtime
 
 # Evaluator contract and phase order
 
-This proposal develops [design policy sections 7–8 and 16](../design/DESIGN_POLICY.md).
-It owns invocation and order, not the provider's motion/format algorithm.
+This proposal owns invocation and order, not the provider's motion/format algorithm.
 
-The physics orchestration direction supplied on 2026-10-20 assigns the runtime
-sole responsibility for the evaluation DAG, shared-world barriers and physics
+The runtime is solely responsible for the evaluation DAG, shared-world barriers and physics
 tick coordination. The target scheduling rules are in
 [section 5](#5-shared-world-physics-orchestration); clock and invalidation rules
 are owned by the [frame lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities).
-These refine the earlier phase sketches without freezing new ABI values.
 
 [`evaluator.h`](../../include/avatarRuntime/evaluator.h) and the direct runtime
 implement experimental registration, phase barriers and explicit predecessor
 dependencies. This does not freeze RT-O3: actual motion/VRM/MMD adapter plans
 still need conformance evidence.
 
-The [near-term direction](../design/NEAR_TERM_PLAN.md#5-validate-evaluator-dependencies)
-requires real-provider validation during overlapping Runtime Phases A/B:
+Real providers must validate these dependencies before a freeze:
 
 ```text
 VRM: motion pose -> humanoid resolution -> LookAt -> expression arbitration
@@ -37,8 +33,7 @@ backend in the initial slice. Real owner calls may combine substeps atomically.
 
 ## 1. Initial phase sequence
 
-The adopted [boundary policy section 10](../design/BOUNDARY_POLICY.md#10-shared-phase-model)
-adds a conceptual common graph: input -> motion sample -> retarget -> format
+A conceptual common graph is: input -> motion sample -> retarget -> format
 pre-physics -> physics boundary -> format post-physics -> expression/LookAt/control
 -> resolve -> publish. Its labels are not new ABI enum values. Runtime owns
 the graph, dependency validation and deterministic handoff; format owners
@@ -49,7 +44,7 @@ Reconcile it with pre/post-physics provider requirements under RT-O3 before
 freeze. Preserve MMD bone-morph/control/IK dependencies and atomic owner calls;
 the conceptual graph does not require all control work to occur after physics.
 
-Numeric positions preserve the policy's conceptual order. They are not frozen
+Numeric positions preserve a conceptual order. They are not frozen
 C ABI enum values.
 
 | Position | Phase |

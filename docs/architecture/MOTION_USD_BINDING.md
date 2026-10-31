@@ -12,19 +12,16 @@ the canonical clip, descriptor and source rest as one coherent owner result.
 File parsing, sampling and retarget mathematics remain with their owners. Runtime core and
 its revision-5 C ABI are unchanged.
 
-## Scoped owner reading split
+## Owner reading
 
-The adopted [boundary policy section 7](../design/BOUNDARY_POLICY.md#7-stageclip-cleanup)
-phases out the current `StageClip` form. `ReadStageClip` calls the installed
+`ReadStageClip` calls the installed
 `motionUsd::ReadCanonicalMotionStage`, which owns source skeleton reading and
-generic units/axis/rate/placement validation. It no longer creates a runtime
-`SkeletonBinding` for the source. The helper preserves the owner's
+generic units/axis/rate/placement validation. The helper preserves the owner's
 `MotionStageRead`, including its owner-built `descriptor` and `sourceRest`;
 it contains no descriptor/source-rest rebuilding, USD motion conversion or
 private motion result vocabulary. It returns the owner's value directly.
 
-The owner's WS-O4 dependency decision is resolved and its typed results are
-consumed here. The parity host now uses `ReadStageClip` and passes the owner clip
+The parity host uses `ReadStageClip` and passes the owner clip
 and source rest to motion registration with explicit target bindings. `StageClip`
 remains a source-compatible immutable wrapper over the same function for existing
 callers; its `SourceRest()` references the rest in `Read()`. It owns no reading logic.
@@ -40,7 +37,7 @@ the generic `usd` component does not require that additive input API.
 This binding alone does not require `motionSampling`, `vrmRig` or `vrmSchema`.
 Installed consumers request `COMPONENTS motion_usd` and link
 `AvatarRuntime::avatarMotionUsdBinding`; the generic `usd` component resolves
-transitively. The generic `usd`/`vrm_usd` bindings now resolve `motionUsd` for
+transitively. The generic `usd`/`vrm_usd` bindings resolve `motionUsd` for
 owner skeleton reading, while importing no source-clip adapter or sampler.
 Core-only lookups still resolve no provider package.
 
@@ -173,82 +170,7 @@ selected duplicate channel identities and malformed values retain owner
 refusals. This consumes the handoff from
 [usd-motion-plugins issue #37](https://github.com/animu-sphere/usd-motion-plugins/issues/37).
 
-## Evidence and remaining scope
+## Evidence
 
-The 2026-10-10 host migration uses the owner value directly through registration,
-input assembly and retained-state comparisons. Source and installed tests cover
-full result/metadata/warning parity, independent value copies, stage/options
-lifetime, selected scalar/gaze values and preserved owner refusal identity/version.
-The legacy wrapper is checked against the same entry point. This completes the
-scoped StageClip integration cleanup; format discovery, capture and publication
-acceptance remain separate work.
-
-`adapters.motion_usd_clip` checks source height/rotation/ancestry, time-code to
-seconds mapping, missing optional metadata, immutable copies, rejection of
-missing rest, invalid units/axis/rate/placement, absent animation and duplicate
-semantic roles. `adapters.motion_usd_installed` repeats these checks through
-installed headers/targets with no source-tree include or format evaluator.
-
-On 2026-10-05, seven privately supplied VRMA MotionPack clips were applied to
-one private avatar with 128 joints and 51 schema-mapped roles: 4,129 source
-samples, 8,272 evaluation frames and maximum TRS component error
-`1.403972313e-7`. All seven changed 51 target joints and passed reset/retention.
-Each reported unbound driven `upperChest`; the target has no authored binding
-for that role, so the owner warning is preserved. Two held diagnostics per
-clip correspond to the intentional outside-range checks. No error diagnostics
-were reported. Asset hashes, commands and paths remain in ignored local build
-evidence; neither clips nor derived motion dumps are included here.
-
-This proves real motion -> real-avatar Humanoid pose -> retained evaluated
-state composition, not independent correctness of parsing/retarget semantics.
-The separate [LookAt binding](VRM_LOOKAT_USD_BINDING.md) extracts gaze
-configuration with test-input evidence. The separate
-[Expression binding](VRM_EXPRESSION_USD_BINDING.md) adds actual-avatar morph
-output discovery and test scalar/gaze composition.
-
-On 2026-10-06, `--vrm` checked all seven clips again with those actual bindings,
-both without probes and with a world-point gaze plus `happy=0.4` / `blink=0.8`
-host probes. Each run evaluated 8,286 frames, including zero/absence/reset;
-maximum pose/morph component error was `1.403972313e-7`. The probe run changed
-morph output on 8,265 frames. All 128 joints, 48 morph slots, snapshot
-capabilities and retained active/held state passed; this avatar has no material
-binds. Reader-provided expression/gaze counters were zero for every clip.
-Owner warnings retain unbound `upperChest` and intentional held/stale checks.
-No error diagnostics occurred. Package versions/toolchain are unchanged from
-the evidence above; asset hashes and commands stay in ignored local evidence.
-
-`tools.motion_vrm_check` adds constructed USD regression coverage for both
-LookAt types, nonidentity eye rest, changing root/head pose, a common semantic
-expression key between body keys, all six material slots and alpha, unmapped
-channels, explicit zero/absence, stale holds, reset and retained snapshots.
-It also rejects malformed probe options and deliberately perturbed oracle
-morph/material output. The optional combined build now passes sixteen tests.
-
-On 2026-10-07, the options handoff passed all sixteen runtime tests, including
-the installed source-clip consumer. Constructed regressions cover selected
-native-style expression/gaze, between-body keys, origin/absence, malformed
-owner input, stage/options lifetime and translated/rotated avatar placement.
-Separate origin and axis checks validate placement independently of the output
-oracle; world probes remain unchanged.
-
-Three generated VRMA format-owner fixtures were opened by the installed file
-plugin and explicitly selected on the same actual avatar, without probes.
-The expression fixture drove four morph frames, and keyed/default gaze
-fixtures each drove three, over 26 evaluation frames in total. All pose/morph
-outputs matched the independent owner oracle within `7.058422424e-8`; reset
-and retained state passed. These are generated-format-input/real-avatar
-integration evidence, not representative captured expression/gaze evidence.
-The seven private MotionPack clips still pass 8,286 frames within
-`1.403972313e-7`; inspecting their imported stages found no native expression
-or gaze attributes, so their zero counters cannot validate those inputs.
-Direct inspection of all seven source GLB JSON chunks also found only
-`specVersion` and `humanoid` in `VRMC_vrm_animation`, with neither `expressions`
-nor `lookAt`. Their missing native input is therefore a source-asset fact,
-not evidence that the importer discarded declared expression/gaze data.
-
-This establishes explicit native-attribute intake and clip placement through
-actual-avatar LookAt/Expression. Representative captured expression/gaze,
-format-owner automatic discovery, live connectors,
-source provenance in retained state, renderer output, milestones A/B/C and
-ABI freeze remain open. See the [capability matrix](../reference/CAPABILITY_MATRIX.md)
-and [roadmap](../roadmap/current.md).
+Measured scope is in the [evidence log](../reports/evidence-log.md#usd-motion-clip-binding-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

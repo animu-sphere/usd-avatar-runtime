@@ -15,11 +15,9 @@ It addresses the skeleton portion of RT-O4. It is not a full VRM binding
 adapter. The separate [VRM USD Humanoid binding](VRM_USD_BINDING.md) supplies
 schema-derived mappings and records scoped local real-avatar evidence.
 
-## Scoped owner reading split
+## Owner reading
 
-The adopted [boundary policy section 8](../design/BOUNDARY_POLICY.md#8-skeletonbinding-split)
-splits this helper into motion-owner conversion and runtime binding. The
-implemented binding calls installed `motionUsd::ReadMotionSkeleton` with the
+The binding calls installed `motionUsd::ReadMotionSkeleton` with the
 explicit `Generic` role for a validated typed descriptor and separate rigid
 placement in metres. Descriptor building and validation stay with the owner;
 the runtime does not rebuild the returned skeleton from raw arrays.
@@ -31,11 +29,7 @@ runtime transform representation and normalized-quaternion checks remain when
 marshalling the baseline. `SkeletonBinding` keeps its public name and lifetime
 behavior, and `Skeleton()` preserves the owner's descriptor unchanged.
 
-The owner's resolved WS-O4 dependency makes `motionRetarget` public through
-`motionUsd`. Typed skeleton/source-rest results are now consumed here;
-[cleanup workstream B](../roadmap/current.md#boundary-cleanup-workstreams)
-also uses direct owner motion-stage results in the parity host, retaining
-`StageClip` only as a compatibility wrapper.
+`motionRetarget` is public through `motionUsd`.
 
 ## Dependencies and build
 
@@ -119,7 +113,7 @@ responsible for honest layout identity assignment.
 Runtime binding failures throw `invalid_argument` with `USD_BINDING_*` codes.
 Owner reading refusals throw `MotionUsdReadError`, an `invalid_argument`
 subclass retaining unmodified owner code/subject/detail and installed
-`motionUsd` package identity/version. Generic rejection codes are now
+`motionUsd` package identity/version. Generic rejection codes are
 `MOTION_USD_*`, rather than locally renamed `USD_BINDING_*` codes.
 These are pre-instance failures, not frame diagnostics or provider callbacks.
 
@@ -138,32 +132,7 @@ baseline untouched. Each frame starts from baseline, so placement never
 accumulates. The [VRM adapter](VRM_ADAPTER.md) then reads the same working pose
 under its explicit dependency on the motion evaluator.
 
-## Evidence and remaining scope
+## Evidence
 
-`adapters.usd_skeleton` checks nested translated/rotated placement, centimetre
-units, multiple roots, auxiliary/nonuniform-scale rest, role/slot identities,
-malformed binding rejection, owned copy/stage lifetime and retained runtime
-snapshot lifetime. With motion/VRM enabled it checks root-motion placement,
-empty-clip baseline, repeat/reset behavior and bone LookAt numeric parity with
-the installed owner evaluator at `1e-6`. `adapters.usd_installed` repeats these
-checks through a separately configured installed consumer.
-
-The typed owner-reading integration compares the unchanged descriptor, joint-ID
-and baseline parent mapping, and placement with direct installed owner calls.
-It retains identical refusal code/subject/detail and package identity/version
-after stage destruction. The full 16-test runtime configuration and isolated
-USD/component installed-consumer checks pass; seven real clips retain the prior
-avatar composition parity. See the
-[capability matrix](../reference/CAPABILITY_MATRIX.md) for the checked scope.
-
-These tests construct USD stages and supply explicit mappings; they also
-check bounded affine roundoff without changing authored matrices.
-Schema-derived Humanoid discovery and one local real-avatar skeleton result
-are recorded by the separate [VRM USD binding](VRM_USD_BINDING.md).
-Format identity, expression/material/deformation bindings,
-connector intake and
-renderer consumption remain open. No milestone or ABI freeze follows from
-this scoped binding evidence; see the [roadmap](../roadmap/current.md).
-The separate [VRM LookAt binding](VRM_LOOKAT_USD_BINDING.md) supplies gaze
-configuration and head/eye/rest extraction with constructed and local-avatar
-test-input evidence.
+Measured scope is in the [evidence log](../reports/evidence-log.md#usd-skeleton-binding-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

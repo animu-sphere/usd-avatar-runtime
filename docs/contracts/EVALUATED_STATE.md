@@ -7,10 +7,7 @@ owner: usd-avatar-runtime
 
 `EvaluatedAvatarState` is the logical resolved result for one avatar and frame.
 It is the common boundary for Hydra, direct consumers and capture, following
-[design policy section 6](../design/DESIGN_POLICY.md).
-The adopted [near-term direction](../design/NEAR_TERM_PLAN.md#4-central-evaluated-state-ir)
-positions it as the central runtime IR, validated first by real VRM evaluators
-and the `hydra-toon` fast-path, then by MMD before freeze.
+the [design policy](../design/DESIGN_POLICY.md#evaluated-state).
 
 Experimental [`state.h`](../../include/avatarRuntime/state.h) implements a
 complete snapshot subset: parent-local rig transforms, blend-shape weights,
@@ -23,7 +20,7 @@ Typed gaze input does not add resolved gaze output fields. Expression/gaze
 result records and snapshot-retained diagnostics remain target requirements
 below, not fields already present in `ArStateView`.
 
-The optional [VRM adapter](../architecture/VRM_ADAPTER.md) now writes owner
+The optional [VRM adapter](../architecture/VRM_ADAPTER.md) writes owner
 expression/LookAt effects into the existing morph and canonical material
 channels, and bone LookAt into parent-local eye rotations using explicit
 owner-to-runtime joint/rest bindings. Constructed-rig tests establish direct-owner numeric parity and
@@ -64,7 +61,7 @@ from configuration/reset generations. The first ABI prioritizes clear
 semantics over internal efficiency; the scoped prototype choice below remains
 subject to real-provider conformance.
 
-Revision 4 binds a dense array of all rig joints, including auxiliary joints.
+Revision 5 binds a dense array of all rig joints, including auxiliary joints.
 Each carries `(skeleton_id, joint_id)`, a parent index (`-1` or an earlier joint
 in the same skeleton), translation, rotation and scale. Translations are metres;
 values use the canonical motion basis, right-handed +Y up/+Z forward. Rotations
@@ -106,8 +103,7 @@ invalid parent order and invalid typed values prevent activation/publication.
 
 ## 2. Semantic convergence
 
-The adopted [boundary policy section 14](../design/BOUNDARY_POLICY.md#14-common-runtime-state)
-requires format-independent resolved channels. Do not add core fields such as
+Resolved channels are format-independent. Do not add core fields such as
 `vrmExpressionHappy`, `mmdBoneMorph` or `pmxMaterialMorph`; adapters convert
 those semantics into common pose, morph and material values. Namespaced format
 identity may survive as provenance without requiring consumers to evaluate it.
@@ -188,7 +184,7 @@ requires a new instance. Old retained snapshots keep their original identity
 and values through subsequent frames/reset/destruction. Snapshot lifetime is
 defined in [ABI section 2](ABI.md#2-lifetime-and-calls).
 
-Revision 4 requires the binding host to supply a nonempty opaque UTF-8
+Revision 5 requires the binding host to supply a nonempty opaque UTF-8
 `ArInstanceDesc.layout_id` and nonzero `layout_version`. The runtime copies these
 and exposes them on every working/prior/published view, even when the evaluator
 has no state domains. The tuple identifies channel identities/order, joint

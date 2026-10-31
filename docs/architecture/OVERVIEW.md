@@ -5,21 +5,9 @@ owner: usd-avatar-runtime
 
 # Runtime architecture
 
-This is the target architecture, following
-[design policy sections 1–4 and 17](../design/DESIGN_POLICY.md).
-Implementation status is the [capability matrix](../reference/CAPABILITY_MATRIX.md).
-
-The adopted [boundary cleanup policy](../design/BOUNDARY_POLICY.md) specifies
-the kernel's ownership: lifecycle, scheduling, registration, capabilities,
-common state and publication. Owner algorithms are invoked through thin
-adapters. Motion validation and USD skeleton/rest interpretation are upstream
-responsibilities; current adapter overlap is tracked as cleanup work.
-
-The [near-term direction](../design/NEAR_TERM_PLAN.md) prioritizes real motion
--> VRM Humanoid/LookAt/Expression -> evaluated state -> `hydra-toon` fast-path,
-then MMD under the same scheduler/state model. Runtime Phases A/B overlap to
-validate and correct contracts before freeze. OpenExec, full Hydra publication
-and physics are not prerequisites for that serial direct slice.
+This is the target architecture. Implementation status is the
+[capability matrix](../reference/CAPABILITY_MATRIX.md), and ownership rules are in the
+[design policy](../design/DESIGN_POLICY.md).
 
 ## 1. Composition and evaluation
 
@@ -42,15 +30,14 @@ data. Format-specific interpretation stays with the format owner.
 High-frequency resolved values live in runtime buffers and output overlays.
 Only explicit recording/baking authoring writes those results back to USD.
 
-The planned USD binding adapter builds instance configuration from avatar root,
+A USD binding adapter builds instance configuration from avatar root,
 skeleton/joint mapping, format identity, expression bindings, LookAt
 configuration and material/deformation target identities. It preserves owner
 semantics and validates layout/version identity and invalidation before frames.
-It is distinct from high-frequency value publication. Revision 4 core accepts
+It is distinct from high-frequency value publication. Revision 5 core accepts
 caller-supplied layouts; optional [USD skeleton](USD_BINDING.md) and
-[VRM USD](VRM_USD_BINDING.md) binders now supply scoped configuration. Generic
-skeleton conversion in the former still needs the owner/runtime split described
-by the boundary policy; no full format-independent binding system is claimed.
+[VRM USD](VRM_USD_BINDING.md) binders supply scoped configuration. No full
+format-independent binding system is claimed.
 
 ## 2. Instances and resources
 
@@ -94,7 +81,7 @@ serial execution, using the
 writes are explicit. Later scheduling can exploit independent read/write
 sets, starting with independent avatars where resource ownership permits it.
 
-The 2026-10-20 physics direction makes runtime the sole coordinator of the
+Runtime is the sole coordinator of the
 evaluation DAG, shared-world barriers, clock/fixed ticks, reset/seek and final
 publication. Stage-runner and other hosts supply their loop, inputs and time
 requests without reproducing the internal avatar sequence. Independent

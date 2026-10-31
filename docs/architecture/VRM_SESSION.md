@@ -66,6 +66,6 @@ evidence file. No avatar or clip is copied into the repository.
 
 Generated source/installed tests cover both spring declaration shapes and
 stage-independent session lifetime. Measured real-avatar scope and exclusions
-are recorded in the [capability matrix](../reference/CAPABILITY_MATRIX.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29).
+are recorded in the [capability matrix](../reports/evidence-log.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29).
 This is a headless pose host: resident mesh rendering, Hydra/direct agreement,
 pixels, display interpolation and shared-world VRM composition remain open.

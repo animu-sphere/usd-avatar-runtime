@@ -5,8 +5,7 @@ owner: usd-avatar-runtime
 
 # Capabilities and diagnostics
 
-This proposal develops [design policy sections 14–15](../design/DESIGN_POLICY.md).
-It owns runtime negotiation and observation; provider-specific diagnostics
+This proposal owns runtime negotiation and observation; provider-specific diagnostics
 retain their original owner and codes.
 
 The direct prototype implements exact-version capability negotiation and
@@ -29,8 +28,8 @@ avatar.appearance.materialOverride
 ```
 
 These names are proposals, not a registered ABI enumeration. Freeze their
-meaning, version compatibility and mandatory/optional requirement rules in
-Runtime Phase A.
+meaning, version compatibility and mandatory/optional requirement rules before the
+[ABI freeze](../roadmap/current.md#abi-freeze).
 
 Distinguish provider support, capabilities of the bound avatar, the active
 evaluation plan and what an output consumer can represent. Installing an
@@ -43,7 +42,7 @@ features. Missing required support prevents the plan/output binding from
 activating. Optional unsupported outputs follow an explicit host policy and
 produce diagnostics. Never rely on compile-time VRM/MMD assumptions alone.
 
-Revision 4 computes active support as the intersection of selected providers'
+Revision 5 computes active support as the intersection of selected providers'
 supplied tokens and the instance's explicitly bound tokens at the **same
 nonzero version**. Required instance/evaluator capabilities must occur in that
 intersection; conflicting versions supplied by selected providers are rejected.
@@ -51,7 +50,7 @@ Optional bound tokens without a selected provider produce an inactive-capability
 warning. `get_capabilities` returns the active set sorted by ID; installation or
 registration alone does not enable a feature. The application must declare the
 bound set honestly; the runtime cannot infer rig support without a binding
-adapter. Output-consumer negotiation is still Runtime Phase C work.
+adapter. Output-consumer negotiation is still open.
 
 The same active set is exposed on working/prior views and retained snapshots.
 Snapshot capability values/strings remain valid after instance destruction
@@ -75,7 +74,7 @@ intent, unsupported outputs, invalid contracts, dependency cycles, conflicting
 writes and non-finite transforms. Deterministic ordering and overflow/drop
 behavior must be specified; logging must not block the frame on external I/O.
 
-Revision 4 delivers synchronous diagnostic callbacks in validation/plan order,
+Revision 5 delivers synchronous diagnostic callbacks in validation/plan order,
 preserves provider `origin`, `code`, `subject`, message and status, and stamps
 the active evaluator/instance/frame/phase. Runtime composition records use
 `runtime.*` codes. Records and strings are borrowed only during the callback;
@@ -89,26 +88,25 @@ validation decide it. Missing mappings/stale-source diagnostics still require
 actual provider/connector adapters; timings, hashes and trace tooling are future
 work.
 
-The near-term adapters must also diagnose missing joint bindings, unsupported
+Integration adapters must also diagnose missing joint bindings, unsupported
 expression channels, invalid gaze space, stale connector input, evaluator
 capability mismatch, layout mismatch and unsupported output channels. Preserve
 owner codes/provenance and frame identity so consumers receive an explained
 evaluation result rather than guessing avatar-semantic failures. This expands
 integration coverage; it does not claim new implemented diagnostic codes or
-snapshot-retained diagnostic records in revision 4.
+snapshot-retained diagnostic records in revision 5.
 
 ## 3. Observation hooks
 
-The adopted [boundary policy section 15](../design/BOUNDARY_POLICY.md#15-diagnostics)
-requires owner name, version and subject to survive forwarding without
-redefining domain codes. Revision 4 preserves callback origin/code/subject and
+Owner name, version and subject must survive forwarding without
+redefining domain codes. Revision 5 preserves callback origin/code/subject and
 provider descriptor version metadata; it has no dedicated diagnostic-record
 owner-version field or retained envelope. Settle their association and capture
 representation before ABI stabilization. Runtime's own diagnostics cover plan,
 dependency/capability, lifecycle/layout, transaction and publication failures;
 publication adapters still need implementation and acceptance evidence.
 
-The optional motion adapter now supplies an owned C++ `MotionValidationError`
+The optional motion adapter supplies an owned C++ `MotionValidationError`
 for malformed owner configuration/selected observations, retaining report and
 installed owner version beyond construction/assembly. Its synchronous C sink
 mapping preserves owner code/subject/detail/origin and sets error severity and

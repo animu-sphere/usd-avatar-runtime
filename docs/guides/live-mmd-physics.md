@@ -20,7 +20,7 @@ skinned bar, a kinematic anchor, a dynamicWithBone box and a standard joint.
 Gravity changes its body orientation, owner feedback changes the bone rotation,
 and usdview consumes the resulting live animation. No precomputed samples or
 simulation bake is involved. The
-[capability matrix](../reference/CAPABILITY_MATRIX.md#live-usdskel-and-usdview-mmd-evidence-2026-10-21)
+[capability matrix](../reports/evidence-log.md#live-usdskel-and-usdview-mmd-evidence-2026-10-21)
 records native and actual-window checks.
 
 The host consumes installed `mmdPhysicsAdapter::ReadSourceBodyProperties` for MMD
@@ -161,7 +161,7 @@ general real-asset acceptance configuration.
 checks each fixed tick against the keyed path and concrete solver-driven
 skinning, and checks exact reset replay. Contact-free generated input does not
 establish representative avatar acceptance. The
-[keyed-input evidence](../reference/CAPABILITY_MATRIX.md#live-mmd-keyed-input-evidence-2026-10-24)
+[keyed-input evidence](../reports/evidence-log.md#live-mmd-keyed-input-evidence-2026-10-24)
 also records the separate private-asset intake boundary.
 
 For direct and owner-resolved group vertex morph acceptance, generate the current VMD fixture set above
@@ -203,7 +203,7 @@ stage opinions are edited by admission. `session.dampingNormalizations` returns
 owned records; successful Reset rereads declarations and updates the records.
 The separate `hosts.usdview_mmd_damping` generated keyed-input check exercises
 independent channels, finite coexistence, constraint response and exact replay.
-See the [source damping evidence](../reference/CAPABILITY_MATRIX.md#source-damping-runtime-evidence-2026-10-31)
+See the [source damping evidence](../reports/evidence-log.md#source-damping-runtime-evidence-2026-10-31)
 for package rebuild requirements and the bounded private-intake result.
 `hosts.usdview_mmd_springs` checks separate translation/rotation response,
 positive free/limited activation, signed/locked/type/disabled gaps, live pose

@@ -64,34 +64,7 @@ Discovery errors throw `invalid_argument` with `VRM_EXPRESSION_BINDING_*`
 codes and subjects; delegated Humanoid/skeleton errors retain their codes.
 Provider evaluation diagnostics continue through the registration adapter.
 
-## Evidence and remaining scope
+## Evidence
 
-`adapters.vrm_usd_expression` compares runtime morph and all six material colour
-slots, including alpha, with direct owner evaluation at `1e-6`. It covers
-override arbitration, indexed/legacy binds, shared expression targets, alias
-tokens, LookAt composition, subtree selection, forwarded/reference remapping,
-malformed bindings, connected-input rejection, owned copy/stage lifetime,
-explicit zero/absence, reset and snapshots retained after runtime destruction.
-`adapters.vrm_usd_installed` separately builds the explicit expression consumer
-and checks component dependency isolation before importing LookAt for composition.
-
-On 2026-10-06 the existing private 128-joint avatar was read in place through
-the installed VRM file-format plugin: 18 expressions and 48 morph output slots,
-with no material colour binds. Test scalar/gaze input -> actual Expression-type
-LookAt/Expression bindings -> retained state matches direct owner output at
-`1e-6`, including reset and stage/runtime lifetime. Local asset paths, hashes,
-provider versions and logs stay in ignored build evidence; no asset is copied.
-Material extraction has constructed-USD evidence, not real-avatar evidence.
-
-The [motion parity tool](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) now
-composes seven real motion clips with these actual bindings and explicit host
-scalar/gaze probes, checking every morph and joint against separate owner calls.
-Its explicit owner-selected reader handoff now also accepts generated native
-VRMA expression/keyed/default gaze fixtures without probes, with actual-avatar
-owner parity. Representative captured expression/gaze and format-owner
-automatic discovery remain open; see the tool's scoped evidence.
-
-Additional avatars (including
-bone eyes and material binds), shared-mesh targets, live connectors, renderer
-consumption and milestone/ABI acceptance remain open in the
-[roadmap](../roadmap/current.md).
+Measured scope is in the [evidence log](../reports/evidence-log.md#vrm-usd-expression-binding-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

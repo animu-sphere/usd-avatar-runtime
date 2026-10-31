@@ -63,7 +63,7 @@ and namespaced gaze channel, then keeps the registration adapter alive for
 its runtime. Expression-type LookAt still needs host-supplied expression,
 morph and material bindings to realize resolved weights. This binder does
 not discover those output targets or invent actual-avatar expression binds.
-The separate [Expression binding](VRM_EXPRESSION_USD_BINDING.md) can now
+The separate [Expression binding](VRM_EXPRESSION_USD_BINDING.md) can
 populate those fields through `ApplyTo()`, with its complete output baseline.
 
 Rebuild after authored configuration changes and update layout identity for
@@ -72,33 +72,7 @@ structural changes. Discovery failures throw `invalid_argument` with
 codes. Owner parser warnings are separate from frame diagnostics; the host
 associates the LookAt prim and asset/provider provenance with them.
 
-## Evidence and remaining scope
+## Evidence
 
-`adapters.vrm_usd_lookat` covers scoped/explicit discovery, both schema types,
-typed-over-raw precedence, both raw formats, defaults/warnings, forwarded
-relationships/reference remapping, malformed type/raw/head/eye/skeleton
-rejection, scale ancestry, centimetre rest/placement, nonidentity eye rest,
-single-eye rigs, stage/copy lifetime, reset, absence and retained snapshots.
-Bone quaternions and expression weights match direct owner calls at `1e-6`;
-expression output uses constructed test sinks. `adapters.vrm_usd_installed`
-also runs this check through installed `vrm_lookat_usd`, after verifying that
-requesting only `vrm_usd` still imports no evaluator.
-
-On 2026-10-05 a private avatar was opened read-only through the installed VRM
-file-format plugin: 128 joints, Expression-type LookAt and no parser warnings.
-Its extracted configuration drives constructed expression test sinks with
-owner-weight parity at `1e-6`, reset and retained state after stage/runtime
-destruction. Paths/hashes and commands remain in ignored build evidence; no
-asset is copied or included in default tests.
-
-This validates one real-avatar LookAt configuration with test gaze. The
-[motion parity tool](MOTION_USD_BINDING.md#opt-in-asset-parity-tool) additionally
-checks that test gaze against the head pose from seven real clips, using actual
-expression outputs and an independent owner head calculation. Explicit native
-VRMA keyed/default gaze fixtures now drive the same avatar without probes,
-through the tool's owner-selected reader handoff and clip placement policy.
-Representative captured gaze, real-avatar bone-eye conformance, connectors, rendering,
-milestones and ABI freeze remain open in
-the [roadmap](../roadmap/current.md).
-Actual expression/output extraction and test-gaze composition now have scoped
-evidence in the separate Expression binding document.
+Measured scope is in the [evidence log](../reports/evidence-log.md#vrm-usd-lookat-binding-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

@@ -64,14 +64,7 @@ the solver's string-only API supplies no numeric code to forward. Empty authored
 spring declarations are currently refused by that owner API. No alternative
 root expansion or parameter validation is implemented here.
 
-## Evidence and remaining scope
+## Evidence
 
-The [capability matrix](../reference/CAPABILITY_MATRIX.md#vrm-spring-stage-binding-evidence-2026-10-28)
-records generated-stage and installed-consumer checks. This boundary provides
-configuration for subsequent [runtime integration slices](../roadmap/current.md#vrm-secondary-motion-integration).
-The separate [spring evaluator](VRM_SPRING_ADAPTER.md) consumes these owned values
-and adds transactional history and current-pose mapping. With both options
-enabled, source and installed binding tests compose that evaluator after stage
-destruction. Fixed-tick scheduling, actual VRM-file intake and clip-driven avatar
-poses are measured separately by the [native host](VRM_SESSION.md).
-Hydra/direct renderer parity remains outside either boundary's evidence.
+Measured scope is in the [evidence log](../reports/evidence-log.md#vrm-spring-usd-binding-summary), and current state is in the
+[capability matrix](../reference/CAPABILITY_MATRIX.md).

@@ -121,4 +121,4 @@ consumes this additional generated motion through the same native session.
 The runtime test checks direct owner values, independent tint coefficients, canonical USD
 values, zero restoration, pause, three reset generations and retained unload
 in both publication modes. Current evidence is in the
-[capability matrix](../reference/CAPABILITY_MATRIX.md#live-mmd-material-evidence-2026-10-29).
+[capability matrix](../reports/evidence-log.md#live-mmd-material-evidence-2026-10-29).
