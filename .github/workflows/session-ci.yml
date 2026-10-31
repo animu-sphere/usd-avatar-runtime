@@ -1,0 +1,135 @@
+# Session pull request lane (hand-authored, because `ost ci generate` emits only
+# workspace cells). Its runtime and ost pins MIRROR openstrata.ci.yaml, which
+# scripts/check_workflows.py checks. It repeats the session steps of release.yml
+# on Windows and Linux: build, test and package the `avatarVrmSession` library from
+# its owners, then build and run the repository's consumer from the install tree.
+#
+# Fork safety: never publishes and uses no secrets.
+name: session ci
+
+on:
+  pull_request:
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
+      - "LICENSE"
+
+permissions:
+  contents: read
+
+jobs:
+  session:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs_on }}
+    env:
+      OST_HOME: ${{ format('{0}/.ost-ci-home', github.workspace) }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: session-pr-windows
+            runtime_artifact: sha256:ebb0c7da509ee14ada19ee5b461de6996aad0024b5c9640f12dde76912e849b5
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:d3ff79a6f330558c3b9a427a927d340fe3dcab1fe89107faa0ea9f66a104b7bf"
+            platform: cy2026
+            profile: usd
+            runs_on: ["windows-2022"]
+            host_python: "3.13"
+          - name: session-pr-linux
+            runtime_artifact: sha256:3bf31789daa60ef650df35ab276bd67d0c0ee44a960311f78835cc0962efe261
+            runtime_remote: "oci://ghcr.io/animu-sphere/openstrata-runtime-cy2026-usd@sha256:8d2d599489ee623044f4360ad3a2b979e2966e6ad2f949e5aa9083570e59cc4f"
+            platform: cy2026
+            profile: usd
+            runs_on: ["ubuntu-24.04"]
+            host_python: "3.13"
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up host Python matching the runtime ABI
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.host_python }}
+      - name: Check the workflows against the CI contract
+        run: python scripts/check_workflows.py
+      - name: Install X11 dev headers required by MaterialX 1.39.5
+        if: ${{ runner.os == 'Linux' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
+      - name: Bootstrap ost 0.23.16 (pinned release asset, checksum-verified)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .ost-ci
+          case "${RUNNER_OS}-${RUNNER_ARCH}" in
+            Linux-X64)   triple=x86_64-unknown-linux-musl ; ext=tar.xz ;;
+            Windows-X64) triple=x86_64-pc-windows-msvc ; ext=zip ;;
+            *) echo "::error title=ost bootstrap::no session cell for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
+          esac
+          asset="ost-cli-${triple}.${ext}"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.16"
+          curl -fsSLo "$asset" "$base/$asset"
+          curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
+          actual="$(sha256sum "$asset" | cut -d' ' -f1)"
+          published="$(cut -d' ' -f1 "$asset.sha256")"
+          if [ "$actual" != "$published" ]; then
+            echo "::error title=ost bootstrap::$asset hashes to $actual but the release publishes $published" ; exit 1
+          fi
+          mkdir -p .ost-ci/bootstrap-bin
+          if [ "$ext" = "zip" ]; then
+            powershell -NoProfile -Command "Expand-Archive -LiteralPath '$asset' -DestinationPath '.ost-ci/bootstrap-bin' -Force"
+          else
+            tar -xf "$asset" -C .ost-ci/bootstrap-bin
+          fi
+          bin="$(find .ost-ci/bootstrap-bin -type f \( -name ost -o -name ost.exe \) | head -n 1)"
+          if [ -z "$bin" ]; then echo "::error title=ost bootstrap::no ost binary inside $asset" ; exit 1 ; fi
+          chmod +x "$bin" 2> /dev/null || true
+          bindir="$(cd "$(dirname "$bin")" && pwd)"
+          # GITHUB_PATH must hold a native path for Windows processes.
+          if command -v cygpath > /dev/null; then bindir="$(cygpath -w "$bindir")"; fi
+          echo "$bindir" >> "$GITHUB_PATH"
+      - name: Check ost is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(ost --version)"
+          echo "$version"
+          if [ "$version" != "ost 0.23.16" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.23.16', got '$version'" ; exit 1
+          fi
+      - name: Pull, verify and materialize the pinned runtime SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          ost artifact pull "${{ matrix.runtime_remote }}" --expect-artifact "${{ matrix.runtime_artifact }}" --require-kind runtime --json
+          ost artifact verify ${{ matrix.runtime_artifact }} --minimum-trust local --require-sbom --require-provenance
+          ost runtime pull ${{ matrix.platform }} --profile ${{ matrix.profile }} --from-artifact ${{ matrix.runtime_artifact }} --force
+          ost runtime validate ${{ matrix.platform }} --profile ${{ matrix.profile }} --json | tee .ost-ci/runtime-validate.json
+      - name: Build, test and package the session library
+        shell: bash
+        run: |
+          set -euo pipefail
+          library=libs/avatarVrmSession
+          ost library pull --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/avatarVrmSession.json
+      - name: Verify the generated consumer (Windows)
+        # On Linux, verify-consumer hides the system prefix from the consumer, so
+        # OpenUSD's MaterialX dependency cannot find X11 (open-strata#289).
+        if: ${{ runner.os == 'Windows' }}
+        shell: bash
+        run: ost library verify-consumer libs/avatarVrmSession --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+      - name: Build and run the installed consumer
+        run: python scripts/check_session_consumer.py
+      - name: Upload the library records and CI evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: report-${{ matrix.name }}
+          include-hidden-files: true
+          path: |
+            .ost-ci/*.json
+            libs/avatarVrmSession/.strata/targets/*/library-*.json
+          if-no-files-found: warn

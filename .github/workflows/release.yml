@@ -1,6 +1,6 @@
 # Release workflow (hand-authored; its shape follows usd-motion-plugins'). The
 # runtime and ost pins MIRROR openstrata.ci.yaml, which
-# scripts/check_release_pins.py checks, because regenerating the pull request
+# scripts/check_workflows.py checks, because regenerating the pull request
 # lanes never updates this file and a green pull request says nothing about it.
 #
 # Pushing a tag `vX.Y.Z` -- equal to VERSION, with a dated CHANGELOG section --
@@ -57,7 +57,7 @@ jobs:
           fi
           echo "version=$file_version" >> "$GITHUB_OUTPUT"
       - name: Check this workflow mirrors the CI contract
-        run: python3 scripts/check_release_pins.py
+        run: python3 scripts/check_workflows.py
       - name: Check the changelog section renders (finalized on a real release)
         shell: bash
         run: |
@@ -176,8 +176,8 @@ jobs:
             ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             # On Linux, verify-consumer hides the system prefix from the consumer, so
-            # OpenUSD's MaterialX dependency cannot find X11. The next step covers the
-            # session there.
+            # OpenUSD's MaterialX dependency cannot find X11. The next step runs the
+            # session's own consumer on both.
             if [ "$name" = "avatarRuntime" ] || [ "${RUNNER_OS}" = "Windows" ]; then
               verified=0
               ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} || verified=$?
@@ -196,26 +196,8 @@ jobs:
               echo "::error title=release packaging::two packagings of $name disagree ($first, $second)" ; exit 1
             fi
           done
-      - name: Build and run the session's installed consumer (Linux)
-        if: ${{ runner.os == 'Linux' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          target="${{ matrix.platform }}-linux-x86_64-py313-${{ matrix.profile }}"
-          prefix="$PWD/libs/avatarVrmSession/.strata/targets/$target/library-prefix"
-          owners="$PWD/.strata/external-libraries/$target"
-          runtime="$OST_HOME/runtimes/openstrata-$target"
-          schema="$(echo "$owners"/vrmSchemaSdk/*)"
-          args=("-DCMAKE_PREFIX_PATH=$prefix" "-DvrmSchema_DIR=$schema/lib/cmake/vrmSchema")
-          for owner in vrmRig motionCore motionSampling motionRetarget motionUsd; do
-            args+=("-D${owner}_DIR=$(echo "$owners/$owner"/*)/lib/cmake/$owner")
-          done
-          cmake -S adapters/vrm-session/installed_consumer -B .ost-ci/session-consumer \
-            -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="$PWD/.strata/targets/$target/toolchain.cmake" "${args[@]}"
-          cmake --build .ost-ci/session-consumer
-          LD_LIBRARY_PATH="$runtime/lib:$schema/lib" PXR_PLUGINPATH_NAME="$schema/plugin/resources/vrmSchema" \
-            ctest --test-dir .ost-ci/session-consumer --output-on-failure
-          rm -rf .ost-ci/session-consumer
+      - name: Build and run the session's installed consumer
+        run: python scripts/check_session_consumer.py
       - name: Stage the release artifacts
         shell: bash
         run: |

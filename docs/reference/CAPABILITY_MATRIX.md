@@ -54,13 +54,12 @@ not implemented.
 | Category | Windows x86_64 | Linux x86_64 | macOS arm64 |
 | --- | --- | --- | --- |
 | Core unit and installed consumer | hosted | hosted | hosted plain CMake; not a release target |
-| `avatarVrmSession` package and consumer | release lane | release lane | no |
+| `avatarVrmSession` package and consumer | pull request and release lanes | pull request and release lanes | no |
 | Adapter integration outside the session | local only | no | no |
 | Real-asset end-to-end | local only | no | no |
 | Renderer consumption | local only, `lookdev` renderer with `usd` package | no | no |
 
-There is no session pull request lane yet: only the release workflow builds it. Web and XR
-are not targets.
+Web and XR are not targets.
 
 Update this page in the change that alters the state, and add the measurement to the
 [evidence log](../reports/evidence-log.md). A sibling's callable library or published
