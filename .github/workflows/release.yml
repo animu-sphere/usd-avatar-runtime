@@ -175,7 +175,14 @@ jobs:
             library="libs/$name"
             ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-            ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+            verified=0
+            ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} || verified=$?
+            record="$(find "$library/.strata/targets" -name library-consumer.json | head -n 1)"
+            if [ -n "$record" ]; then cp "$record" ".ost-ci/$name-consumer.json"; fi
+            if [ "$verified" -ne 0 ]; then
+              if [ -n "$record" ]; then jq -r '.checks | to_entries[] | "\(.key): \(.value.status // "")\n\(.value.stderr // "")"' "$record"; fi
+              exit "$verified"
+            fi
             ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name.json"
             ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name-second.json"
             first="$(jq -er '.data.archive_digest' ".ost-ci/$name.json")"
