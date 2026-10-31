@@ -4,8 +4,9 @@ target_compile_features(avatarVrmSession PUBLIC cxx_std_17)
 set_target_properties(avatarVrmSession PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_include_directories(avatarVrmSession PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
-target_link_libraries(avatarVrmSession PUBLIC avatarVrmUsdBinding avatarVrmSpringUsdBinding
-    avatarVrmSpringAdapter avatarMotionUsdBinding avatarMotionAdapter)
+target_link_libraries(avatarVrmSession PUBLIC avatarVrmUsdBinding avatarVrmExpressionUsdBinding
+    avatarVrmLookAtUsdBinding avatarVrmSpringUsdBinding avatarVrmSpringAdapter
+    avatarMotionUsdBinding avatarMotionAdapter)
 install(TARGETS avatarVrmSession EXPORT AvatarVrmSessionTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT AvatarVrmSessionTargets NAMESPACE AvatarRuntime:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)

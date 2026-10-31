@@ -25,7 +25,7 @@ core library. Do not create empty targets or rename working directories to match
 | `avatarVrmSpringUsdBinding` | `adapters/vrm-spring-usd`: optional canonical spring/collider stage snapshot into installed owner values; [boundary](VRM_SPRING_USD_BINDING.md) |
 | `avatarVrmSpringAdapter` | `adapters/vrm-spring`: optional transactional owner spring registration and final rotation mapping; [boundary](VRM_SPRING_ADAPTER.md) |
 | `avatarMotionCheck` | `tools/avatarMotionCheck`: opt-in asset parity host, optionally with installed Toon probe transport checks |
-| `avatarVrmSession` / `avatarVrmSessionCheck` | `adapters/vrm-session`: opt-in native clip/spring host and headless owner/pose-output check over core `FixedTickSession` |
+| `avatarVrmSession` / `avatarVrmSessionCheck` | `adapters/vrm-session`: opt-in native clip/spring/expression/LookAt host and headless owner/pose-output check over core `FixedTickSession` |
 | `usdviewMmdPhysicsPython` | `tools/usdviewMmdPhysics`: opt-in live single-PMX usdview application host, installed-owner control/coupling/Jolt and anonymous pose output |
 | `mmdToonContracts` | `adapters/mmd/tests`: separately opt-in final MMD/Jolt snapshot transport host using installed Toon and explicit generated resources |
 

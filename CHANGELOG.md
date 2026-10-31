@@ -7,8 +7,16 @@ the C ABI revision are separate numbers.
 
 ## [Unreleased]
 
+### Added
+
+- The VRM session selects expressions and LookAt through `SessionConfig`, with host
+  observations passed to a new `Session::Advance` overload. `avatarVrmSessionCheck --face`
+  compares the results with the owner.
+
 ### Changed
 
+- The `avatarVrmSession` package and `vrm_session` component now include the VRM
+  expression and LookAt adapters.
 - A session pull request lane builds, tests and packages `avatarVrmSession` on Windows
   and Linux. It and the release lane build and run the repository's installed consumer
   on both, and `verify-consumer` still runs on Windows only.

@@ -1,8 +1,11 @@
 #include "avatarVrmSession/Session.h"
 #include "avatarMotion/ClipPoseAdapter.h"
 #include "avatarVrm/SpringBoneAdapter.h"
+#include "avatarVrmUsd/ExpressionBinding.h"
+#include "avatarVrmUsd/LookAtBinding.h"
 #include "avatarVrmUsd/SpringBoneBinding.h"
 #include <limits>
+#include <optional>
 #include <stdexcept>
 
 namespace avatarVrmSession {
@@ -14,6 +17,7 @@ void ok(ArStatus status) {
 struct Session::Impl {
     avatarVrmUsd::HumanoidBinding humanoid;
     std::unique_ptr<avatarMotion::ClipPoseAdapter> motion;
+    std::unique_ptr<avatarVrm::ExpressionAdapter> face;
     std::unique_ptr<avatarVrm::SpringBoneAdapter> spring;
     ArRuntimeApi api{};
     ArRuntime runtime = 0;
@@ -32,6 +36,22 @@ struct Session::Impl {
         m.jointIds = binding.JointIds(); m.rootPlacement = binding.RootPlacement();
         m.clip = clip.clip; m.sourceRest = *clip.sourceRest;
         motion = std::make_unique<avatarMotion::ClipPoseAdapter>(std::move(m));
+        if (!config.expressions && !config.expressionInputs.empty())
+            throw std::invalid_argument("VRM_SESSION_EXPRESSION: expression inputs require selecting expressions");
+        std::optional<avatarVrmUsd::ExpressionBinding> expressions;
+        if (config.expressions) expressions.emplace(stage, avatarVrmUsd::ExpressionBindingConfig{config.avatar, {}});
+        if (config.lookAt || config.expressions) {
+            avatarVrm::ExpressionAdapterConfig f;
+            if (config.lookAt) {
+                f = avatarVrmUsd::LookAtBinding(stage, avatarVrmUsd::LookAtBindingConfig{config.avatar, {}})
+                    .AdapterConfig("vrm.session.face", config.gaze, {"vrm.session.motion"});
+                if (f.lookAt->type == vrmRig::LookAtType::Expression && !expressions)
+                    throw std::invalid_argument("VRM_SESSION_LOOKAT: expression-type LookAt requires selecting expressions");
+                if (expressions) expressions->ApplyTo(f);
+                f.inputs = config.expressionInputs;
+            } else f = expressions->AdapterConfig("vrm.session.face", config.expressionInputs, {"vrm.session.motion"});
+            face = std::make_unique<avatarVrm::ExpressionAdapter>(std::move(f));
+        }
         if (config.secondaryMotion) {
             avatarVrmUsd::SpringBoneBinding springBinding(stage,
                 {config.avatar.avatarRoot, pxr::SdfPath(binding.SkeletonId()), baseline.layout_id, baseline.layout_version, {}});
@@ -40,6 +60,7 @@ struct Session::Impl {
             s.skeletonId = binding.SkeletonId(); s.jointIds = binding.JointIds();
             s.rig = springBinding.Rig(); s.placement = springBinding.RestPose().placement;
             s.fixedStepSeconds = config.clock.fixedStepSeconds; s.after = {"vrm.session.motion"};
+            if (face) s.after.push_back("vrm.session.face");
             spring = std::make_unique<avatarVrm::SpringBoneAdapter>(std::move(s));
         }
         ok(arGetApi(AR_ABI_VERSION, sizeof(api), &api));
@@ -48,13 +69,17 @@ struct Session::Impl {
             const auto md = motion->Descriptor(); ok(api.register_evaluator(runtime, &md, nullptr));
             std::vector<const char*> ids{md.id};
             std::vector<ArCapability> caps(md.supplies, md.supplies + md.supply_count);
+            if (face) {
+                const auto fd = face->Descriptor(); ok(api.register_evaluator(runtime, &fd, nullptr));
+                ids.push_back(fd.id); caps.insert(caps.end(), fd.supplies, fd.supplies + fd.supply_count);
+            }
             if (spring) {
                 const auto sd = spring->Descriptor(); ok(api.register_evaluator(runtime, &sd, nullptr));
                 ids.push_back(sd.id); caps.insert(caps.end(), sd.supplies, sd.supplies + sd.supply_count);
             }
             ArInstanceDesc d{AR_HEADER(ArInstanceDesc)};
             d.generation = generation; d.layout_id = baseline.layout_id; d.layout_version = baseline.layout_version;
-            d.initial_state = baseline; d.evaluators = ids.data(); d.evaluator_count = uint32_t(ids.size());
+            d.initial_state = expressions ? expressions->Baseline() : baseline; d.evaluators = ids.data(); d.evaluator_count = uint32_t(ids.size());
             d.bound_capabilities = caps.data(); d.bound_capability_count = uint32_t(caps.size());
             ArInstance instance = 0; ok(api.create_instance(runtime, &d, nullptr, &instance));
             clock = std::make_unique<avatarRuntime::FixedTickSession>(runtime, instance, config.clock);
@@ -78,6 +103,15 @@ ArStatus Session::Advance(double elapsed, const ArDiagnosticSink* sink) {
     if (!s.clock || s.request == std::numeric_limits<uint64_t>::max()) return AR_INVALID_STATE;
     ArInputFrame input{AR_HEADER(ArInputFrame)};
     input.input_revision = s.request + 1;
+    return s.clock->Advance(++s.request, elapsed, s.paused, input, sink);
+}
+ArStatus Session::Advance(double elapsed, const ArInputFrame& observations, const ArDiagnosticSink* sink) {
+    auto& s = *impl_;
+    if (!s.clock || s.request == std::numeric_limits<uint64_t>::max()) return AR_INVALID_STATE;
+    ArInputFrame input{AR_HEADER(ArInputFrame)};
+    input.scalars = observations.scalars; input.scalar_count = observations.scalar_count;
+    input.gazes = observations.gazes; input.gaze_count = observations.gaze_count;
+    input.input_revision = observations.input_revision;
     return s.clock->Advance(++s.request, elapsed, s.paused, input, sink);
 }
 ArStatus Session::Reset(double start) {
