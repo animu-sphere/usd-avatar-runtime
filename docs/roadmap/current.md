@@ -52,7 +52,6 @@ ABI freeze and bindings for several languages at once.
 
 ### B. VRM end to end
 
-- [ ] Decide what happens to node constraints: integrate them, or defer them explicitly.
 - [ ] Add a redistributable small VRM, motion and expected state to CI. Private assets stay as additional evidence.
 - [ ] Test import failure, evaluator failure, reset, pause/resume, destroy/recreate, snapshot retention and several avatars.
 
@@ -69,6 +68,14 @@ ABI freeze and bindings for several languages at once.
 - [ ] Classify ABI change candidates, and decide whether to keep deferring the freeze.
 
 ## After v0.3.0
+
+### VRM node constraints
+
+[Deferred past v0.3.0](../architecture/VRM_SESSION.md#node-constraints): the owner has no
+evaluator to integrate. Accepted when the owner publishes one, the session selects it
+explicitly, its phase order against motion, LookAt and spring is agreed with the owner, and
+real-avatar results match the owner within tolerance. No substitute solver is written here or
+in a renderer.
 
 ### MMD session
 

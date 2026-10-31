@@ -1725,3 +1725,9 @@ output, the session not raising its generation record, and root placement droppe
 
 These are generated values with no renderer, and Linux was not measured when this was written.
 The installed consumer runs in the pull request lane.
+
+## Consumer state contract on Linux (2026-11-01)
+
+`session ci` run `41226331665` on pull request #69 passed `hosts.vrm_session` and
+`installed.vrm_session` on hosted Windows and Linux, including the consumer contract checks on
+the generated bone and expression fixtures. Real avatars remain measured on Windows only.
