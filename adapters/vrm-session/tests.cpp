@@ -15,8 +15,11 @@
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/gf/rotation.h"
+#include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 int avatarVrmSessionCheck(int argc, char** argv);
@@ -282,6 +285,100 @@ int main(int argc, char** argv) {
             const auto v = state(mixed);
             require(findSample(v,"clip:vrm:happy") && findSample(v,"expr:blink") && v.input_revision == v.frame_id, "mixed samples");
             require(v.blend_shapes[0].weight > 0, "host expression at a clip key with no clip weight");
+        }
+        {
+            // The consumer state contract: identity, absence, complete values and retention.
+            auto c = avatarVrmSession::SessionConfig{}; c.avatar = identity; c.clock = {.25,1./60,4}; c.secondaryMotion = false;
+            c.expressions = c.lookAt = true; c.expressionInputs = {{{"host","actor","expr:happy"},"happy"}}; c.gaze = {"host","actor","gaze:point"};
+            avatarVrmSession::Session s(avatar(true,Gaze::bone,true),read,c);
+            ArStateView unread{AR_HEADER(ArStateView)};
+            require(s.Snapshot() == 0 && s.Api().get_snapshot(0,&unread) == AR_INVALID_HANDLE, "no state before the seed");
+            const auto& skeletonOnly = s.Binding().Baseline();
+            require(skeletonOnly.instance == 0 && skeletonOnly.blend_shape_count == 0 && skeletonOnly.material_count == 0, "bind from a snapshot, not the skeleton baseline");
+            const auto authored = [](const ArStateView& v) {
+                require(v.material_count > 0, "material outputs");
+                for (uint32_t i = 0; i < v.material_count; ++i) {
+                    const auto& m = v.materials[i];
+                    require(m.overridden == 0, "no override at baseline");
+                    if (m.value_type == AR_VALUE_VEC3) require(m.value[0] == double(.2f) && m.value[1] == double(.3f) && m.value[2] == double(.4f), "authored colour");
+                    else require(m.value_type == AR_VALUE_SCALAR && m.value[0] == double(.8f), "authored alpha");
+                    for (int k = m.value_type == AR_VALUE_VEC3 ? 3 : 1; k < 4; ++k) require(m.value[k] == 0, "unused components");
+                }
+            };
+            // The seed is the first state, with the complete layout and nothing selected.
+            require(s.Advance(0,&quiet) == AR_OK, "contract seed");
+            auto v = state(s);
+            const auto instance = v.instance;
+            const std::vector<std::string> layout{std::string(v.layout_id),std::string(v.joints[1].joint_id),std::string(v.blend_shapes[0].mesh_id),std::string(v.blend_shapes[0].target_id),std::string(v.materials[0].material_id)};
+            require(instance && v.frame_id == 1 && v.generation == 1 && v.evaluation_seconds == .25 && layout[0] == "face" && v.layout_version == 1, "seed identity");
+            require(v.joint_count == 6 && v.blend_shape_count == 1 && v.visibility_count == 0 && v.vertex_uv_count == 0, "seed layout");
+            require(v.sample_count == 1 && findSample(v,"motion:pose") && v.samples[0].kind == AR_SOURCE_POSE, "only the pose sample was resolved");
+            require(v.capability_count == 3 && std::string(v.capabilities[0].id) == "avatar.motion.clipPose" &&
+                std::string(v.capabilities[1].id) == "avatar.vrm.expression.effects" && std::string(v.capabilities[2].id) == "avatar.vrm.lookAt.bone", "active capabilities");
+            require(std::string(v.joints[0].skeleton_id) == "/Avatar/Body" && layout[1] == "Root/Head" && layout[2] == "/Avatar/Face" && layout[3] == "smile" && layout[4] == "/Avatar/Material", "target identities");
+            for (uint32_t i = 0; i < v.joint_count; ++i) require(v.joints[i].parent_index < int32_t(i), "parents come first");
+            require(v.joints[0].parent_index == -1 && std::abs(v.joints[0].local.translation[1]-4.8) < 1e-5, "the root holds the placement, in metres");
+            require(std::abs(v.joints[1].local.translation[1]-.5) < 1e-5, "other joints are parent-local");
+            require(v.blend_shapes[0].weight == 0, "no expression weight at baseline"); authored(v);
+            const auto materialCount = v.material_count;
+            s.Play();
+            // An explicit zero is present: an override of the same value, with a record.
+            ArScalarInput happy{"host","actor","expr:happy",0.}; happy.clock_scale = 1;
+            ArInputFrame frame{AR_HEADER(ArInputFrame)}; frame.scalars = &happy; frame.scalar_count = 1; frame.input_revision = 7;
+            require(s.Advance(1./60,frame,&quiet) == AR_OK, "explicit zero");
+            v = state(s);
+            require(v.frame_id == 2 && v.input_revision == 7 && findSample(v,"expr:happy") && v.blend_shapes[0].weight == 0, "zero identity");
+            for (uint32_t i = 0; i < v.material_count; ++i) require(v.materials[i].overridden == 1, "zero overrides");
+            // A resolved weight changes the values; retain them across later frames.
+            happy.value = 1;
+            require(s.Advance(1./60,frame,&quiet) == AR_OK, "explicit weight");
+            const auto kept = s.Snapshot(); require(s.Api().retain_snapshot(kept) == AR_OK, "retain");
+            ArStateView retained{AR_HEADER(ArStateView)}; require(s.Api().get_snapshot(kept,&retained) == AR_OK, "retained view");
+            const auto keptWeight = retained.blend_shapes[0].weight; const auto keptColour = retained.materials[0].value[0];
+            require(retained.frame_id == 3 && keptWeight > 0 && retained.materials[0].overridden == 1 && keptColour != double(.2f), "resolved values");
+            // A refused request changes nothing and the latest state stays readable.
+            happy.value = std::numeric_limits<double>::quiet_NaN();
+            require(s.Advance(1./60,frame,&quiet) == AR_INVALID_ARGUMENT && s.Snapshot() == kept && s.Stats().pendingSeconds == 0, "refused observation");
+            // An absent input returns to baseline in the next complete snapshot; nothing holds.
+            require(s.Advance(1./60,&quiet) == AR_OK, "absent input");
+            v = state(s);
+            require(v.frame_id == 4 && !findSample(v,"expr:happy") && v.blend_shapes[0].weight == 0, "absent identity"); authored(v);
+            // Bone gaze has no state field: an eye rotation, with the observation as a record.
+            require(std::string(v.joints[4].joint_id) == "Root/Head/EyeL", "eye slot");
+            const auto rest = v.joints[4].local;
+            ArGazeInput g{"host","actor","gaze:point",AR_GAZE_POINT,AR_GAZE_RUNTIME_WORLD,AR_OBSERVATION_VALID};
+            g.value[0] = 6; g.value[1] = 6; g.value[2] = 8; g.clock_scale = 1;
+            ArInputFrame looking{AR_HEADER(ArInputFrame)}; looking.gazes = &g; looking.gaze_count = 1;
+            require(s.Advance(1./60,looking,&quiet) == AR_OK, "valid gaze");
+            v = state(s);
+            require(!std::equal(rest.rotation,rest.rotation+4,v.joints[4].local.rotation), "gaze moves the eye");
+            require(findSample(v,"gaze:point") && findSample(v,"gaze:point")->validity == AR_OBSERVATION_VALID && v.blend_shapes[0].weight == 0, "gaze record");
+            g.validity = AR_OBSERVATION_STALE;
+            require(s.Advance(1./60,looking,&quiet) == AR_OK, "stale gaze");
+            v = state(s);
+            require(findSample(v,"gaze:point") && findSample(v,"gaze:point")->validity == AR_OBSERVATION_STALE, "stale record");
+            // Reset keeps the instance and layout, raises the generation and restarts the
+            // frames; no state exists until the next seed.
+            require(s.Reset(.5) == AR_OK && s.IsPaused() && s.Snapshot() == 0, "reset clears output");
+            require(s.Advance(0,&quiet) == AR_OK, "reseed");
+            v = state(s);
+            require(v.instance == instance && v.generation == 2 && v.frame_id == 1 && v.evaluation_seconds == .5, "reset identity");
+            require(layout[0] == v.layout_id && v.layout_version == 1 && v.material_count == materialCount, "reset layout"); authored(v);
+            require(s.Reset(.5) == AR_OK && s.Advance(0,&quiet) == AR_OK && state(s).generation == 3 && state(s).frame_id == 1, "each reset raises the generation");
+            // A retained view keeps its identity and values through reset and destruction.
+            s.Close();
+            require(s.Snapshot() == 0 && s.Advance(0,&quiet) == AR_INVALID_STATE, "closed session");
+            ArStateView after{AR_HEADER(ArStateView)}; require(s.Api().get_snapshot(kept,&after) == AR_OK, "retained after close");
+            require(after.instance == instance && after.generation == 1 && after.frame_id == 3 && layout[0] == after.layout_id, "retained identity");
+            require(after.blend_shapes[0].weight == keptWeight && after.materials[0].value[0] == keptColour, "retained values");
+            require(s.Api().release_snapshot(kept) == AR_OK && s.Api().get_snapshot(kept,&after) == AR_INVALID_HANDLE, "released");
+            // Expression gaze has no state field either: a resolved morph weight, with eyes untouched.
+            auto e = avatarVrmSession::SessionConfig{}; e.avatar = identity; e.clock = {0,1./60,4}; e.secondaryMotion = false;
+            e.expressions = e.lookAt = true; e.gaze = {"host","actor","gaze:point"};
+            avatarVrmSession::Session face(avatar(true,Gaze::expression,true),read,e);
+            g.validity = AR_OBSERVATION_VALID;
+            require(face.Advance(0,looking,&quiet) == AR_OK && state(face).blend_shapes[0].weight > 0 && findSample(state(face),"gaze:point"), "expression gaze");
+            for (uint32_t i = 0; i < state(face).material_count; ++i) require(state(face).materials[i].overridden == 0, "expression gaze has no material bind here");
         }
         {
             const auto bad = [&](avatarVrmSession::SessionConfig c, const openstrata::motion::MotionStageRead& r, const char* message) {

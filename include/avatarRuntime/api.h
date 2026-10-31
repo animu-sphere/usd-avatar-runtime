@@ -38,8 +38,8 @@ typedef struct ArRuntimeApi {
 } ArRuntimeApi;
 
 /* Core table entry point (optional tables have their own query symbol). Caller owns out_api;
-   size must cover the complete revision-4 table. Larger tails are untouched.
-   Revisions 1-3 are rejected; providers/consumers must rebuild. */
+   size must cover the complete current table. Larger tails are untouched.
+   Other revisions are rejected; providers/consumers must rebuild. */
 AR_EXPORT ArStatus AR_CALL arGetApi(uint32_t version, uint32_t size, ArRuntimeApi* out_api);
 
 #ifdef __cplusplus

@@ -53,7 +53,6 @@ ABI freeze and bindings for several languages at once.
 ### B. VRM end to end
 
 - [ ] Decide what happens to node constraints: integrate them, or defer them explicitly.
-- [ ] Document the state contract consumers rely on: views, units, spaces, lifetime and the absent representation for pose, morph, material and gaze.
 - [ ] Add a redistributable small VRM, motion and expected state to CI. Private assets stay as additional evidence.
 - [ ] Test import failure, evaluator failure, reset, pause/resume, destroy/recreate, snapshot retention and several avatars.
 
@@ -210,9 +209,9 @@ These are runtime design questions, not reported upstream bugs.
 | ID | Decision | Owner here | Needed by |
 | --- | --- | --- | --- |
 | RT-O1 | evaluation seconds, source clock, USD time-code mapping and gaze space descriptors | [input](../contracts/INPUT_FRAME.md) | ABI freeze |
-| RT-O2 | semantic intent vocabulary, custom and native channel names, mapping precedence; resolved expression identity, arbitration, provenance and availability | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) | v0.3.0 for what the session publishes; ABI freeze |
+| RT-O2 | semantic intent vocabulary, custom and native channel names, mapping precedence; resolved expression identity, arbitration, provenance and availability. The session publishes effects only, under the [consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract) | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) | ABI freeze |
 | RT-O3 | whether the DAG fits MMD morph, append, control and IK, model-specific pre/post-physics dependencies, gaze and expressions, before any phase extension | [evaluator](../contracts/EVALUATOR.md) | MMD session |
-| RT-O4 | final rig pose and spaces, layout and version identity, complete/sparse/delta semantics, gaze results, snapshot provenance | [state](../contracts/EVALUATED_STATE.md) | v0.3.0 for the consumer contract; ABI freeze |
+| RT-O4 | typed gaze results, retained diagnostics and snapshot provenance, and real-provider layout conformance. Pose, spaces, layout identity and complete snapshots are in the [consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract) | [state](../contracts/EVALUATED_STATE.md) | ABI freeze |
 | RT-O5 | reset, checkpoint, commit and abort for stateful evaluators; shared-world discontinuity scope, post-Step recovery, publication failure | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | ABI freeze; world recovery for the MMD session |
 | RT-O6 | world handles and callbacks, fixed-tick and catch-up policy, tick/display separation, shared participants and sibling alignment | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), [dependencies](../architecture/DEPENDENCIES.md#3-integration-questions) | MMD session |
 | RT-O7 | C layout and calling convention, strings, allocator ownership, handles, provider lifetime and negotiation | [ABI](../contracts/ABI.md) | ABI freeze |

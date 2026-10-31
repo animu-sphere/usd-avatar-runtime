@@ -60,7 +60,9 @@ nothing, and the complete snapshot returns its outputs to baseline.
 Selecting expressions adds morph and material outputs to the layout, so a host that changes
 the selection for one layout ID must change `HumanoidBindingConfig::layoutVersion`.
 Consumers receive resolved blend-shape weights, material values and joint rotations. The
-session publishes no expression names or LookAt status records.
+session publishes no expression names or LookAt status records; the
+[consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract) states what a
+snapshot holds.
 
 ## Clip expressions and gaze
 
@@ -98,9 +100,9 @@ so an invalid host record refuses at the first due tick, after elapsed is accept
 
 ## Clock and lifetime
 
-`Snapshot()` borrows the latest committed tick state. Retain through `Api()`
-before advancing, resetting or closing; retained values survive runtime/provider
-destruction. Delivery retries read that handle and do not call `Advance`.
+`Snapshot()` borrows the latest committed tick state. It is 0 before the first seed, after a
+reset until the next seed, and after close. Retain through `Api()` before advancing, resetting
+or closing; retained values survive runtime/provider destruction. Delivery retries read that handle and do not call `Advance`.
 `Stats()` exposes completed ticks in the last request, total tick index, fixed
 simulation time, pending backlog and initialization. A failed evaluation retains
 the latest successful tick and due time; retry `Advance(0)` with no extra elapsed.

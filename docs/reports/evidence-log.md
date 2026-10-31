@@ -1711,3 +1711,17 @@ written, and the installed consumer runs in the pull request lane.
 `hosts.vrm_session` and `installed.vrm_session` on hosted Windows and Linux, including the
 clip expression and gaze checks on the generated bone and expression fixtures and exact
 catch-up equality. Real avatars remain measured on Windows only.
+
+## Consumer state contract (2026-11-01)
+
+`hosts.vrm_session` now checks the [consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract)
+on a generated avatar with bone and expression LookAt: no state before the seed or after reset,
+seed and reset identity, target identities, the root holding the placement in metres, explicit
+zero against absent input, return to baseline, stale gaze records, a refused request keeping the
+latest state, and retained identity and values through reset and close until release. 15/15 library
+tests and the installed consumer passed on Windows. The test failed, as it should, under each of
+four temporary changes: expression colours not marked as overrides, reset keeping the previous
+output, the session not raising its generation record, and root placement dropped.
+
+These are generated values with no renderer, and Linux was not measured when this was written.
+The installed consumer runs in the pull request lane.
