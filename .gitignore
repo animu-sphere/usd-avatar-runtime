@@ -4,3 +4,10 @@ CMakeUserPresets.json
 /.vs/
 __pycache__/
 *.py[cod]
+# OpenStrata state and packages.
+.strata/
+**/build/
+**/dist/
+strata.lock
+/.ost-ci/
+/.ost-ci-home/

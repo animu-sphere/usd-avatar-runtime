@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
-project(UsdAvatarRuntime VERSION 0.1.0 LANGUAGES C CXX)
+file(STRINGS "${CMAKE_CURRENT_LIST_DIR}/VERSION" _avatar_runtime_version LIMIT_COUNT 1)
+project(UsdAvatarRuntime VERSION ${_avatar_runtime_version} LANGUAGES C CXX)
 
 option(AVATAR_BUILD_TESTS "Build contract and direct execution tests" ${PROJECT_IS_TOP_LEVEL})
 option(AVATAR_BUILD_VRM_ADAPTER "Build the optional vrmRig registration adapter" OFF)
@@ -60,7 +61,7 @@ configure_package_config_file(cmake/AvatarRuntimeConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfig.cmake
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
 write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfigVersion.cmake
-    VERSION ${PROJECT_VERSION} COMPATIBILITY ExactVersion)
+    VERSION ${PROJECT_VERSION} COMPATIBILITY SameMinorVersion)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfig.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/AvatarRuntimeConfigVersion.cmake
     cmake/AvatarMmdMorphResolution.cmake

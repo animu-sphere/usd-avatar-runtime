@@ -64,7 +64,7 @@ renderer and makes no Toon rendering/parity claim.
 
 ## Build
 
-Run from the runtime checkout. Prepare the installed MMD 0.2, physics/Jolt,
+Run from the runtime checkout. Prepare the installed MMD 0.3, physics/Jolt,
 Stage Runner `runtimeCore` 0.1, motion owner 0.5.4 and Python-enabled OpenUSD
 26.08 packages first. Set `$prefixes` to their install prefixes and `$jolt` to
 the matching Jolt SDK prefix. No sibling source is compiled into this host.

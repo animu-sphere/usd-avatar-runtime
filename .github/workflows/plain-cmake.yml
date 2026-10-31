@@ -1,0 +1,28 @@
+# Hand-written; independent of the generated OpenStrata source CI. The core must
+# build and pass without OpenStrata, OpenUSD or any format library.
+name: plain cmake
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Configure
+        run: cmake -S . -B build/direct -DCMAKE_BUILD_TYPE=Release
+      - name: Build
+        run: cmake --build build/direct --config Release --parallel
+      - name: Test
+        run: ctest --test-dir build/direct -C Release --output-on-failure

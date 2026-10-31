@@ -1,4 +1,4 @@
-find_package(vrmSchema 0.9.0 CONFIG REQUIRED)
+find_package(vrmSchema 0.10 CONFIG REQUIRED)
 add_library(avatarVrmUsdBinding STATIC humanoidBinding.cpp)
 add_library(AvatarRuntime::avatarVrmUsdBinding ALIAS avatarVrmUsdBinding)
 target_compile_features(avatarVrmUsdBinding PUBLIC cxx_std_17)
