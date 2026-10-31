@@ -1,4 +1,4 @@
-"""Generate redistributable live material inputs using the MMD owner's encoders."""
+"""Generate redistributable material and combined inputs with the MMD owner's encoders."""
 import argparse
 import copy
 import importlib.util
@@ -43,6 +43,9 @@ def generate(owner, out):
     out.mkdir(parents=True, exist_ok=True)
     (out / "material.pmx").write_bytes(pmx.encode(model)[0])
     (out / "material.vmd").write_bytes(motion.encode())
+    combined = copy.deepcopy(vmd.fixtures()["live-physics-uv-mixed.vmd"][0])
+    combined.morphs.extend(motion.morphs)
+    (out / "combined.vmd").write_bytes(combined.encode())
     def chunk(kind, data):
         return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data))
     pixels = bytes([0, 64, 128, 192, 255, 192, 64, 128, 192,

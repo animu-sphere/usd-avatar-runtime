@@ -113,7 +113,12 @@ pendulum alone without configuring the mixed UV/vertex VMD option.
 `AVATAR_MMD_SESSION_TEST_MATERIAL_PMX`/`_VMD` generated pair. Generate it with
 `tools/generate-mmd-material-fixture.py --owner <mmd-repository> --out <directory>`;
 the script uses the owner's test encoders and creates no private asset copies.
-It checks direct owner values, independent tint coefficients, canonical USD
+It also writes `combined.vmd`, adding the owner's keyed pendulum and signed
+group/direct vertex/UV channels to the material motion without changing the
+original material-only pair. The renderer's
+[combined comparison](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/114-2026-10-31-mmd-combined-parity.md)
+consumes this additional generated motion through the same native session.
+The runtime test checks direct owner values, independent tint coefficients, canonical USD
 values, zero restoration, pause, three reset generations and retained unload
 in both publication modes. Current evidence is in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md#live-mmd-material-evidence-2026-10-29).
