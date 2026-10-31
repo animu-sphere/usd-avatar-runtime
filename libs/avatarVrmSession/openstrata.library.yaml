@@ -1,8 +1,6 @@
 # OpenStrata plain-library descriptor. The core and the native VRM session's
 # adapters, in one prefix. It provides the same AvatarRuntime CMake package as
-# avatarRuntime, so a consumer pins one of the two. It has no package_contract:
-# `ost` 0.23.15's verify-consumer refuses OpenUSD's imported targets, which expose
-# the host Python's include directory.
+# avatarRuntime, so a consumer pins one of the two.
 schema: openstrata.library/v1alpha1
 library:
   id: avatarVrmSession
@@ -71,5 +69,15 @@ requires:
             digest: sha256:e63c632e9588aee23080415f2ad9834929ad13dfc756bff2d0111f659b2a6acc
             source: oci://ghcr.io/animu-sphere/usd-vrm-plugins@sha256:0cf0a0606fb3aec7a5eaa3f6106fb7f25990fe2bc28652d140e0cb75d40e9c2b
 cmake:
-  package: AvatarRuntime
+  package: AvatarVrmSession
   target: AvatarRuntime::avatarVrmSession
+package:
+  standalone: true
+  aggregate_member: false
+package_contract:
+  package_name: AvatarVrmSession
+  exported_targets: [AvatarRuntime::avatarVrmSession]
+  public_headers: [include/avatarVrmSession/**]
+  consumer:
+    include: avatarVrmSession/Session.h
+    symbol: avatarVrmSession::Session::Play

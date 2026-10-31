@@ -14,11 +14,14 @@ x86_64. The C ABI stays at experimental revision 5 and is not frozen.
 
 - The `avatarVrmSession` package: the core and the session's motion, USD, VRM USD
   and spring adapters in one prefix, with `avatarVrmSessionCheck`. It pins motion
-  0.5.4 and VRM 0.12.0 by digest.
+  0.5.4 and VRM 0.12.0 by digest. `find_package(AvatarVrmSession)` is equivalent to
+  requesting the `vrm_session` component of `AvatarRuntime`.
 
 ### Changed
 
-- The release lane and source CI move to `ost` 0.23.15.
+- The release lane and source CI move to `ost` 0.23.16, whose `verify-consumer`
+  resolves the runtime's OpenUSD and Python, so it links a consumer of the session on
+  each target.
 - The `AvatarRuntime` CMake package version moves to 0.2. `SameMinorVersion`
   refuses a `find_package(AvatarRuntime 0.1)` request.
 - Installed-consumer tests register only when this repository is the top-level
@@ -32,9 +35,6 @@ x86_64. The C ABI stays at experimental revision 5 and is not frozen.
 - The session selects pose only. Expressions, gaze and node constraints are not
   evaluated, and scaled spring rigs are refused.
 - The session has no pull request lane; only the release workflow builds it.
-- The release lane does not link a consumer of the session, because `ost library
-  verify-consumer` refuses OpenUSD's imported targets. A consumer was linked on
-  Windows only, by hand.
 
 ## [0.1.0] - 2026-10-31
 

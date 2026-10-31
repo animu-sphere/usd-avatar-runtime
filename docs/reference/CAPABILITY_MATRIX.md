@@ -1333,7 +1333,7 @@ Linux evidence comes from the release workflow, not from this run.
 
 | Check | Result |
 | --- | --- |
-| `ost library build`, `test` and `package libs/avatarVrmSession` | builds; 12/12 CTests; two packagings give one digest |
+| `ost library build`, `test`, `verify-consumer` and `package libs/avatarVrmSession` with `ost` 0.23.16 | builds; 12/12 CTests; a generated consumer links `avatarVrmSession::Session`; two packagings give one digest |
 | Top-level configuration of the same adapters | 20/20 CTests, including every installed consumer at `AvatarRuntime` 0.2.0 |
 | `tools/check-vrm-session.ps1` on the packaged `avatarVrmSessionCheck`, with the published VRM product | all four runs pass; every error value equals the [2026-10-29 table](#vrm-fixed-tick-session-and-host-evidence-2026-10-29) |
 | `hydra-toon` at `1c17de7`: `toon-viewport-vrm` and `toon-vrm-runtime-test` from this prefix | both build; `toon-vrm-runtime-resident` passes with AliciaSolid and `VRMA_01` |
@@ -1344,8 +1344,3 @@ exercises resident skin palettes without a window: no window was shown and no pi
 were compared here. `toon-vrm-runtime-resident` omitted `vrmImaging`, which it did not
 need. The repository's own installed-consumer tests run only in a top-level
 configuration, because `ost library test` has no compiler environment.
-
-With `ost` 0.23.15, `ost library verify-consumer` resolves the runtime's `pxr` but then
-refuses `gf`, whose imported include directories name the host Python's `Include`. The
-package therefore declares no `package_contract`, and the hosted lanes link no consumer
-of it. Linking a consumer is Windows-only evidence here.

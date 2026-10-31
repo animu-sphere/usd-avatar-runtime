@@ -102,7 +102,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.23.15 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.16 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -113,7 +113,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no release cell for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.15"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.16"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$(sha256sum "$asset" | cut -d' ' -f1)"
@@ -140,8 +140,8 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.23.15" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.23.15', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.23.16" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.23.16', got '$version'" ; exit 1
           fi
       - name: Pull, verify and materialize the pinned runtime SDK
         shell: bash
@@ -166,7 +166,7 @@ jobs:
       - name: Run the root suite, including the installed consumer
         shell: bash
         run: ost test --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-      - name: Build, test and package the libraries, twice
+      - name: Build, test, verify and package the libraries, twice
         shell: bash
         run: |
           set -euo pipefail
@@ -175,10 +175,7 @@ jobs:
             library="libs/$name"
             ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-            # avatarVrmSession declares no package contract; see its descriptor.
-            if [ "$name" = "avatarRuntime" ]; then
-              ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-            fi
+            ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name.json"
             ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name-second.json"
             first="$(jq -er '.data.archive_digest' ".ost-ci/$name.json")"
@@ -247,12 +244,12 @@ jobs:
         with:
           pattern: release-*
           path: staged
-      - name: Bootstrap ost 0.23.15 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.16 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
           asset="ost-cli-x86_64-unknown-linux-musl.tar.xz"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.15"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.16"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$(sha256sum "$asset" | cut -d' ' -f1)"

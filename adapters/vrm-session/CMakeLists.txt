@@ -9,6 +9,14 @@ target_link_libraries(avatarVrmSession PUBLIC avatarVrmUsdBinding avatarVrmSprin
 install(TARGETS avatarVrmSession EXPORT AvatarVrmSessionTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT AvatarVrmSessionTargets NAMESPACE AvatarRuntime:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/AvatarVrmSessionConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/AvatarVrmSessionConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarVrmSession)
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AvatarVrmSessionConfigVersion.cmake
+    VERSION ${PROJECT_VERSION} COMPATIBILITY SameMinorVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AvatarVrmSessionConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/AvatarVrmSessionConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarVrmSession)
 add_executable(avatarVrmSessionCheck check.cpp)
 target_link_libraries(avatarVrmSessionCheck PRIVATE avatarVrmSession)
 if(WIN32)

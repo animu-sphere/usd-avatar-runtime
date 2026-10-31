@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+# The session under a package name of its own, because a library contract's
+# generated consumer cannot request a component of AvatarRuntime.
+include(CMakeFindDependencyMacro)
+find_dependency(AvatarRuntime @PROJECT_VERSION@ EXACT CONFIG COMPONENTS vrm_session
+    PATHS "${CMAKE_CURRENT_LIST_DIR}/.." NO_DEFAULT_PATH)
+check_required_components(AvatarVrmSession)
