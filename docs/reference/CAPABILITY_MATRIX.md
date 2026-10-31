@@ -1297,3 +1297,28 @@ CY2026 `usd` runtime. These are the first non-Windows measurements of the core;
 adapter evidence in this matrix remains local. The [release lane](../releases/README.md)
 packages `avatarRuntime` for Windows and Linux and verifies an installed consumer
 and a reproducible archive digest. This is not an ABI freeze.
+
+## VRM session against published owners (2026-10-31)
+
+Measured at `9f5b422` on Windows x86-64 / MSVC 19.51 / OpenUSD 26.08, for
+[v0.2.0](../roadmap/current.md#next-release-v020). Linux was not measured.
+
+| Owner inputs | Result |
+| --- | --- |
+| motion 0.5.4 and VRM 0.11.0 release assets as published | **refused at configure:** the `vrmSchema` package has no `include/`, and its CMake target names that path |
+| as above, with the v0.11.0 tag's schema headers overlaid in a scratch prefix | configures, builds, passes 20/20 CTests |
+| motion 0.5.4, with `vrmRig` and `vrmSchema` from `ost library package` of an unmodified v0.11.0 tree plus a thin schema descriptor | configures, builds, passes 20/20 CTests |
+
+`ost plugin package` stages a bundle's libraries and USD resources but no headers,
+so a `usd-schema` bundle cannot serve a C++ consumer. `ost library package` keeps
+the whole install tree. `vrmRig` is a library already, but is not a release member;
+the published `execVrm` asset carries it unpinned, with motion 0.5.1. The last
+row therefore links a `vrmRig` built against motion 0.5.1 with motion 0.5.4, which
+these tests do not establish as a supported combination.
+
+With the last row's build and the published VRM plugin product,
+`tools/check-vrm-session.ps1` ran `VRMA_01.vrma` at 60 Hz for 120 ticks with the
+assets [listed above](#vrm-fixed-tick-session-and-host-evidence-2026-10-29). All
+four runs passed exact reset replay and retained unload, and every error value
+equals the 2026-10-29 table. The renderer path and pinned package resolution were
+not exercised.

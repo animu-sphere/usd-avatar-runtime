@@ -40,6 +40,28 @@ the evaluation DAG, shared-world barrier and clock/reset coordination. The
 [physics milestones](#physics-orchestration-milestones) extend the MMD track;
 their acceptance gates do not replace Runtime Phases or imply a frozen ABI.
 
+## Next release: v0.2.0
+
+v0.2.0 publishes the [native VRM session](../architecture/VRM_SESSION.md), the first
+package with a real consumer. The MMD path follows later: it spans three owner
+repositories and its representative acceptance is still open. The ABI stays at
+experimental revision 5 unless the work below requires a change.
+
+**Package shape.** A second library, `avatarVrmSession`, joins `avatarRuntime` as a
+release member. It holds the core and the session's adapters in one prefix and
+provides the same `AvatarRuntime` CMake package, so
+`find_package(AvatarRuntime COMPONENTS vrm_session)` is unchanged. A consumer pins
+one of the two packages, not both. `avatarRuntime` stays dependency-free.
+
+| Step | Work | Owner | Gate |
+| --- | --- | --- | --- |
+| 1 | publish `vrmRig` and a header-carrying `vrmSchema` library on the `usd` lane, with `vrmRig` pinned to motion 0.5.4 | VRM ([measurement](../reference/CAPABILITY_MATRIX.md#vrm-session-against-published-owners-2026-10-31)) | digest pins exist for Windows and Linux |
+| 2 | add `libs/avatarVrmSession` with those pins and motion 0.5.4; keep its compiler-dependent installed-consumer tests out of `ost library test` | runtime | `ost library build`, `test` and `package` pass, with a reproducible digest |
+| 3 | add an adapter CI lane and the second release member | runtime | Windows and Linux pass; this is the session's first Linux measurement |
+| 4 | build `toon-viewport-vrm` from the published pins | renderer | the [resident VRM check](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/110-2026-10-29-live-vrm-springs.md) passes without a local owner prefix |
+
+Publishing the tag and the draft release remains a human decision.
+
 ## Boundary cleanup workstreams
 
 These preserve the supplied cleanup sequence A–F, separately from the original
