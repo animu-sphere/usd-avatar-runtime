@@ -166,6 +166,11 @@ for this runtime's ABI revision; the configure probe refuses other revisions. Th
 actual avatar rendering and Hydra/direct parity remain open. See
 [output paths](docs/architecture/OUTPUT_PATHS.md#scoped-toon-transport-check).
 
+## Releases
+
+See the [release records](docs/releases/README.md) and [changelog](CHANGELOG.md).
+Releases publish the dependency-free core; adapters build from source.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), the [Code of Conduct](CODE_OF_CONDUCT.md)

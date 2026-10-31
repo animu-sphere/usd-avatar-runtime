@@ -5,7 +5,7 @@ Notable changes to the released runtime. The format follows
 0.x, a minor version may change the public API or ABI. The package version and
 the C ABI revision are separate numbers.
 
-## [0.1.0] - unreleased
+## [0.1.0] - 2026-10-31
 
 The first versioned release. It publishes the dependency-free `avatarRuntime`
 core for `cy2026` / `usd` on Windows x86_64 and Linux x86_64, with the C ABI at

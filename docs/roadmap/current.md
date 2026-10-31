@@ -24,8 +24,9 @@ claiming full PMX/VMD or L3 acceptance.
 Runtime Phases A–F remain open. The adopted
 [near-term direction](../design/NEAR_TERM_PLAN.md) refines the original phase
 sequence: A/B overlap, early direct consumer work from C validates the state,
-and full Hydra publication follows real-provider evidence. No release names,
-dates or package pins have been assigned.
+and full Hydra publication follows real-provider evidence. The first
+[release](../releases/README.md) publishes the core only and closes none of
+these phases.
 Related provider work is tracked by its owner; this page tracks runtime
 integration and the evidence needed here.
 
