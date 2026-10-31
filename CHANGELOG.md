@@ -5,6 +5,16 @@ Notable changes to the released runtime. The format follows
 0.x, a minor version may change the public API or ABI. The package version and
 the C ABI revision are separate numbers.
 
+## [Unreleased]
+
+### Changed
+
+- A session pull request lane builds, tests and packages `avatarVrmSession` on Windows
+  and Linux. It and the release lane build and run the repository's installed consumer
+  on both, and `verify-consumer` still runs on Windows only.
+- A change touching only documentation no longer runs the pull request lanes or the
+  `plain cmake` push lane.
+
 ## [0.2.0] - 2026-11-01
 
 Publishes the native VRM session for `cy2026` / `usd` on Windows x86_64 and Linux
