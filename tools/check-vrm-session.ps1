@@ -5,7 +5,8 @@ param(
     [Parameter(Mandatory=$true)][string]$Clip,
     [Parameter(Mandatory=$true)][string]$EvidencePath,
     [double]$FixedStepSeconds = (1.0 / 60),
-    [int]$Ticks = 120
+    [int]$Ticks = 120,
+    [switch]$Face
 )
 $ErrorActionPreference = 'Stop'
 # Caller supplies installed USD/plugin/DLL discovery. Assets are never copied.
@@ -16,6 +17,7 @@ foreach ($taskAvatar in $taskAssets[0..1]) {
     foreach ($taskSecondary in @($true, $false)) {
         $taskArguments = @($taskAvatar, $taskAssets[2], $FixedStepSeconds.ToString('R', [Globalization.CultureInfo]::InvariantCulture), "$Ticks")
         if (-not $taskSecondary) { $taskArguments += '--no-springs' }
+        if ($Face) { $taskArguments += '--face' }
         $taskOutput = (& $taskHost @taskArguments 2>&1 | Out-String)
         $taskExit = $LASTEXITCODE
         Write-Output $taskOutput.Trim()

@@ -14,7 +14,9 @@ are owned by the [frame lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-
 
 [`evaluator.h`](../../include/avatarRuntime/evaluator.h) and the direct runtime
 implement experimental registration, phase barriers and explicit predecessor
-dependencies. This does not freeze RT-O3: actual motion/VRM/MMD adapter plans
+dependencies. The [VRM session](../architecture/VRM_SESSION.md#expression-and-lookat) composes
+motion, expression with LookAt, and spring in the existing phases, with no phase extension,
+on real avatars. This does not freeze RT-O3: actual motion/VRM/MMD adapter plans
 still need conformance evidence.
 
 Real providers must validate these dependencies before a freeze:

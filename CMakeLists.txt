@@ -123,9 +123,9 @@ if(AVATAR_BUILD_MOTION_USD_BINDING)
     add_subdirectory(adapters/motion-usd)
 endif()
 if(AVATAR_BUILD_VRM_SESSION)
-    if(NOT (AVATAR_BUILD_VRM_USD_BINDING AND AVATAR_BUILD_VRM_SPRING_USD_BINDING AND
+    if(NOT (AVATAR_BUILD_VRM_ADAPTER AND AVATAR_BUILD_VRM_USD_BINDING AND AVATAR_BUILD_VRM_SPRING_USD_BINDING AND
             AVATAR_BUILD_VRM_SPRING_ADAPTER AND AVATAR_BUILD_MOTION_USD_BINDING AND AVATAR_BUILD_MOTION_ADAPTER))
-        message(FATAL_ERROR "VRM session requires VRM USD, spring USD/evaluator, motion USD and motion adapters")
+        message(FATAL_ERROR "VRM session requires VRM, VRM USD, spring USD/evaluator, motion USD and motion adapters")
     endif()
     add_subdirectory(adapters/vrm-session)
 endif()

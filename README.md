@@ -34,7 +34,7 @@ The runtime is experimental: the C ABI is at revision 5 and is not frozen.
 | Package | Contents | Dependencies |
 | --- | --- | --- |
 | `avatarRuntime` | the core: C contracts, instances, ordered evaluation, transactions, retained snapshots, physics barrier and fixed-tick session | none |
-| `avatarVrmSession` | the core and a native VRM and motion clip session with spring secondary motion | motion, VRM and OpenUSD packages, pinned by digest |
+| `avatarVrmSession` | the core and a native VRM and motion clip session with spring secondary motion and selectable expression and LookAt | motion, VRM and OpenUSD packages, pinned by digest |
 
 Both target `cy2026` / `usd` on Windows x86_64 and Linux x86_64. The VRM session evaluates
 pose and spring. Expression, LookAt and MMD adapters are source-built, and Hydra publication,
