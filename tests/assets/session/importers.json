@@ -1,0 +1,14 @@
+{
+  "repository": "animu-sphere/usd-vrm-plugins",
+  "version": "0.12.0",
+  "bundles": {
+    "usdVrmFileFormat": {
+      "linux": "e8c1799d75d51b5195f63f7ce919308edc66e960741f84b2f4a60a48f535bdc5",
+      "windows": "cfce74d3292631228863612465da76d9900f79d87add69a5c8e87f8cbb90b527"
+    },
+    "usdVrmaFileFormat": {
+      "linux": "0f9441df014d1176071c4855858caf4f34d2528b0a5db4495757a075aed75530",
+      "windows": "e4750c1a75b4146dfa8beaca05d10d989576c486fa666985b23796279b5de686"
+    }
+  }
+}

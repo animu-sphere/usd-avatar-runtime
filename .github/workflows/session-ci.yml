@@ -123,6 +123,8 @@ jobs:
         run: ost library verify-consumer libs/avatarVrmSession --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
       - name: Build and run the installed consumer
         run: python scripts/check_session_consumer.py
+      - name: Run the VRM fixture through the importers and the session
+        run: python scripts/check_session_fixture.py
       - name: Upload the library records and CI evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7

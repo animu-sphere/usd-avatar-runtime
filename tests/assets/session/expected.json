@@ -1,0 +1,4286 @@
+{
+ "bone": [
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.bone",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 1,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0.0029775710746052547,
+      -0.025755236553314746,
+      7.671382987297112e-05,
+      0.9996638414865102
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0.0029775710746052547,
+      -0.025755236553314746,
+      7.671382987297112e-05,
+      0.9996638414865102
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.800000011920929,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.20000000298023224,
+      0.30000001192092896,
+      0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.05000000074505806,
+      0.05000000074505806,
+      0.05000000074505806,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 0,
+     "validity": 1
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 2,
+     "source_seconds": 0,
+     "validity": 1
+    }
+   ],
+   "seconds": 0
+  },
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.bone",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 31,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      2.137411872652117e-17,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0.15000000596046448
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      1.0687059363260585e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      2.6717649235332076e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      -2.6717649235332076e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      2.6717649235332076e-17,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -0.2588190734386444,
+      0.9659258723258972
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0.2588190734386444,
+      0.9659258723258972
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0.003915061341214396,
+      -2.3748835747660483e-18,
+      9.2978859426429e-21,
+      0.9999923361179797
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0.003915061341214396,
+      -2.3748835747660483e-18,
+      9.2978859426429e-21,
+      0.9999923361179797
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0.048338756146589924,
+      0,
+      -0.031558402001049105,
+      0.9983323253893669
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      -0.022877163696801046,
+      0,
+      -0.004612062493628399,
+      0.9997276450417606
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.7000000476837158,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.550000011920929,
+      0.5,
+      0.44999998807907104,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.17500001192092896,
+      0.07500000298023224,
+      0.07500000298023224,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0.5
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0.5,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0.5,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 0.5,
+     "validity": 1
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 2,
+     "source_seconds": 0.5,
+     "validity": 1
+    }
+   ],
+   "seconds": 0.5
+  },
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.bone",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 61,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      -4.274823745304234e-17,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0.30000001192092896
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      -2.137411872652117e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      -5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -5.343529847066415e-17,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0.0038663461078185975,
+      0.03445123154320723,
+      -0.00013328049751857806,
+      0.9993988924594823
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0.0038663461078185975,
+      0.03445123154320723,
+      -0.00013328049751857806,
+      0.9993988924594823
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0.0984658247148104,
+      0,
+      0.01815496795935366,
+      0.9949748129986141
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      0.04913665836964823,
+      0,
+      0.010367905022235474,
+      0.9987382516704336
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.800000011920929,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.20000000298023224,
+      0.30000001192092896,
+      0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.05000000074505806,
+      0.05000000074505806,
+      0.05000000074505806,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 1
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 2,
+     "source_seconds": 1,
+     "validity": 1
+    }
+   ],
+   "seconds": 1
+  },
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.bone",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 91,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      -4.274823745304234e-17,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0.30000001192092896
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      -2.137411872652117e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      -5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -5.343529847066415e-17,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0.049994687932927766,
+      0,
+      -1.354612853601245e-05,
+      0.9987494836018649
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      -0.020032601492434354,
+      0,
+      -0.0001617083476459405,
+      0.999799314226538
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.800000011920929,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.20000000298023224,
+      0.30000001192092896,
+      0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.05000000074505806,
+      0.05000000074505806,
+      0.05000000074505806,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 1
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 3
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 3,
+     "source_seconds": 1,
+     "validity": 1
+    }
+   ],
+   "seconds": 1.5
+  }
+ ],
+ "expression": [
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.expression",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 1,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.800000011920929,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.20000000298023224,
+      0.30000001192092896,
+      0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.05000000074505806,
+      0.05000000074505806,
+      0.05000000074505806,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0.03413182497024536
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 0.2951672375202179
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 0,
+     "validity": 1
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 2,
+     "source_seconds": 0,
+     "validity": 1
+    }
+   ],
+   "seconds": 0
+  },
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.expression",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 31,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      2.137411872652117e-17,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0.15000000596046448
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      1.0687059363260585e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      2.6717649235332076e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      -2.6717649235332076e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      2.6717649235332076e-17,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -0.2588190734386444,
+      0.9659258723258972
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0.2588190734386444,
+      0.9659258723258972
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0.048338756146589924,
+      0,
+      -0.031558402001049105,
+      0.9983323253893669
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      -0.022877163696801046,
+      0,
+      -0.004612062493628399,
+      0.9997276450417606
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.7000000476837158,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.550000011920929,
+      0.5,
+      0.44999998807907104,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.17500001192092896,
+      0.07500000298023224,
+      0.07500000298023224,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0.04486341029405594
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 2.721436788444772e-17
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0.5
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0.5,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 0.5,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 0.5,
+     "validity": 1
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 2,
+     "source_seconds": 0.5,
+     "validity": 1
+    }
+   ],
+   "seconds": 0.5
+  },
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.expression",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 61,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      -4.274823745304234e-17,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0.30000001192092896
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      -2.137411872652117e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      -5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -5.343529847066415e-17,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0.0984658247148104,
+      0,
+      0.01815496795935366,
+      0.9949748129986141
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      0.04913665836964823,
+      0,
+      0.010367905022235474,
+      0.9987382516704336
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.800000011920929,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.20000000298023224,
+      0.30000001192092896,
+      0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.05000000074505806,
+      0.05000000074505806,
+      0.05000000074505806,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 1
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0.04433148726820946
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0.394863098859787
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 2,
+     "source_seconds": 1,
+     "validity": 1
+    }
+   ],
+   "seconds": 1
+  },
+  {
+   "capabilities": [
+    "avatar.motion.clipPose",
+    "avatar.vrm.expression.effects",
+    "avatar.vrm.lookAt.expression",
+    "avatar.vrm.springBone"
+   ],
+   "frame": 91,
+   "generation": 1,
+   "joints": [
+    {
+     "joint": "hips",
+     "parent": -1,
+     "rotation": [
+      0,
+      -4.274823745304234e-17,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.8999999761581421,
+      0.30000001192092896
+     ]
+    },
+    {
+     "joint": "hips/spine",
+     "parent": 0,
+     "rotation": [
+      -2.137411872652117e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg",
+     "parent": 0,
+     "rotation": [
+      -5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg",
+     "parent": 0,
+     "rotation": [
+      5.343529847066415e-17,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.10000000149011612,
+      -0.05000000074505806,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -5.343529847066415e-17,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.5,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      -0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm",
+     "parent": 1,
+     "rotation": [
+      0,
+      0,
+      0.5,
+      0.8660253882408142
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.15000000596046448,
+      0.3499999940395355,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg",
+     "parent": 2,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg",
+     "parent": 3,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/leftEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/rightEye",
+     "parent": 4,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.029999999329447746,
+      0.05000000074505806,
+      0.07999999821186066
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1",
+     "parent": 4,
+     "rotation": [
+      0.049994687932927766,
+      0,
+      -1.354612853601245e-05,
+      0.9987494836018649
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      0.10000000149011612,
+      -0.05000000074505806
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm",
+     "parent": 5,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm",
+     "parent": 6,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/leftUpperLeg/leftLowerLeg/leftFoot",
+     "parent": 7,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/rightUpperLeg/rightLowerLeg/rightFoot",
+     "parent": 8,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2",
+     "parent": 11,
+     "rotation": [
+      -0.020032601492434354,
+      0,
+      -0.0001617083476459405,
+      0.999799314226538
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/leftUpperArm/leftLowerArm/leftHand",
+     "parent": 12,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/rightUpperArm/rightLowerArm/rightHand",
+     "parent": 13,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      -0.25,
+      0,
+      0
+     ]
+    },
+    {
+     "joint": "hips/spine/head/hair1/hair2/hair3",
+     "parent": 16,
+     "rotation": [
+      0,
+      0,
+      0,
+      1
+     ],
+     "scale": [
+      1,
+      1,
+      1
+     ],
+     "skeleton": "/Asset/skel/Skeleton",
+     "translation": [
+      0,
+      -0.10000000149011612,
+      0
+     ]
+    }
+   ],
+   "layout": "vrm.session.check",
+   "layout_version": 1,
+   "materials": [
+    {
+     "input": "inputs:vrm:material:baseColorAlphaFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 1,
+     "value": [
+      0.800000011920929,
+      0,
+      0,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:baseColorFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.20000000298023224,
+      0.30000001192092896,
+      0.4000000059604645,
+      0
+     ]
+    },
+    {
+     "input": "inputs:vrm:material:emissiveFactor",
+     "material": "/Asset/mtl/Body_Mat",
+     "overridden": 1,
+     "type": 3,
+     "value": [
+      0.05000000074505806,
+      0.05000000074505806,
+      0.05000000074505806,
+      0
+     ]
+    }
+   ],
+   "morphs": [
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_close",
+     "weight": 1
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_down",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_left",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_right",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_smile",
+     "weight": 0
+    },
+    {
+     "mesh": "/Asset/geo/Body",
+     "target": "Body_up",
+     "weight": 0
+    }
+   ],
+   "samples": [
+    {
+     "channel": "clip:vrm:blink",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "clip:vrm:happy",
+     "kind": 1,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 1
+    },
+    {
+     "channel": "motion:lookAtTarget",
+     "kind": 2,
+     "resolution": 1,
+     "source_seconds": 1,
+     "validity": 3
+    },
+    {
+     "channel": "motion:pose",
+     "kind": 3,
+     "resolution": 3,
+     "source_seconds": 1,
+     "validity": 1
+    }
+   ],
+   "seconds": 1.5
+  }
+ ]
+}

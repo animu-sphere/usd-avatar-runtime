@@ -56,6 +56,7 @@ not implemented.
 | Core unit and installed consumer | hosted | hosted | hosted plain CMake; not a release target |
 | `avatarVrmSession` package and consumer | pull request and release lanes | pull request and release lanes | no |
 | Adapter integration outside the session | local only | no | no |
+| Generated VRM through published importers and the session | pull request and release lanes | pull request and release lanes | no |
 | Real-asset end-to-end | local only | no | no |
 | Renderer consumption | local only, `lookdev` renderer with `usd` package | no | no |
 

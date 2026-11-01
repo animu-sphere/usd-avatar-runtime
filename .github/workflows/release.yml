@@ -198,6 +198,8 @@ jobs:
           done
       - name: Build and run the session's installed consumer
         run: python scripts/check_session_consumer.py
+      - name: Run the VRM fixture through the importers and the session
+        run: python scripts/check_session_fixture.py
       - name: Stage the release artifacts
         shell: bash
         run: |

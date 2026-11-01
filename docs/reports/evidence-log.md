@@ -1765,3 +1765,18 @@ with a local session build from this repository. Its
 holds the measurements. AliciaSolid and VRM1 Constraint Twist Sample passed the resident check with
 generated input; Seed-san is refused by the scaled spring limit. Neither passing avatar's expressions
 bind a material.
+
+## Generated VRM through the importers (2026-11-01)
+
+`scripts/check_session_fixture.py` runs a generated 20-joint VRM 1.0 avatar, with bone and expression
+LookAt, and a one-second VRMA clip through `usdVrmFileFormat` and `usdVrmaFileFormat` 0.12.0 and
+`avatarVrmSessionCheck`. On Windows, generated-input runs with and without springs and clip-input runs
+with springs passed: owner comparisons at `1e-6`, exact reset replay and retained unload. The maximum
+motion error was `9.38e-8` and the maximum spring error `9.56e-8`. The committed state covers pose,
+spring, morph weights, material overrides, eye rotations or LookAt morphs, stale gaze past the clip's
+end, and source samples. Changing one expected weight by `0.01` made the comparison fail.
+
+The fixture's expressions bind material colours, so a material override from an imported VRM reaches
+committed state here; no renderer received it. The motion is generated, not captured, and the expected
+file records this implementation's output, with owner agreement checked separately. Linux was not
+measured when this was written. The session lane runs it.
