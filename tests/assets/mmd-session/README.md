@@ -1,7 +1,7 @@
 # MMD session end-to-end fixture
 
 A small PMX and VMD that exercise morph, primary UV, IK, append and physics feedback through one
-session. [`tools/make_mmd_session_fixture.py`](../../../tools/make_mmd_session_fixture.py) writes them
+session, with a joint from a body to itself and a bone two simulated bodies name. [`tools/make_mmd_session_fixture.py`](../../../tools/make_mmd_session_fixture.py) writes them
 with the MMD owner's encoders, from its source archive at the tag and digest in `importers.json`, with
 no third-party art. They are test inputs: one quad per moving bone, not a model anyone would draw.
 

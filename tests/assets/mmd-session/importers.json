@@ -1,15 +1,15 @@
 {
   "repository": "animu-sphere/usd-mmd-plugins",
-  "version": "0.3.1",
-  "source": "edde0455310ef24b93df19faea7e0874af85e54652b1359fc2c319403e9f7c8d",
+  "version": "0.3.2",
+  "source": "c38c372f83ac8ce58336314efe8384102d9349facdc9e7770dd8c8bc036b40d4",
   "bundles": {
     "usdMmdFileFormat": {
-      "linux": "5f2e3dd510307401ceb8b740de8a8fc36272e9be016d8b026390c9e3f2f79893",
-      "windows": "7f6ca6eae1959278c21e70ecb65740876632d6d02c680781437c3ce85a1a8d68"
+      "linux": "d8b18f752b016129aabe5a3568d40249beda9bfd764aa52c5b08a68c1c992a37",
+      "windows": "199addbdea9e358db3dd271f7d508a6c0e4bdd435a0db7e200df30b188e3860c"
     },
     "mmdSchema": {
-      "linux": "ee575b28028105b8e33720010c29694e168803242e991e46e8cf316d82369875",
-      "windows": "bc107895b8961252a104bb6940bfa52c08d5b4573ab3b6eb030937c692929ea6"
+      "linux": "d76f89bc0627854c720049ea66902c72823afd78d55e29ec1145f75b3c37d6a7",
+      "windows": "135f69b1ea847d649034721d9f5d60d24f28e6e3e941aca0a994dc6f2ab20289"
     }
   }
 }

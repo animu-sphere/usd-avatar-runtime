@@ -186,7 +186,8 @@ run, and `scripts/check_mmd_session_fixture.py` runs them on both platforms:
   its pinned source archive, so CI needs no owner checkout. `usdMmdFileFormat` and `mmdSchema` are
   published, and pinned by digest as the VRM importers are.
 - One model that exercises the whole path. Morph, primary UV, IK, append and physics feedback each change
-  committed state, and each input in `broken/` must fail the comparison on the feature it took away.
+  committed state, and each input in `broken/` must fail the comparison on the feature it took away. It has
+  a self-joint and a bone two bodies drive, so the owners' rules for them run in the lanes.
 - Expected state through `scripts/compare_avatar_state.py`, which has a channel for primary vertex UVs.
 
 On the deterministic SDK, this fixture's state has equal values on Windows and Linux, so one expected

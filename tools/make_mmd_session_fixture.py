@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 """Write the MMD session fixture in tests/assets/mmd-session with the owner's encoders.
 
-One model and one motion exercise morph, primary UV, IK, append and physics feedback.
+One model and one motion exercise morph, primary UV, IK, append and physics feedback, with a
+self-joint, which the importer disables, and a bone two simulated bodies name.
 Each `broken` input takes away exactly one of them, so that the check can show the
 comparison failing for that reason. The encoders come from the owner's source archive
 at the tag and digest in importers.json, so neither mode needs an owner checkout.
@@ -94,13 +95,16 @@ def model(pmx) -> dict:
     result["rigidBodies"] = [
         pmx.rigid_body("anchor", "anchor", 0, 0, 0, (1.0, 0.0, 0.0), (0.0, 20.0, 0.0), (0.0, 0.0, 0.0), 1.0, 0),
         pmx.rigid_body("swing", "swing", 1, 0, 1, (7.5, 1.0, 1.0), (7.5, 20.0, 0.0), (0.0, 0.0, 0.0), 1.0, 2),
+        # Later in source order than "swing", so this body's rotation reaches the bone.
+        pmx.rigid_body("swingLater", "swingLater", 1, 0, 1, (3.0, 1.0, 1.0), (3.0, 20.0, 0.0), (0.0, 0.0, 0.0), 1.0, 2),
     ]
     for body in result["rigidBodies"]:
         body["nonCollisionMask"] = 0xFFFF
         body["linearDamping"] = body["angularDamping"] = 0.0
         body["friction"] = body["restitution"] = 0.0
-    result["joints"] = [pmx.joint("pivot", 0, (0, 1), (0.0, 20.0, 0.0), (0.0, 0.0, 0.0),
-        ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)), ((0.0, 0.0, -3.0), (0.0, 0.0, 3.0)), ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)))]
+    limits = ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)), ((0.0, 0.0, -3.0), (0.0, 0.0, 3.0)), ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
+    result["joints"] = [pmx.joint(name, 0, bodies, (0.0, 20.0, 0.0), (0.0, 0.0, 0.0), *limits)
+                        for name, bodies in (("pivot", (0, 1)), ("pivotLater", (0, 2)), ("self", (1, 1)))]
     return result
 
 
@@ -126,7 +130,11 @@ def outputs(pmx, vmd) -> dict[str, bytes]:
     no_append = copy.deepcopy(avatar)
     no_append["bones"][3]["flags"] &= ~pmx.APPEND_ROTATION
     no_feedback = copy.deepcopy(avatar)
-    no_feedback["rigidBodies"][1]["physicsMode"] = 0
+    no_feedback["rigidBodies"][1]["physicsMode"] = no_feedback["rigidBodies"][2]["physicsMode"] = 0
+    # Without the later body, the earlier one drives the bone.
+    earlier_body = copy.deepcopy(avatar)
+    del earlier_body["rigidBodies"][2]
+    earlier_body["joints"] = [j for j in earlier_body["joints"] if 2 not in j["rigidBodies"]]
     no_morph = copy.deepcopy(clip)
     no_morph.morphs = []
     return {
@@ -135,6 +143,7 @@ def outputs(pmx, vmd) -> dict[str, bytes]:
         "broken/no-ik.pmx": pmx.encode(no_ik)[0],
         "broken/no-append.pmx": pmx.encode(no_append)[0],
         "broken/no-feedback.pmx": pmx.encode(no_feedback)[0],
+        "broken/earlier-body.pmx": pmx.encode(earlier_body)[0],
         "broken/no-morph.vmd": no_morph.encode(),
     }
 
