@@ -12,6 +12,23 @@ means real VRM evaluation, a rendering `hydra-toon` consumer and real MMD evalua
 [physics gates](../roadmap/current.md#physics-orchestration-milestones). "L3" is the MMD
 owner's representative-acceptance level.
 
+## Real models from the package (2026-11-01)
+
+41 private PMX files and one private VMD, which stay local and are not named here, ran through
+`avatarMmdSessionCheck` from the package on Windows, on the `usd-physics-plugins` 0.1.2 and `usd-mmd-plugins`
+0.3.2 digests. Category: real-asset end-to-end, headless. Not a rendering or physics-appearance check.
+
+- **Outcome at 240 ticks:** the 24 models with rigid bodies pass, up to 692 joints, 571 bodies and 873 source
+  joints. The other 17 are props with no rigid bodies, which the session refuses by contract. Before the owner
+  changes 11 passed: 6 exhausted Jolt's capacity, 6 had self-joints, and 1 had both a self-joint and bones
+  several bodies drive.
+- **At 7,200 ticks:** the 17 largest pass, on builds of those changes for the 12 they affected.
+- **Against the owner:** largest pose error `6.66e-16`, morph and UV `0`. Reset replay is exact. The check feeds
+  the owner the session's own bodies, so this covers composition, not the solver. Material values, up to 624 in
+  a model, are not compared.
+- **Cost:** about 5 to 10 ms a tick for the largest model, including the check's own comparison. Not a real-time
+  measurement. Linux has not run these models.
+
 ## MMD session package (2026-11-01)
 
 `avatarMmdSession` built from the pushed `usd-mmd-plugins` 0.3.1 and `usd-physics-plugins` 0.1.1 digests,
