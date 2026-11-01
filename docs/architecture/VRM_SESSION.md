@@ -154,7 +154,8 @@ clip in both modes, with `-Face` for the face check, and writes asset hashes and
 evidence file. No avatar or clip is copied into the repository.
 
 Generated source/installed tests cover both spring declaration shapes, both LookAt
-types, refused selections and stage-independent session lifetime. Measured real-avatar scope and exclusions
+types, refused selections, stage-independent session lifetime, import and evaluator failure,
+pause and reset with a tick due, destroy/recreate and two avatars in one thread. Measured real-avatar scope and exclusions
 are recorded in the [capability matrix](../reports/evidence-log.md#vrm-fixed-tick-session-and-host-evidence-2026-10-29).
 This is a headless pose host: resident mesh rendering, Hydra/direct agreement,
 pixels, display interpolation and shared-world VRM composition remain open.
