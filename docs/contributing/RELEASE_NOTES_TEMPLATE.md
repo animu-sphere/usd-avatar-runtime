@@ -17,9 +17,10 @@ core has no dependency on OpenUSD, Hydra or any format library.
 
 Each package is published as a `.tar.zst` asset below and as a digest-pinned
 OpenStrata artifact in `ghcr.io/animu-sphere/usd-avatar-runtime`, tagged
-`<package>-{version}-<target>`. Pin `avatarRuntime` for the dependency-free core, or
-`avatarVrmSession` for the core with the VRM session, not both. Paste the entry
-under `requires.libraries`:
+`<package>-{version}-<target>`. Pin `avatarRuntime` for the dependency-free core,
+`avatarVrmSession` for the core with the VRM session, or `avatarMmdSession` for the core
+with the MMD session, which also needs a deterministic Jolt SDK you build. Pin only one.
+Paste the entry under `requires.libraries`:
 
 {pins}
 
@@ -29,6 +30,7 @@ under `requires.libraries`:
 | --- | --- |
 | `avatarRuntime-{version}-<target>.tar.zst` | the installed core for `<target>` |
 | `avatarVrmSession-{version}-<target>.tar.zst` | the core with the native VRM session, for `<target>` |
+| `avatarMmdSession-{version}-<target>.tar.zst` | the core with the native MMD session, for `<target>` |
 | `<package>-{version}-<target>.manifest.json` | its OpenStrata manifest |
 | `external-library-pins.md` / `.json` | the pin table above, as a file |
 | `usd-avatar-runtime-{version}-src.tar.gz` | source archive at this tag, including every optional adapter |

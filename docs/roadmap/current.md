@@ -16,7 +16,7 @@ in its way, while Hydra publication still needs an agreed integration with its c
 
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
-| P0 | [MMD session package](#v040) | a release member, with its lanes green; a dry run of the release lane has not run it | the v0.4.0 definition of done is reviewed against its evidence |
+| P0 | [MMD session package](#v040) | a release member; the [release dry run](../reports/evidence-log.md#release-dry-run-with-the-mmd-session-2026-11-01) passes | the draft and its pins are inspected and published |
 | P1 | [Hydra/direct agreement](#renderer-paths) | a [state comparison](../architecture/OUTPUT_PATHS.md#4-parity-evidence) that no consumer feeds yet; no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
 | P1 | Diagnosability | bounded diagnostics, an opt-in parity host | trace, capability dump and deterministic replay locate the phase, failure and reproduction conditions |
 | P2 | [Connector path](#input-and-recording) | not started | external input reaches `AvatarInputFrame` with latency, loss and timestamps explicit |
@@ -53,7 +53,10 @@ package, compared with the owner, with no format-specific change to core.
   Full MMD compatibility is not claimed.
 - [x] The VRM package and core-only consumers keep working, and choosing between packages is enforced.
 - [x] `hydra-toon`'s VRM host [consumes the published `avatarVrmSession` by its pin](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/119-2026-11-01-avatar-sessions-from-packages.md).
-- [ ] A dry run of the release lane passes with `avatarMmdSession` as a member.
+- [x] A [dry run of the release lane](../reports/evidence-log.md#release-dry-run-with-the-mmd-session-2026-11-01) passes
+  with `avatarMmdSession` as a member.
+
+Tag, inspect the draft and its pins, and publish. Then add the MMD session to `hydra-toon`'s pins.
 
 **Out of scope:** Hydra publication, several avatars in one world, seek, both formats in one
 process, and an ABI freeze.

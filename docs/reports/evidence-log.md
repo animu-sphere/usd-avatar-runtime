@@ -1905,3 +1905,23 @@ deterministic Jolt SDK, on the `usd` runtime, on Windows. Category: real-asset e
 `toon-viewport-vrm` from them with the published 0.12.0 plugins, on the `usd` runtime, on Windows. With AliciaSolid and
 `VRMA_01`, `toon-vrm-runtime-resident` passes, and 120 presented frames with springs and face have 0 mismatches and
 refusals. Pixels were not compared numerically.
+
+## Release dry run with the MMD session (2026-11-01)
+
+`release` run `41298663014` at `23d120d`, a dispatch on `main` before the version moved, passed every job with `ost`
+0.23.18 on hosted Windows and Linux: `avatarMmdSession` built and tested on the deterministic Jolt SDK and packaged
+twice with one digest, the package choice for both sessions, both installed consumers and both fixtures. The pin table
+has all three libraries on both targets.
+
+`toon-viewport-mmd` was then built clean from that run's Windows archive, `sha256:7dcc21f1`, after checking its digest,
+on the `usd` runtime, with a local deterministic SDK. A rebuild over a replaced prefix reported no work and kept the
+earlier static libraries, so the build directory was deleted first.
+
+| Check | Result |
+| --- | --- |
+| `toon-mmd-runtime-cache`, `toon-mmd-runtime-admission`, `toon-viewport-mmd-runtime`, generated | pass |
+| The 24 private models with rigid bodies, 300 presented frames at vsync | 597 to 651 ticks, 0 refusals and mismatches, at most 5.5 ms a tick and 1.0 ms a result |
+| The window watched by the repository owner, on the largest model, 571 bodies | accepted |
+
+The window ran from a local build of the same sources, before this archive existed. The acceptance is by eye: pixels were
+not compared numerically. The package was still 0.3.0 by version and had this release's content.

@@ -16,7 +16,7 @@ session and physics USD resources. `AVATAR_BUILD_USDVIEW_MMD_PHYSICS` also
 builds it. Consumers use the installed package:
 
 ```cmake
-find_package(AvatarRuntime 0.3.0 EXACT CONFIG REQUIRED COMPONENTS mmd_session)
+find_package(AvatarRuntime 0.4.0 EXACT CONFIG REQUIRED COMPONENTS mmd_session)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarMmdSession)
 ```
 
@@ -125,7 +125,7 @@ in both publication modes. Current evidence is in the
 
 ## Package boundary
 
-A release member from v0.4.0. The MMD session follows the
+Released from v0.4.0. The MMD session follows the
 [VRM session's packaging](PROJECT_LAYOUT.md#packaging):
 
 - `libs/avatarMmdSession` packages the core with the `mmd`, `usd`, `stage_runner`, `physics_usd`
