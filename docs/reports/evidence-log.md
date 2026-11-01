@@ -1925,3 +1925,14 @@ earlier static libraries, so the build directory was deleted first.
 
 The window ran from a local build of the same sources, before this archive existed. The acceptance is by eye: pixels were
 not compared numerically. The package was still 0.3.0 by version and had this release's content.
+
+## MMD session from the published pin (2026-11-01)
+
+v0.4.0 was published from release run `41302631672` at `25ccba3`, on the repository owner's decision. `hydra-toon`
+pulled `avatarMmdSession` 0.4.0 and its owners by the release's digests, Windows archive `sha256:bd8b1b83`, and built
+`toon-viewport-mmd` in a new directory with a local deterministic Jolt SDK and the published MMD plugins, on the `usd`
+runtime, on Windows.
+
+The generated resident and viewport tests pass. The 24 private models with rigid bodies draw 300 presented frames at 597
+to 635 ticks, with 0 refusals and mismatches, at most 5.5 ms a tick and 1.0 ms a result. See the
+[renderer report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/120-2026-11-01-mmd-session-from-published-pin.md).
