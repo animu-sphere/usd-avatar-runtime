@@ -1,3 +1,4 @@
+#include "../common/StateJson.h"
 #include "avatarVrmSession/Session.h"
 #include "avatarVrmUsd/ExpressionBinding.h"
 #include "avatarVrmUsd/LookAtBinding.h"
@@ -55,42 +56,6 @@ void identical(const ArStateView& a, const ArStateView& b) {
         require(a.materials[i].overridden == b.materials[i].overridden, "Replay material override");
         for (int k = 0; k < 4; ++k) require(a.materials[i].value[k] == b.materials[i].value[k], "Replay material");
     }
-}
-// One committed state as JSON, for comparison with an expected file. Identities are
-// paths and tokens, which need no escaping.
-std::string stateJson(const ArStateView& v) {
-    std::ostringstream o; o.precision(17);
-    const auto numbers = [&](const double* values, int count) {
-        o << '['; for (int k = 0; k < count; ++k) o << (k ? "," : "") << values[k]; o << ']';
-    };
-    o << "{\"layout\":\"" << v.layout_id << "\",\"layout_version\":" << v.layout_version << ",\"frame\":" << v.frame_id
-      << ",\"generation\":" << v.generation << ",\"seconds\":" << v.evaluation_seconds << ",\"capabilities\":[";
-    for (uint32_t i = 0; i < v.capability_count; ++i) o << (i ? "," : "") << '"' << v.capabilities[i].id << '"';
-    o << "],\"joints\":[";
-    for (uint32_t i = 0; i < v.joint_count; ++i) {
-        const auto& j = v.joints[i];
-        o << (i ? "," : "") << "{\"skeleton\":\"" << j.skeleton_id << "\",\"joint\":\"" << j.joint_id << "\",\"parent\":" << j.parent_index << ",\"translation\":";
-        numbers(j.local.translation,3); o << ",\"rotation\":"; numbers(j.local.rotation,4); o << ",\"scale\":"; numbers(j.local.scale,3); o << '}';
-    }
-    o << "],\"morphs\":[";
-    for (uint32_t i = 0; i < v.blend_shape_count; ++i) {
-        const auto& m = v.blend_shapes[i];
-        o << (i ? "," : "") << "{\"mesh\":\"" << m.mesh_id << "\",\"target\":\"" << m.target_id << "\",\"weight\":" << m.weight << '}';
-    }
-    o << "],\"materials\":[";
-    for (uint32_t i = 0; i < v.material_count; ++i) {
-        const auto& m = v.materials[i];
-        o << (i ? "," : "") << "{\"material\":\"" << m.material_id << "\",\"input\":\"" << m.input_id << "\",\"type\":" << m.value_type
-          << ",\"overridden\":" << m.overridden << ",\"value\":"; numbers(m.value,4); o << '}';
-    }
-    o << "],\"samples\":[";
-    for (uint32_t i = 0; i < v.sample_count; ++i) {
-        const auto& r = v.samples[i];
-        o << (i ? "," : "") << "{\"channel\":\"" << r.channel_id << "\",\"kind\":" << r.kind << ",\"validity\":" << r.validity
-          << ",\"resolution\":" << r.resolution << ",\"source_seconds\":" << r.source_seconds << '}';
-    }
-    o << "]}";
-    return o.str();
 }
 struct Retained {
     ArRuntimeApi api; ArSnapshot handle = 0;
@@ -329,7 +294,7 @@ int avatarVrmSessionCheck(int argc, char** argv) {
             require(session.Stats().tick == tick, "One fixed tick expected");
             const auto a = view(session.Api(), session.Snapshot());
             const auto m = view(animated.Api(), animated.Snapshot());
-            if (!stateOutput.empty() && tick % 30 == 0) states.push_back(stateJson(a));
+            if (!stateOutput.empty() && tick % 30 == 0) states.push_back(avatarCheck::StateJson(a));
             // The pose the spring phase receives: motion, then any resolved eyes.
             std::map<uint32_t, pxr::GfQuatd> eyes;
             if (face) {

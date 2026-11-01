@@ -1,0 +1,2282 @@
+[
+ {
+  "capabilities": [],
+  "frame": 30,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.05000000073034573,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     -0.19467659259472578,
+     0.9808674855941077
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.19509032445221788,
+     0.9807852799186622
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.09801714156548819,
+     0.9951847265504686
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     -0.1771789109412794,
+     0.9841786593488309
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0.5656590532025978,
+     0.8246392153723595
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.24000000362335816,
+     -1.040000003623358,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": 0.25
+   }
+  ],
+  "samples": [],
+  "seconds": 0.25,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0.0625,
+     -0.125
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ },
+ {
+  "capabilities": [],
+  "frame": 60,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.10000000149011612,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     -0.6564573342647962,
+     0.7543631541174036
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.3826834370613369,
+     0.9238795305660376
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.19509032450888292,
+     0.9807852799073907
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     -0.08856715833460813,
+     0.9960702075981053
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0.6928115006082276,
+     0.7211187312953228
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.0800000071525574,
+     -0.8800000071525573,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": 0.5
+   }
+  ],
+  "samples": [],
+  "seconds": 0.5,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0.125,
+     -0.25
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ },
+ {
+  "capabilities": [],
+  "frame": 90,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.05000000075977039,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.9385153833276024,
+     -0.3452374186808888
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.195090324565548,
+     0.9807852798961194
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.09801714162298518,
+     0.9951847265448057
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     -0.1771789109322701,
+     0.9841786593504529
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0.5656590533322142,
+     0.8246392152834495
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.24000000352919926,
+     -1.0400000035291992,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": 0.125
+   }
+  ],
+  "samples": [],
+  "seconds": 0.75,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0.03125,
+     -0.0625
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ },
+ {
+  "capabilities": [],
+  "frame": 120,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.9929542986147254,
+     -0.11849793611088351
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -1.2,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": -0.25
+   }
+  ],
+  "samples": [],
+  "seconds": 1,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     -0.0625,
+     0.125
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ },
+ {
+  "capabilities": [],
+  "frame": 150,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.9710007046509559,
+     -0.23907662279559483
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -1.2,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": -0.1875
+   }
+  ],
+  "samples": [],
+  "seconds": 1.25,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     -0.046875,
+     0.09375
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ },
+ {
+  "capabilities": [],
+  "frame": 180,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0.7775185323680233,
+     -0.6288600256211831
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -1.2,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": -0.125
+   }
+  ],
+  "samples": [],
+  "seconds": 1.5,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     -0.03125,
+     0.0625
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ },
+ {
+  "capabilities": [],
+  "frame": 210,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     -0.37915877183279184,
+     0.9253316301425394
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -1.2,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": -0.0625
+   }
+  ],
+  "samples": [],
+  "seconds": 1.75,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     -0.015625,
+     0.03125
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ },
+ {
+  "capabilities": [],
+  "frame": 240,
+  "generation": 1,
+  "joints": [
+   {
+    "joint": "anchor",
+    "parent": -1,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     1.6,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/swing",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     -0.13683237020813394,
+     0.9905942168533108
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     0,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/driver",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/follower",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     -0.8,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower",
+    "parent": 4,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/upper/lower/tip",
+    "parent": 5,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0,
+     -0.4,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/target",
+    "parent": 0,
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     -0.4,
+     -1.2,
+     0
+    ]
+   }
+  ],
+  "layout": "live-mmd",
+  "layout_version": 1,
+  "materials": [],
+  "morphs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "target": "wide",
+    "weight": 0
+   }
+  ],
+  "samples": [],
+  "seconds": 2,
+  "uvs": [
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 0
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 1
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 2
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 3
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 4
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 5
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 6
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 7
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 8
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 9
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 10
+   },
+   {
+    "mesh": "/Asset/geo/Mesh",
+    "value": [
+     0,
+     0
+    ],
+    "vertex": 11
+   }
+  ]
+ }
+]

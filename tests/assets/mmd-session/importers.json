@@ -1,0 +1,15 @@
+{
+  "repository": "animu-sphere/usd-mmd-plugins",
+  "version": "0.3.1",
+  "source": "edde0455310ef24b93df19faea7e0874af85e54652b1359fc2c319403e9f7c8d",
+  "bundles": {
+    "usdMmdFileFormat": {
+      "linux": "5f2e3dd510307401ceb8b740de8a8fc36272e9be016d8b026390c9e3f2f79893",
+      "windows": "7f6ca6eae1959278c21e70ecb65740876632d6d02c680781437c3ce85a1a8d68"
+    },
+    "mmdSchema": {
+      "linux": "ee575b28028105b8e33720010c29694e168803242e991e46e8cf316d82369875",
+      "windows": "bc107895b8961252a104bb6940bfa52c08d5b4573ab3b6eb030937c692929ea6"
+    }
+  }
+}

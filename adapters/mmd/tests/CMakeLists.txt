@@ -10,13 +10,15 @@ endif()
 add_executable(mmdAdapterContracts contracts.cpp)
 target_link_libraries(mmdAdapterContracts PRIVATE avatarMmdAdapter)
 add_test(NAME adapters.mmd COMMAND mmdAdapterContracts)
-add_test(NAME adapters.mmd_installed COMMAND ${CMAKE_COMMAND}
-    "-DROOT_BINARY=${PROJECT_BINARY_DIR}"
-    "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
-    "-DDEPENDENCY_PREFIX=${CMAKE_PREFIX_PATH}"
-    "-DGENERATOR=${CMAKE_GENERATOR}" "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}"
-    "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}" "-DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
-    "-DCONFIG=$<CONFIG>" -P "${CMAKE_CURRENT_SOURCE_DIR}/installed.cmake")
+if(PROJECT_IS_TOP_LEVEL)
+    add_test(NAME adapters.mmd_installed COMMAND ${CMAKE_COMMAND}
+        "-DROOT_BINARY=${PROJECT_BINARY_DIR}"
+        "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
+        "-DDEPENDENCY_PREFIX=${CMAKE_PREFIX_PATH}"
+        "-DGENERATOR=${CMAKE_GENERATOR}" "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}"
+        "-DCXX_COMPILER=${CMAKE_CXX_COMPILER}" "-DMAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+        "-DCONFIG=$<CONFIG>" -P "${CMAKE_CURRENT_SOURCE_DIR}/installed.cmake")
+endif()
 if(WIN32)
     add_custom_command(TARGET mmdAdapterContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:mmdAdapterContracts>)

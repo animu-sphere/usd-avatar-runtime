@@ -22,6 +22,7 @@ IDENTITY_FIELDS = ("layout", "layout_version", "generation", "frame")
 CHANNELS = {
     "joints": ("skeleton", "joint"),
     "morphs": ("mesh", "target"),
+    "uvs": ("mesh", "vertex"),
     "materials": ("material", "input"),
     "samples": ("channel",),
 }
@@ -145,6 +146,8 @@ def compare_state(path: str, actual: dict, expected: dict, tolerances: Tolerance
                 _joint(where, found[key], wanted[key], tolerances, result)
             elif channel == "morphs":
                 _close(f"{where}.weight", "weight", found[key]["weight"], wanted[key]["weight"], tolerances.weight, result)
+            elif channel == "uvs":
+                _values(f"{where}.value", "uv", found[key]["value"], wanted[key]["value"], tolerances.weight, result)
             elif channel == "materials":
                 _material(where, found[key], wanted[key], tolerances, result)
             else:

@@ -125,15 +125,17 @@ in both publication modes. Current evidence is in the
 
 ## Package boundary
 
-Planned; no package is published yet. The MMD session follows the
+Not released yet. The MMD session follows the
 [VRM session's packaging](PROJECT_LAYOUT.md#packaging):
 
 - `libs/avatarMmdSession` packages the core with the `mmd`, `usd`, `stage_runner`, `physics_usd`
   and `mmd_session` targets in one prefix, and pins its owners by digest.
 - `AvatarMmdSession` is a thin package over the `mmd_session` component, so that a core already found
   in another prefix is refused. Targets keep the `AvatarRuntime::` namespace.
-- A new `avatarMmdSessionCheck` ships in the prefix, compares the session with the owner and writes
-  state in the `--state-output` format. No renderer is linked, and the MMD session has no such host today.
+- `avatarMmdSessionCheck` ships in the prefix, and writes state in the `--state-output` format. Jolt owns
+  the simulation, so it takes the session's own bodies each tick and evaluates them again through the
+  owner's feedback, continuation, morph and UV queries: a difference is one of composition. Material
+  values are not compared with the owner, and it reports how many it left out. No renderer is linked.
 - A consumer pins one package. The `mmd_session` component gets the same refusal as `vrm_session` in
   a prefix without it, and `scripts/check_package_choice.py` covers the new orders.
 
@@ -144,38 +146,36 @@ needs both formats in one process needs a combined package, to be decided when o
 | Owner | Libraries the session needs | State |
 | --- | --- | --- |
 | `usd-motion-plugins` 0.5.4 | `motionCore`, `motionSampling`, `motionRetarget`, `motionUsd` | published by digest for Windows and Linux |
-| `usd-physics-plugins` 0.1.0 | `physicsCore`, `physicsJolt`, `physicsUsd` | published by digest for Windows and Linux |
+| `usd-physics-plugins` 0.1.1 | `physicsCore`, `physicsJoltSixDof`, `physicsUsd` | pushed by digest for Windows and Linux; its draft waits for the session lanes |
 | `usd-stage-runner` 0.1.0 | `runtimeCore` | published by digest for Windows and Linux |
-| `usd-mmd-plugins` | `mmdPhysicsAdapter`, `mmdControl`, `mmdMotionBinding`, `mmdModel`, `mmdPmx`, `motionVmd` | **not published**; [prepared as 0.3.1](https://github.com/animu-sphere/usd-mmd-plugins/pull/121) |
+| `usd-mmd-plugins` 0.3.1 | `mmdPhysicsAdapter`, `mmdControl`, `mmdMotionBinding`, `mmdModel`, `mmdPmx`, `motionVmd` | published by digest for Windows and Linux |
 
-The MMD owner publishing those libraries comes first; this repository does not vendor or rebuild them.
-A published MMD library names its siblings by version range, so the descriptor pins all six.
+This repository does not vendor or rebuild them. A published MMD library names its siblings by version
+range, so the descriptor pins all six. Two things follow from the owners' packages:
 
-A trial built this package on Windows from those six, packaged locally and imported by digest: it
-configured, built and packaged reproducibly, and its tests passed. Two things follow from it:
-
-- **A Jolt SDK is a prerequisite.** `physicsJolt` requires Jolt 5.5.0, and
+- **A deterministic Jolt SDK is a prerequisite.** MMD joints need six-DOF constraints, which published
+  `physicsJolt` does not have: the session refuses any model with an admitted joint on it, with
+  `SceneResources requires SixDofConstraints for admitted joints`. `physicsJoltSixDof` has them, and
   [its owner](https://github.com/animu-sphere/usd-physics-plugins/blob/main/docs/architecture/DEPENDENCIES.md#3-jolt-physics)
-  leaves that build to the consumer, with options its release workflow names. The installed package
-  checks the exported definitions and refuses any other build. The session lanes build it the same
-  way and pass it through `CMAKE_PREFIX_PATH`, and every consumer of this package has to as well.
+  leaves building Jolt 5.5.0 to the consumer, with the deterministic options its release workflow names.
+  The installed package checks the exported definitions and refuses any other build. The session lanes
+  build it that way and pass it through `CMAKE_PREFIX_PATH`, and every consumer of this package has to
+  as well. The capability stays experimental at the owner.
 - **The package has no `package_contract`.** `ost library verify-consumer` resolves only a declared
-  closure, which cannot name that SDK. `scripts/check_session_consumer.py` builds and runs the
-  repository's installed consumer instead.
+  closure, which cannot name that SDK. `scripts/check_session_consumer.py --session mmd` builds and runs
+  the repository's installed consumer instead.
 
 ### Fixtures
 
-The trial uses generated assets that CI can run, in the same shape as `tests/assets/session`:
+[`tests/assets/mmd-session`](../../tests/assets/mmd-session/README.md) holds generated assets that CI can
+run, and `scripts/check_mmd_session_fixture.py` runs them on both platforms:
 
-- Committed PMX and VMD files with a `--check` generator, so CI needs no owner checkout. They are
-  written with the owner's encoders at a pinned tag. `usdMmdFileFormat` and `mmdSchema` are published,
-  and pinned by digest as the VRM importers are.
-- One model that exercises the whole path. The owner's `live-physics-morph.pmx` has morphs, bodies
-  and a joint but no IK or append, and its `sample-*.pmx` models have IK and append but are not
-  checked as live physics input. A new owner-encoded model must show morph, IK, append and physics
-  feedback each changing committed state, and each must be shown to fail the comparison when broken.
-- Expected state through `scripts/compare_avatar_state.py`, which needs a channel for primary vertex
-  UVs, as `--state-output` does.
+- Committed PMX and VMD files with a `--check` generator. They are written with the owner's encoders from
+  its pinned source archive, so CI needs no owner checkout. `usdMmdFileFormat` and `mmdSchema` are
+  published, and pinned by digest as the VRM importers are.
+- One model that exercises the whole path. Morph, primary UV, IK, append and physics feedback each change
+  committed state, and each input in `broken/` must fail the comparison on the feature it took away.
+- Expected state through `scripts/compare_avatar_state.py`, which has a channel for primary vertex UVs.
 
 Jolt has not been compared across platforms here, so cross-platform agreement cannot be assumed.
 Measure it before committing one expected file: if the OSes differ beyond a stated tolerance, physics

@@ -10,7 +10,7 @@ import unittest
 
 from compare_avatar_state import OPTIONAL_CHANNELS, Tolerances, compare_sequences
 
-EXPECTED = pathlib.Path(__file__).resolve().parents[1] / "tests" / "assets" / "session" / "expected.json"
+EXPECTED = pathlib.Path(__file__).resolve().parents[1] / "tests" / "assets" / "vrm-session" / "expected.json"
 
 
 class CompareAvatarState(unittest.TestCase):
@@ -32,12 +32,21 @@ class CompareAvatarState(unittest.TestCase):
         self.assertEqual(self.differences(), [])
 
     def test_the_fixture_exercises_every_channel(self) -> None:
-        for channel in OPTIONAL_CHANNELS:
+        # A VRM session publishes no primary UVs; test_a_uv_is_compared adds them.
+        for channel in set(OPTIONAL_CHANNELS) - {"uvs"}:
             self.assertTrue(self.state[channel], channel)
         self.overridden_material()
 
+    def test_a_uv_is_compared(self) -> None:
+        for state in (self.state, self.expected[-1]):
+            state["uvs"] = [{"mesh": "/m", "vertex": 0, "value": [0.25, 0.5]}, {"mesh": "/m", "vertex": 1, "value": [0.5, 0.5]}]
+        self.state["uvs"].reverse()
+        self.assertEqual(self.differences(), [])
+        self.state["uvs"][0]["value"][1] += 0.01
+        self.assertIn("uvs[/m/1].value[1]", self.differences()[0])
+
     def test_record_order_does_not_matter(self) -> None:
-        for channel in ("joints", "morphs", "materials", "samples", "capabilities"):
+        for channel in ("joints", "morphs", "uvs", "materials", "samples", "capabilities"):
             self.state[channel].reverse()
         self.assertEqual(self.differences(), [])
 

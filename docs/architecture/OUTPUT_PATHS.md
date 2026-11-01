@@ -237,7 +237,7 @@ and the script matches frames in order and records by identity.
 | Value | Agrees when |
 | --- | --- |
 | layout, layout version, generation, frame, joint parent, material type and override flag, sample kind, validity and resolution | equal |
-| translation, rotation, scale, morph weight, evaluation and source seconds | `abs(actual-expected)/max(1,abs(expected)) <= 2e-6`; a quaternion also agrees with its negation |
+| translation, rotation, scale, morph weight, primary vertex UV, evaluation and source seconds | `abs(actual-expected)/max(1,abs(expected)) <= 2e-6`; a quaternion also agrees with its negation |
 | material value with `overridden = 1` | equal after conversion to `float`; with `overridden = 0` the value is ignored |
 | capabilities | the same set |
 

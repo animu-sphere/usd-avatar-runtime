@@ -533,7 +533,8 @@
      "validity": 1
     }
    ],
-   "seconds": 0
+   "seconds": 0,
+   "uvs": []
   },
   {
    "capabilities": [
@@ -1068,7 +1069,8 @@
      "validity": 1
     }
    ],
-   "seconds": 0.5
+   "seconds": 0.5,
+   "uvs": []
   },
   {
    "capabilities": [
@@ -1603,7 +1605,8 @@
      "validity": 1
     }
    ],
-   "seconds": 1
+   "seconds": 1,
+   "uvs": []
   },
   {
    "capabilities": [
@@ -2138,7 +2141,8 @@
      "validity": 1
     }
    ],
-   "seconds": 1.5
+   "seconds": 1.5,
+   "uvs": []
   }
  ],
  "expression": [
@@ -2675,7 +2679,8 @@
      "validity": 1
     }
    ],
-   "seconds": 0
+   "seconds": 0,
+   "uvs": []
   },
   {
    "capabilities": [
@@ -3210,7 +3215,8 @@
      "validity": 1
     }
    ],
-   "seconds": 0.5
+   "seconds": 0.5,
+   "uvs": []
   },
   {
    "capabilities": [
@@ -3745,7 +3751,8 @@
      "validity": 1
     }
    ],
-   "seconds": 1
+   "seconds": 1,
+   "uvs": []
   },
   {
    "capabilities": [
@@ -4280,7 +4287,8 @@
      "validity": 1
     }
    ],
-   "seconds": 1.5
+   "seconds": 1.5,
+   "uvs": []
   }
  ]
 }
