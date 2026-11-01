@@ -6,6 +6,7 @@ to the [roadmap](../roadmap/current.md).
 
 | Version | Record | Scope |
 | --- | --- | --- |
+| v0.4.0 | [v0.4.0.md](v0.4.0.md) | The MMD session as a third package, running real models |
 | v0.3.0 | [v0.3.0.md](v0.3.0.md) | The VRM session with expression and LookAt, drawn by a renderer |
 | v0.2.0 | [v0.2.0.md](v0.2.0.md) | The native VRM session as a second package |
 | v0.1.0 | [v0.1.0.md](v0.1.0.md) | The dependency-free core with experimental ABI revision 5, and the release lane |

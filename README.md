@@ -35,24 +35,26 @@ The runtime is experimental: the C ABI is at revision 5 and is not frozen.
 | --- | --- | --- |
 | `avatarRuntime` | the core: C contracts, instances, ordered evaluation, transactions, retained snapshots, physics barrier and fixed-tick session | none |
 | `avatarVrmSession` | the core and a native VRM and motion clip session with spring secondary motion and selectable expression and LookAt | motion, VRM and OpenUSD packages, pinned by digest |
+| `avatarMmdSession` | the core and a native PMX and VMD session with Jolt physics; [a subset](docs/reference/CAPABILITY_MATRIX.md#mmd-session-supported-subset), not full MMD compatibility | motion, physics, Stage Runner, MMD and OpenUSD packages, pinned by digest, and a [deterministic Jolt SDK](docs/architecture/MMD_SESSION.md#package-boundary) you build |
 
-Both target `cy2026` / `usd` on Windows x86_64 and Linux x86_64. The VRM session evaluates
-pose and spring. Expression, LookAt and MMD adapters are source-built, and Hydra publication,
-recording and connector intake are not implemented. The
+All target `cy2026` / `usd` on Windows x86_64 and Linux x86_64. Hydra publication, recording and
+connector intake are not implemented. The
 [capability matrix](docs/reference/CAPABILITY_MATRIX.md) has the details, and the
 [roadmap](docs/roadmap/current.md) has what comes next.
 
 ## Use
 
-Pin a package from the [release notes](docs/releases/README.md). A consumer pins one of the
-two, since both provide the `AvatarRuntime` CMake package:
+Pin a package from the [release notes](docs/releases/README.md). A consumer pins one, since
+each provides the `AvatarRuntime` CMake package:
 
 ```cmake
-find_package(AvatarRuntime 0.3 REQUIRED)                         # the core
-find_package(AvatarRuntime 0.3 REQUIRED COMPONENTS vrm_session)  # the VRM session
+find_package(AvatarRuntime 0.4 REQUIRED)                         # the core
+find_package(AvatarRuntime 0.4 REQUIRED COMPONENTS vrm_session)  # the VRM session
+find_package(AvatarRuntime 0.4 REQUIRED COMPONENTS mmd_session)  # the MMD session
 ```
 
-The session's API is described in the [native VRM session](docs/architecture/VRM_SESSION.md).
+The sessions' APIs are described in the [native VRM session](docs/architecture/VRM_SESSION.md) and the
+[native MMD session](docs/architecture/MMD_SESSION.md).
 
 ## Build
 

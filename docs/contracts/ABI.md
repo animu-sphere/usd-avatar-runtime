@@ -157,6 +157,10 @@ native dynamic loading cannot be presumed to work unchanged in a browser.
 
 ## 4. Change candidates, reviewed for v0.3.0
 
+**v0.4.0 also keeps revision 5.** It changed no table or layout. A second format is now in a package, and install-tree CI
+covers both sessions. Tests of failure recovery still cover the VRM session only, and the rest of the list below still does
+not hold.
+
 **The freeze stays deferred, and v0.3.0 keeps revision 5.** Work since 0.2.0 changed no table or
 layout. Against the [freeze gates](../roadmap/current.md#abi-freeze): failure recovery and install-tree
 CI exist for the VRM session only, and these do not hold:

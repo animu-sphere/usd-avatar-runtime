@@ -31,7 +31,7 @@ ctest --test-dir build/usd-binding --output-on-failure
 Installed consumers request the component explicitly:
 
 ```cmake
-find_package(AvatarRuntime 0.3.0 EXACT CONFIG REQUIRED COMPONENTS vrm_usd)
+find_package(AvatarRuntime 0.4.0 EXACT CONFIG REQUIRED COMPONENTS vrm_usd)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarVrmUsdBinding)
 ```
 

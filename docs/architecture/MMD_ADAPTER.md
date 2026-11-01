@@ -60,7 +60,7 @@ integration remain open.
 Ordinary installed MMD consumers import no host target.
 
 ```cmake
-find_package(AvatarRuntime 0.3.0 EXACT CONFIG REQUIRED COMPONENTS mmd)
+find_package(AvatarRuntime 0.4.0 EXACT CONFIG REQUIRED COMPONENTS mmd)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarMmdAdapter)
 ```
 

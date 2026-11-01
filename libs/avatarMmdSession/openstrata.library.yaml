@@ -10,7 +10,7 @@ schema: openstrata.library/v1alpha1
 library:
   id: avatarMmdSession
   # Mirrors VERSION.
-  version: 0.3.0
+  version: 0.4.0
 requires:
   libraries:
     - id: motionCore

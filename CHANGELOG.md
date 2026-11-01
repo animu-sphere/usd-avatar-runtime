@@ -7,6 +7,12 @@ the C ABI revision are separate numbers.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-01
+
+The MMD session ships as a package and runs real models from it, as the VRM session did in v0.3.0. The C ABI stays
+at experimental revision 5 and is not frozen. The `AvatarRuntime` CMake package moves to 0.4, and `SameMinorVersion`
+refuses a request for 0.3.
+
 ### Added
 
 - `avatarMmdSession` as a package, pinning its owners by digest, with `avatarMmdSessionCheck` and a

@@ -2,7 +2,7 @@ schema: openstrata.library/v1alpha1
 library:
   id: avatarRuntime
   # Mirrors VERSION.
-  version: 0.3.0
+  version: 0.4.0
 cmake:
   package: AvatarRuntime
   target: AvatarRuntime::avatarRuntime
