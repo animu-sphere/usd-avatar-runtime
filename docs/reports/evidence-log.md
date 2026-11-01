@@ -24,7 +24,7 @@ over generated assets. A real PMX has not run from the package.
   not compared, and this fixture has none.
 - **Reset:** exact replay over three generations on each platform, and retained output survives close.
 - **Broken inputs:** without IK, append, physics feedback, or morph and UV, the comparison reports 12, 6,
-  16 and 21 differences on Windows, each naming what was taken away.
+  16 and 21 differences on Windows and Linux, each naming what was taken away.
 - **Across platforms:** the state from `windows-2022`, `ubuntu-24.04` and a local Visual Studio 18 build is
   equal at every value, compared after parsing, so one expected file serves both. This covers this model
   and duration. Other assets are not assumed to agree.

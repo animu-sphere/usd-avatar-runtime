@@ -23,8 +23,8 @@ owners. **Package** ships in the `avatarVrmSession` package and the session sele
 | Node constraints | no | no | no | [deferred past v0.3.0](../architecture/VRM_SESSION.md#node-constraints); the owner has no evaluator |
 | Native input expression and gaze | explicit attribute selection; generated fixtures | yes, sampled per tick in the session | no | captured input; automatic discovery |
 | Live UsdSkel pose, morph, UV, material output | yes | yes, optional for hosts | usdview | discardable session layer, not stage authoring |
-| MMD control and coupling | yes; generated PMX/VMD/Jolt | no | probe transport | owner libraries unpublished: `usd-mmd-plugins` 0.3.0 pins bundles and tools only; representative assets |
-| Native MMD session | yes; bounded private-asset headless runs | no | `hydra-toon` viewport, [generated material delivery](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/111-2026-10-29-live-mmd-materials.md) | full-motion and representative acceptance; several avatars |
+| MMD control and coupling | yes; generated PMX/VMD/Jolt | no | probe transport | representative assets |
+| Native MMD session | yes; bounded private-asset headless runs; [generated PMX/VMD from the package](../reports/evidence-log.md#mmd-session-package-2026-11-01) on Windows and Linux | unreleased; `avatarMmdSession` needs a deterministic Jolt SDK | `hydra-toon` viewport, [generated material delivery](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/111-2026-10-29-live-mmd-materials.md) | full-motion and representative acceptance; several avatars |
 | Live usdview MMD host | yes; [guide](../guides/live-mmd-physics.md) | no | usdview | full PMX/VMD |
 | Stage Runner session, USD physics resources | yes; generated | no | no | automatic world and participant binding; application wiring |
 | Hydra publication | no | no | no | not started |
