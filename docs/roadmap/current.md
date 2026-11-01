@@ -33,22 +33,31 @@ consumer and appears on screen.
 
 ### Definition of done
 
-- [ ] The published session builds and runs from a clean install tree.
-- [ ] Windows and Linux CI repeat the same end-to-end test.
-- [ ] With a real VRM and motion, pose, LookAt, expression and spring appear in committed state.
-- [ ] A renderer consumer receives the values, and drawing and post-reset display have no serious breakage.
-- [ ] Owner semantics and session values are compared automatically.
-- [ ] Public documents state supported and unsupported capabilities and their limits.
-- [ ] Existing core-only consumers keep working.
+Reviewed 2026-11-01 at `317d8b3`. A checked item has evidence today, within the stated limit.
+
+- [ ] The published session builds and runs from a clean install tree. The lanes do this from the library prefix on both platforms; `release.yml` has not run with `ost` 0.23.18 or this content, and nothing is published.
+- [x] Windows and Linux CI repeat the same end-to-end test: [`session ci`](../reports/evidence-log.md#state-comparison-2026-11-01). The avatar is generated.
+- [x] With a real VRM and motion, pose, LookAt, expression and spring appear in committed state. Windows only, with real clips and [generated expression and gaze input](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/118-2026-11-01-live-vrm-face.md).
+- [ ] A renderer consumer receives the values, and drawing and post-reset display have no serious breakage. Drawing was watched, and reset replays exactly by the numbers, but the display after a reset has not been watched, and the renderer used a local session build.
+- [x] Owner semantics and session values are compared automatically: `avatarVrmSessionCheck` in `scripts/check_session_fixture.py`, on both platforms.
+- [ ] Public documents state supported and unsupported capabilities and their limits. The capability matrix does; the release record does not exist yet.
+- [x] Existing core-only consumers keep working: the workspace lanes, `plain cmake`, and the package choice check.
 
 **Out of scope:** format-specific solvers in core, every rendering engine, a permanent
 ABI freeze and bindings for several languages at once.
 
 ### C. Release decision
 
-- [ ] Review the definition of done.
-- [ ] Design the MMD session's package boundary and fixtures.
-- [ ] Classify ABI change candidates, and decide whether to keep deferring the freeze.
+In order:
+
+1. Run `release.yml` by dispatch and inspect its dry-run bundle.
+2. Build `toon-viewport-vrm` from that prefix, and watch drawing and the display after a reset.
+3. Move the version to 0.3.0, date the changelog and add the release record.
+4. Tag, inspect the draft and its pins, and publish.
+
+The MMD session's [package boundary and fixtures](../architecture/MMD_SESSION.md#package-boundary)
+are designed, and it waits on the owner publishing its libraries. The freeze stays deferred, with
+[change candidates classified](../contracts/ABI.md#4-change-candidates-reviewed-for-v030).
 
 ## After v0.3.0
 
@@ -65,7 +74,9 @@ in a renderer.
 Prove the runtime is not VRM-shaped through outside use of an MMD session: the minimal
 vertical path through PMX/VMD, morph, IK, append, physics feedback, shared world and
 reset. Publish a supported subset with fixtures and the capability matrix; do not claim
-full MMD compatibility. The owner library must be published first.
+full MMD compatibility. The owner library must be published first; `usd-mmd-plugins` 0.3.0
+pins bundles and tools only. The [package boundary](../architecture/MMD_SESSION.md#package-boundary)
+states what the trial needs.
 
 Also open for this track: complete non-bone morph output, including additional UV
 channels; resident UV mapping and coherent tangents; representative private-asset,
