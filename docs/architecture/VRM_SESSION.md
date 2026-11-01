@@ -151,7 +151,7 @@ only what it authors.
 
 `--state-output` writes the committed state at every 30th tick as JSON.
 [`scripts/check_session_fixture.py`](../../scripts/check_session_fixture.py) runs a
-[generated VRM and VRMA](../../tests/assets/session/README.md) through the owner's published
+[generated VRM and VRMA](../../tests/assets/vrm-session/README.md) through the owner's published
 importers and this host in the session pull request and release lanes, and compares that state
 with a committed file at `1e-5`.
 

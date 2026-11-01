@@ -54,27 +54,29 @@ not erase a library's actual dependencies.
 
 ## Packaging
 
-`openstrata.toml` names the release members. `libs/avatarRuntime` packages the core, and
-`libs/avatarVrmSession` packages the core with the session's adapters and pins their owners by
-digest. Other adapters stay source-built. See [how a release is cut](../releases/README.md).
+`openstrata.toml` names the workspace members and the release members. `libs/avatarRuntime` packages
+the core, and `libs/avatarVrmSession` and `libs/avatarMmdSession` each package the core with their
+session's adapters and pin their owners by digest. Other adapters stay source-built. See
+[how a release is cut](../releases/README.md).
 
-Pin one of the two:
+Pin one of these:
 
 | A consumer that needs | Pins | Finds |
 | --- | --- | --- |
 | the core, with its own providers | `avatarRuntime` | `find_package(AvatarRuntime)` |
 | the VRM session | `avatarVrmSession` | `find_package(AvatarVrmSession)`, or the `vrm_session` component of `AvatarRuntime` |
+| the MMD session | `avatarMmdSession` | `find_package(AvatarMmdSession)`, or the `mmd_session` component of `AvatarRuntime`, with [a Jolt SDK](MMD_SESSION.md#package-boundary) |
 
-The session's prefix includes the core, so both provide the `AvatarRuntime` CMake package and the
-same core files, and the core's targets keep the `AvatarRuntime::` namespace in both. The session
+A session's prefix includes the core, so each provides the `AvatarRuntime` CMake package and the
+same core files, and the core's targets keep the `AvatarRuntime::` namespace in all of them. A session
 does not depend on a separately published core: it would have to pin a digest made by the same
-release, and the `vrm_session` component would have to span two prefixes.
+release, and its component would have to span two prefixes.
 
-The two do not combine. `find_package(AvatarVrmSession)` uses the core in its own prefix, whatever
-the search order. A prefix without the session refuses the `vrm_session` component, and
-`AvatarVrmSession` refuses a core already found in such a prefix, each naming this choice.
-`scripts/check_package_choice.py` checks these orders in the session and release lanes. Composing
-both with `ost runtime compose` fails on their shared install paths.
+They do not combine. A session's package uses the core in its own prefix, whatever the search order.
+A prefix without a session refuses its component, and a session's package refuses a core already
+found in such a prefix, each naming this choice. `scripts/check_package_choice.py` checks these
+orders, including the other session's package found first, in the session lanes, and the VRM session's
+in the release lane. Composing them with `ost runtime compose` fails on their shared install paths.
 
 ## Tools and tests
 

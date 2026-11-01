@@ -25,11 +25,29 @@ endif()
 install(TARGETS avatarMmdSession EXPORT AvatarMmdSessionTargets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(EXPORT AvatarMmdSessionTargets NAMESPACE AvatarRuntime:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarRuntime)
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/AvatarMmdSessionConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/AvatarMmdSessionConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarMmdSession)
+write_basic_package_version_file(${CMAKE_CURRENT_BINARY_DIR}/AvatarMmdSessionConfigVersion.cmake
+    VERSION ${PROJECT_VERSION} COMPATIBILITY SameMinorVersion)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AvatarMmdSessionConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/AvatarMmdSessionConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/AvatarMmdSession)
+add_executable(avatarMmdSessionCheck check.cpp)
+target_link_libraries(avatarMmdSessionCheck PRIVATE avatarMmdSession)
+if(MSVC)
+    target_compile_options(avatarMmdSessionCheck PRIVATE /W4 /permissive- /utf-8)
+endif()
+if(WIN32)
+    add_custom_command(TARGET avatarMmdSessionCheck POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:avatarMmdSessionCheck>)
+endif()
+install(TARGETS avatarMmdSessionCheck RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 set(AVATAR_MMD_SESSION_TEST_PMX "" CACHE FILEPATH "Generated morph PMX for direct session tests")
 set(AVATAR_MMD_SESSION_TEST_VMD "" CACHE FILEPATH "Generated mixed primary UV/vertex VMD for direct session tests")
 set(AVATAR_MMD_SESSION_TEST_MATERIAL_PMX "" CACHE FILEPATH "Generated two-material physics PMX")
 set(AVATAR_MMD_SESSION_TEST_MATERIAL_VMD "" CACHE FILEPATH "Generated group/direct material VMD")
-if(AVATAR_BUILD_TESTS AND AVATAR_MMD_SESSION_TEST_PMX)
+if(AVATAR_BUILD_TESTS AND AVATAR_MMD_SESSION_TEST_PMX AND PROJECT_IS_TOP_LEVEL)
     add_test(NAME hosts.mmd_session_installed COMMAND ${CMAKE_COMMAND}
         "-DROOT_BINARY=${PROJECT_BINARY_DIR}" "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
         "-DDEPENDENCY_PREFIX=${CMAKE_PREFIX_PATH}" "-DGENERATOR=${CMAKE_GENERATOR}"

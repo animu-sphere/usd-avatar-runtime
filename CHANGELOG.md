@@ -7,6 +7,17 @@ the C ABI revision are separate numbers.
 
 ## [Unreleased]
 
+### Added
+
+- `avatarMmdSession` as a package, pinning its owners by digest, with `avatarMmdSessionCheck` and a
+  generated PMX and VMD in the session lane. Consumers supply the deterministic Jolt SDK that
+  `physicsJoltSixDof` requires.
+- A `uvs` channel in the `--state-output` format and `scripts/compare_avatar_state.py`.
+
+### Changed
+
+- The VRM session's fixture moves to `tests/assets/vrm-session`.
+
 ## [0.3.0] - 2026-11-01
 
 Completes the VRM session and connects it to a renderer: motion, LookAt, expression and spring

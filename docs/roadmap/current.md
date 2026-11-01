@@ -16,7 +16,7 @@ in its way, while Hydra publication still needs an agreed integration with its c
 
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
-| P0 | [MMD session package](#v040) | source-only session; [trial package](../architecture/MMD_SESSION.md#package-boundary) built on Windows against unpublished owner artifacts | the v0.4.0 definition of done is reviewed against its evidence |
+| P0 | [MMD session package](#v040) | source-only session; [package](../architecture/MMD_SESSION.md#package-boundary) checked on Windows against the owners' pushed digests, with a generated PMX and VMD | the v0.4.0 definition of done is reviewed against its evidence |
 | P1 | [Hydra/direct agreement](#renderer-paths) | a [state comparison](../architecture/OUTPUT_PATHS.md#4-parity-evidence) that no consumer feeds yet; no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
 | P1 | Diagnosability | bounded diagnostics, an opt-in parity host | trace, capability dump and deterministic replay locate the phase, failure and reproduction conditions |
 | P2 | [Connector path](#input-and-recording) | not started | external input reaches `AvatarInputFrame` with latency, loss and timestamps explicit |
@@ -30,17 +30,20 @@ package, compared with the owner, with no format-specific change to core.
 
 ### Definition of done
 
-- [ ] `usd-mmd-plugins` publishes `mmdPhysicsAdapter` and its closure:
-  [owner pull request](https://github.com/animu-sphere/usd-mmd-plugins/pull/121), prepared as 0.3.1.
+- [x] `usd-mmd-plugins` 0.3.1 publishes `mmdPhysicsAdapter` and its closure.
+- [ ] `usd-physics-plugins` 0.1.1 publishes `physicsJoltSixDof`. `physicsJolt` has no six-DOF, so it
+  refuses any model with an admitted joint. Its draft is published after the session lanes pass on its
+  digests.
 - [ ] `avatarMmdSession` builds, tests and packages from those pins on Windows and Linux, and its
   installed consumer runs from the package with the Jolt SDK the
   [package boundary](../architecture/MMD_SESSION.md#package-boundary) requires.
 - [ ] `avatarMmdSessionCheck` compares the session with the owner and writes state in the
-  `--state-output` format, which gains primary vertex UVs.
+  `--state-output` format, which gains primary vertex UVs. It does not compare material values with
+  the owner, and reports how many it left out.
 - [ ] A generated PMX and VMD in the session lanes show morph, IK, append and physics feedback each
   changing committed state, and each failing the comparison when broken.
-- [ ] Jolt agreement across platforms is measured, and decides between one expected file and one per
-  platform.
+- [x] Jolt agreement across platforms is [measured](../reports/evidence-log.md#mmd-session-package-2026-11-01):
+  this fixture's state has equal values on the deterministic SDK, so there is one expected file.
 - [ ] A real PMX and VMD run locally from the package, and `toon-viewport-mmd` draws them from it.
 - [ ] [RT-O3 and RT-O6](#open-decisions) are resolved or deferred with a stated reason.
 - [ ] The capability matrix states the supported subset. Full MMD compatibility is not claimed.

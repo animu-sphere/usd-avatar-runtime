@@ -22,9 +22,11 @@ if(AVATAR_BUILD_TESTS)
         add_custom_command(TARGET stageRunnerSessionContracts POST_BUILD COMMAND ${CMAKE_COMMAND} -E
             copy_if_different $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:stageRunnerSessionContracts>)
     endif()
-    add_test(NAME adapters.stage_runner_installed COMMAND ${CMAKE_COMMAND}
-        "-DROOT_BINARY=${PROJECT_BINARY_DIR}" "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
-        "-DruntimeCore_DIR=${runtimeCore_DIR}" "-DGENERATOR=${CMAKE_GENERATOR}"
-        "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}" "-DCONFIG=$<CONFIG>"
-        -P "${CMAKE_CURRENT_SOURCE_DIR}/installed.cmake")
+    if(PROJECT_IS_TOP_LEVEL)
+        add_test(NAME adapters.stage_runner_installed COMMAND ${CMAKE_COMMAND}
+            "-DROOT_BINARY=${PROJECT_BINARY_DIR}" "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
+            "-DruntimeCore_DIR=${runtimeCore_DIR}" "-DGENERATOR=${CMAKE_GENERATOR}"
+            "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}" "-DCONFIG=$<CONFIG>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/installed.cmake")
+    endif()
 endif()

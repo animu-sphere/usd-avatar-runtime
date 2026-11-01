@@ -4,7 +4,7 @@
 
 This is the end-to-end check: a VRM and a VRMA file go through the owner's published
 importers and `avatarVrmSessionCheck`, which compares the session with the owner, and
-the committed state is compared with tests/assets/session/expected.json.
+the committed state is compared with tests/assets/vrm-session/expected.json.
 
 `ost library build` must have built avatarVrmSession. With --update, this rewrites
 the expected file instead of comparing with it.
@@ -26,7 +26,7 @@ from compare_avatar_state import Comparison, Tolerances, compare_sequences, repo
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 LIBRARY = ROOT / "libs" / "avatarVrmSession"
-ASSETS = ROOT / "tests" / "assets" / "session"
+ASSETS = ROOT / "tests" / "assets" / "vrm-session"
 TOLERANCE = 1e-5
 CLIP_INPUTS = [
     "--clip-expression", "/Animation/Expressions/happy.vrm:expressionName", "/Animation/Expressions/happy.vrm:expressionWeight",
@@ -37,9 +37,9 @@ CLIP_INPUTS = [
 EXPECTED_RUNS = {"bone": "avatar_bone.vrm", "expression": "avatar_expression.vrm"}
 
 
-def importers(directory: pathlib.Path) -> tuple[list[str], list[str]]:
+def importers(directory: pathlib.Path, assets: pathlib.Path = ASSETS) -> tuple[list[str], list[str]]:
     """Downloads the pinned importer bundles and returns their plugin and library paths."""
-    pins = json.loads((ASSETS / "importers.json").read_text(encoding="utf-8"))
+    pins = json.loads((assets / "importers.json").read_text(encoding="utf-8"))
     system = {"Windows": "windows", "Linux": "linux"}[platform.system()]
     plugins: list[str] = []
     libraries: list[str] = []
@@ -63,10 +63,11 @@ def importers(directory: pathlib.Path) -> tuple[list[str], list[str]]:
     return plugins, libraries
 
 
-def environment(plugins: list[str], libraries: list[str]) -> tuple[pathlib.Path, dict[str, str]]:
-    records = sorted(LIBRARY.glob(".strata/targets/*/library-build.json"))
+def environment(plugins: list[str], libraries: list[str], library: pathlib.Path = LIBRARY,
+                host: str = "avatarVrmSessionCheck") -> tuple[pathlib.Path, dict[str, str]]:
+    records = sorted(library.glob(".strata/targets/*/library-build.json"))
     if len(records) != 1:
-        raise SystemExit(f"expected one built target under {LIBRARY}, found {len(records)}")
+        raise SystemExit(f"expected one built target under {library}, found {len(records)}")
     record = json.loads(records[0].read_text(encoding="utf-8"))
     home = pathlib.Path(os.environ.get("OST_HOME") or pathlib.Path.home() / ".ost")
     prefix = pathlib.Path(record["install_prefix"])
@@ -76,10 +77,10 @@ def environment(plugins: list[str], libraries: list[str]) -> tuple[pathlib.Path,
     env["PXR_PLUGINPATH_NAME"] = os.pathsep.join(plugins)
     if os.name == "nt":
         env["PATH"] = os.pathsep.join([*libraries, *[str(p / d) for p in prefixes for d in ("bin", "lib")], env["PATH"]])
-        return prefix / "bin" / "avatarVrmSessionCheck.exe", env
+        return prefix / "bin" / f"{host}.exe", env
     inherited = [env["LD_LIBRARY_PATH"]] if env.get("LD_LIBRARY_PATH") else []
     env["LD_LIBRARY_PATH"] = os.pathsep.join([*libraries, *[str(p / "lib") for p in prefixes], *inherited])
-    return prefix / "bin" / "avatarVrmSessionCheck", env
+    return prefix / "bin" / host, env
 
 
 def main() -> int:

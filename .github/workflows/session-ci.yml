@@ -3,6 +3,8 @@
 # scripts/check_workflows.py checks. It repeats the session steps of release.yml
 # on Windows and Linux: build, test and package the `avatarVrmSession` library from
 # its owners, then build and run the repository's consumer from the install tree.
+# `avatarMmdSession` does the same on a Jolt SDK this lane builds, because
+# `physicsJoltSixDof` accepts only the physics owner's deterministic set.
 #
 # Fork safety: never publishes and uses no secrets.
 name: session ci
@@ -59,6 +61,48 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
+      - name: Check out pinned Jolt Physics 5.5.0
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: jrouwe/JoltPhysics
+          ref: 23dadd0e603f1b321142d4c74df07fce85064989
+          path: .ci/jolt
+      - name: Build and install the deterministic Jolt ABI set
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="$GITHUB_WORKSPACE/.ci/jolt-install"
+          configure=(
+            -S .ci/jolt/Build
+            -B .ci/jolt-build
+            "-DCMAKE_INSTALL_PREFIX=$prefix"
+            -DCMAKE_BUILD_TYPE=Release
+            -DINTERPROCEDURAL_OPTIMIZATION=OFF
+            -DDOUBLE_PRECISION=OFF
+            -DCROSS_PLATFORM_DETERMINISTIC=ON
+            -DENABLE_ALL_WARNINGS=OFF
+            -DGENERATE_DEBUG_SYMBOLS=OFF
+            -DDEBUG_RENDERER_IN_DEBUG_AND_RELEASE=OFF
+            -DPROFILER_IN_DEBUG_AND_RELEASE=OFF
+            -DUSE_STATIC_MSVC_RUNTIME_LIBRARY=OFF
+            -DTARGET_UNIT_TESTS=OFF
+            -DTARGET_HELLO_WORLD=OFF
+            -DTARGET_PERFORMANCE_TEST=OFF
+            -DTARGET_SAMPLES=OFF
+            -DTARGET_VIEWER=OFF
+          )
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            configure+=(-A x64)
+          else
+            configure+=(-DCMAKE_POSITION_INDEPENDENT_CODE=ON)
+          fi
+          cmake "${configure[@]}"
+          cmake --build .ci/jolt-build --config Release --target Jolt
+          cmake --install .ci/jolt-build --config Release
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            prefix="$(cygpath -w "$prefix")"
+          fi
+          echo "JOLT_PREFIX=$prefix" >> "$GITHUB_ENV"
       - name: Bootstrap ost 0.23.18 (pinned release asset, checksum-verified)
         shell: bash
         run: |
@@ -117,12 +161,25 @@ jobs:
           ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
           ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
           ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/avatarVrmSession.json
-      - name: Check choosing between the core and the session package
+      - name: Build, test and package the MMD session library
         shell: bash
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.JOLT_PREFIX }}
+        run: |
+          set -euo pipefail
+          library=libs/avatarMmdSession
+          ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/avatarMmdSession.json
+      - name: Check choosing between the core and the session packages
+        shell: bash
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.JOLT_PREFIX }}
         run: |
           set -euo pipefail
           ost library build libs/avatarRuntime --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-          python scripts/check_package_choice.py
+          python scripts/check_package_choice.py --session vrm
+          python scripts/check_package_choice.py --session mmd
       - name: Verify the generated consumer
         shell: bash
         run: |
@@ -138,6 +195,12 @@ jobs:
         run: python scripts/check_session_consumer.py
       - name: Run the VRM fixture through the importers and the session
         run: python scripts/check_session_fixture.py
+      - name: Build and run the MMD session's installed consumer
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.JOLT_PREFIX }}
+        run: python scripts/check_session_consumer.py --session mmd
+      - name: Run the MMD fixture through the importer and the session
+        run: python scripts/check_mmd_session_fixture.py
       - name: Upload the library records and CI evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -148,4 +211,5 @@ jobs:
             .ost-ci/*.json
             libs/avatarVrmSession/.strata/targets/*/library-*.json
             libs/avatarVrmSession/.strata/targets/*/consumer/library-consumer.json
+            libs/avatarMmdSession/.strata/targets/*/library-*.json
           if-no-files-found: warn

@@ -18,9 +18,11 @@ if(AVATAR_BUILD_TESTS)
     add_executable(physicsUsdResourceContracts tests.cpp)
     target_link_libraries(physicsUsdResourceContracts PRIVATE AvatarRuntime::avatarPhysicsUsdResources)
     add_test(NAME adapters.physics_usd_resources COMMAND physicsUsdResourceContracts)
-    add_test(NAME adapters.physics_usd_installed COMMAND ${CMAKE_COMMAND}
-        "-DROOT_BINARY=${PROJECT_BINARY_DIR}" "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
-        "-DDEPENDENCY_PREFIX=${CMAKE_PREFIX_PATH}" "-DGENERATOR=${CMAKE_GENERATOR}"
-        "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}" "-DCONFIG=$<CONFIG>"
-        -P "${CMAKE_CURRENT_SOURCE_DIR}/installed.cmake")
+    if(PROJECT_IS_TOP_LEVEL)
+        add_test(NAME adapters.physics_usd_installed COMMAND ${CMAKE_COMMAND}
+            "-DROOT_BINARY=${PROJECT_BINARY_DIR}" "-DSOURCE=${CMAKE_CURRENT_SOURCE_DIR}"
+            "-DDEPENDENCY_PREFIX=${CMAKE_PREFIX_PATH}" "-DGENERATOR=${CMAKE_GENERATOR}"
+            "-DPLATFORM=${CMAKE_GENERATOR_PLATFORM}" "-DCONFIG=$<CONFIG>"
+            -P "${CMAKE_CURRENT_SOURCE_DIR}/installed.cmake")
+    endif()
 endif()

@@ -6,7 +6,7 @@ The geometry and motion here are written by this script, with no third-party art
 and are covered by this repository's license. They exist to exercise pose, spring,
 expression and LookAt through the real importers, not to look like an avatar.
 
-    python tools/make_session_fixture.py          # rewrite tests/assets/session
+    python tools/make_session_fixture.py          # rewrite tests/assets/vrm-session
     python tools/make_session_fixture.py --check  # fail if the files differ
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ import struct
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-ASSETS = ROOT / "tests" / "assets" / "session"
+ASSETS = ROOT / "tests" / "assets" / "vrm-session"
 FLOAT, U16, U8 = 5126, 5123, 5121
 COUNT = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 FORMAT = {FLOAT: "f", U16: "H", U8: "B"}
