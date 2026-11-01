@@ -11,10 +11,12 @@
 #include "pxr/usd/usdSkel/skeleton.h"
 #include <algorithm>
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 
 namespace {
@@ -53,6 +55,42 @@ void identical(const ArStateView& a, const ArStateView& b) {
         require(a.materials[i].overridden == b.materials[i].overridden, "Replay material override");
         for (int k = 0; k < 4; ++k) require(a.materials[i].value[k] == b.materials[i].value[k], "Replay material");
     }
+}
+// One committed state as JSON, for comparison with an expected file. Identities are
+// paths and tokens, which need no escaping.
+std::string stateJson(const ArStateView& v) {
+    std::ostringstream o; o.precision(17);
+    const auto numbers = [&](const double* values, int count) {
+        o << '['; for (int k = 0; k < count; ++k) o << (k ? "," : "") << values[k]; o << ']';
+    };
+    o << "{\"layout\":\"" << v.layout_id << "\",\"layout_version\":" << v.layout_version << ",\"frame\":" << v.frame_id
+      << ",\"generation\":" << v.generation << ",\"seconds\":" << v.evaluation_seconds << ",\"capabilities\":[";
+    for (uint32_t i = 0; i < v.capability_count; ++i) o << (i ? "," : "") << '"' << v.capabilities[i].id << '"';
+    o << "],\"joints\":[";
+    for (uint32_t i = 0; i < v.joint_count; ++i) {
+        const auto& j = v.joints[i];
+        o << (i ? "," : "") << "{\"skeleton\":\"" << j.skeleton_id << "\",\"joint\":\"" << j.joint_id << "\",\"parent\":" << j.parent_index << ",\"translation\":";
+        numbers(j.local.translation,3); o << ",\"rotation\":"; numbers(j.local.rotation,4); o << ",\"scale\":"; numbers(j.local.scale,3); o << '}';
+    }
+    o << "],\"morphs\":[";
+    for (uint32_t i = 0; i < v.blend_shape_count; ++i) {
+        const auto& m = v.blend_shapes[i];
+        o << (i ? "," : "") << "{\"mesh\":\"" << m.mesh_id << "\",\"target\":\"" << m.target_id << "\",\"weight\":" << m.weight << '}';
+    }
+    o << "],\"materials\":[";
+    for (uint32_t i = 0; i < v.material_count; ++i) {
+        const auto& m = v.materials[i];
+        o << (i ? "," : "") << "{\"material\":\"" << m.material_id << "\",\"input\":\"" << m.input_id << "\",\"type\":" << m.value_type
+          << ",\"overridden\":" << m.overridden << ",\"value\":"; numbers(m.value,4); o << '}';
+    }
+    o << "],\"samples\":[";
+    for (uint32_t i = 0; i < v.sample_count; ++i) {
+        const auto& r = v.samples[i];
+        o << (i ? "," : "") << "{\"channel\":\"" << r.channel_id << "\",\"kind\":" << r.kind << ",\"validity\":" << r.validity
+          << ",\"resolution\":" << r.resolution << ",\"source_seconds\":" << r.source_seconds << '}';
+    }
+    o << "]}";
+    return o.str();
 }
 struct Retained {
     ArRuntimeApi api; ArSnapshot handle = 0;
@@ -214,7 +252,8 @@ int avatarVrmSessionCheck(int argc, char** argv) {
     try {
         bool springs = true, faces = false;
         require(argc >= 5, "Usage: avatarVrmSessionCheck avatar.vrm clip.vrma fixed_seconds ticks [--no-springs] [--face] "
-            "[--clip-expression name-attribute value-attribute]... [--clip-gaze attribute]");
+            "[--clip-expression name-attribute value-attribute]... [--clip-gaze attribute] [--state-output file]");
+        std::string stateOutput;
         openstrata::motion::MotionStageReadOptions clipInputs;
         for (int i = 5; i < argc; ++i) {
             const std::string option = argv[i];
@@ -222,6 +261,7 @@ int avatarVrmSessionCheck(int argc, char** argv) {
             else if (option == "--face") faces = true;
             else if (option == "--clip-expression" && i + 2 < argc) { clipInputs.channels.push_back({argv[i+1], argv[i+2], "vrm:"}); i += 2; }
             else if (option == "--clip-gaze" && i + 1 < argc) clipInputs.lookAtTargetAttributePath = argv[++i];
+            else if (option == "--state-output" && i + 1 < argc) stateOutput = argv[++i];
             else require(false, "Unknown or incomplete option " + option);
         }
         const bool clipGaze = !clipInputs.lookAtTargetAttributePath.empty();
@@ -283,11 +323,13 @@ int avatarVrmSessionCheck(int argc, char** argv) {
         openstrata::motion::PoseRetargeter retarget(binding.Skeleton(), binding.HumanoidMap(), *clip.sourceRest);
         double maxOwnerError = 0, maxMotionError = 0, maxOutputError = 0, maxScaleError = 0, maxFaceError = 0;
         std::set<uint32_t> changedMotion, changedSpring, changedEyes;
+        std::vector<std::string> states;
         for (uint64_t tick = 0; tick <= ticks; ++tick) {
             if (tick) { ok(advance(dt, tick)); ok(animated.Advance(dt, &sink)); }
             require(session.Stats().tick == tick, "One fixed tick expected");
             const auto a = view(session.Api(), session.Snapshot());
             const auto m = view(animated.Api(), animated.Snapshot());
+            if (!stateOutput.empty() && tick % 30 == 0) states.push_back(stateJson(a));
             // The pose the spring phase receives: motion, then any resolved eyes.
             std::map<uint32_t, pxr::GfQuatd> eyes;
             if (face) {
@@ -398,6 +440,13 @@ int avatarVrmSessionCheck(int argc, char** argv) {
             require((clipFace && config.clipExpressions.empty()) || !face->ExpectsMorphs() || !face->MorphChanged().empty(), "No morph weight observed");
             require(clipFace || !face->ExpectsMaterials() || !face->MaterialChanged().empty(), "No material override observed");
             require((clipFace && !clipGaze) || !face->BoneType() || !changedEyes.empty(), "No eye rotation observed");
+        }
+        if (!stateOutput.empty()) {
+            std::ofstream file(stateOutput, std::ios::binary);
+            file << '[';
+            for (size_t i = 0; i < states.size(); ++i) file << (i ? "," : "") << '\n' << states[i];
+            file << "]\n";
+            require(bool(file), "Cannot write " + stateOutput);
         }
         Retained final{session.Api(), session.Snapshot()}; ok(final.api.retain_snapshot(final.handle));
         session.Pause(); const auto last = session.Snapshot();

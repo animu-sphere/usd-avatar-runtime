@@ -20,6 +20,9 @@ the C ABI revision are separate numbers.
   values. The C ABI is unchanged.
 - The evaluated-state contract states what a consumer can rely on: identity, units, spaces,
   absent values, gaze and snapshot lifetime. `hosts.vrm_session` checks it.
+- `scripts/check_session_fixture.py` runs a generated VRM and VRMA through the owner's published
+  importers and the session in the session and release lanes, and compares the committed state with
+  `tests/assets/session/expected.json`. `avatarVrmSessionCheck --state-output` writes that state.
 - `hosts.vrm_session` covers import and evaluator failure, recovery, destroy/recreate and two
   avatars in one thread.
 
