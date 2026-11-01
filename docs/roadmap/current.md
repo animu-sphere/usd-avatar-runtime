@@ -1,60 +1,57 @@
 # Roadmap
 
-Adopted 2026-11-01 from v0.2.0. This page holds incomplete work only: what comes
-next, in what order and how it is accepted. What exists is in the
+Adopted 2026-11-01 from v0.2.0, and rescoped after v0.3.0. This page holds incomplete work
+only: what comes next, in what order and how it is accepted. What exists is in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md). Version assignments are
 targets; recheck them against the code and released owners when work starts.
 
-The next release is about **completing the VRM session and connecting it to a
-renderer**, not about adding evaluators. A later MMD session then shows that nothing
-VRM-specific leaked into the runtime.
+The next release is about **showing that the runtime is not VRM-shaped**: an MMD session
+ships as a package and runs from it, as the VRM session did in v0.3.0.
 
 ## Priorities
 
-Order: VRM session integration -> direct rendering end to end -> Hydra/direct agreement
--> MMD session -> external input and bindings.
+Order: MMD session package -> Hydra/direct agreement -> external input and bindings. The
+MMD session comes first because its boundary is designed and only an owner release stands
+in its way, while Hydra publication still needs an agreed integration with its consumer.
 
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
-| P0 | [VRM session integration](#c-release-decision) | CI runs a generated VRM and VRMA through the published importers and the session, and compares the state; private avatars run locally | the definition of done is reviewed against that evidence |
-| P0 | [`hydra-toon` direct consumer](#c-release-decision) | `toon-viewport-vrm` draws one real VRM with pose, spring, expression and gaze from generated input, on Windows; no real-avatar material bind measured | drawing and post-reset display are accepted |
+| P0 | [MMD session package](#v040) | source-only session; [trial package](../architecture/MMD_SESSION.md#package-boundary) built on Windows against unpublished owner artifacts | the v0.4.0 definition of done is reviewed against its evidence |
 | P1 | [Hydra/direct agreement](#renderer-paths) | a [state comparison](../architecture/OUTPUT_PATHS.md#4-parity-evidence) that no consumer feeds yet; no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
-| P1 | [MMD session trial package](#mmd-session) | source-only session | a real PMX/VMD loads, plays, resets and feeds physics back from a package |
 | P1 | Diagnosability | bounded diagnostics, an opt-in parity host | trace, capability dump and deterministic replay locate the phase, failure and reproduction conditions |
 | P2 | [Connector path](#input-and-recording) | not started | external input reaches `AvatarInputFrame` with latency, loss and timestamps explicit |
 | P2 | [Recording and publication](#input-and-recording) | not started | frame sequences reproduce and remain compatible |
 | P2 | [Python, JavaScript and Web](#bindings-and-web) | not started | begins only after the native ABI is stable |
 
-## v0.3.0
+## v0.4.0
 
-**Goal:** a real VRM goes into one session, motion, LookAt, expression and spring
-evaluate there, and the committed state reaches at least one independent renderer
-consumer and appears on screen.
+**Goal:** a real PMX and VMD load, play, reset and feed physics back from an installed
+package, compared with the owner, with no format-specific change to core.
 
 ### Definition of done
 
-Reviewed 2026-11-01. A checked item has evidence today, within the stated limit.
+- [ ] `usd-mmd-plugins` publishes `mmdPhysicsAdapter` and its closure:
+  [owner pull request](https://github.com/animu-sphere/usd-mmd-plugins/pull/121), prepared as 0.3.1.
+- [ ] `avatarMmdSession` builds, tests and packages from those pins on Windows and Linux, and its
+  installed consumer runs from the package with the Jolt SDK the
+  [package boundary](../architecture/MMD_SESSION.md#package-boundary) requires.
+- [ ] `avatarMmdSessionCheck` compares the session with the owner and writes state in the
+  `--state-output` format, which gains primary vertex UVs.
+- [ ] A generated PMX and VMD in the session lanes show morph, IK, append and physics feedback each
+  changing committed state, and each failing the comparison when broken.
+- [ ] Jolt agreement across platforms is measured, and decides between one expected file and one per
+  platform.
+- [ ] A real PMX and VMD run locally from the package, and `toon-viewport-mmd` draws them from it.
+- [ ] [RT-O3 and RT-O6](#open-decisions) are resolved or deferred with a stated reason.
+- [ ] The capability matrix states the supported subset. Full MMD compatibility is not claimed.
+- [ ] The VRM package and core-only consumers keep working, and choosing between packages is enforced.
+- [ ] `hydra-toon`'s VRM host consumes the published `avatarVrmSession` by its pin. The v0.3.0 check
+  used the dry run's package, and `hydra-toon` does not pin the published one yet.
 
-- [ ] The published session builds and runs from a clean install tree. The [release dry run](../reports/evidence-log.md#release-dry-run-and-post-reset-display-2026-11-01) does this from the library prefix on both platforms; it closes with the published 0.3.0.
-- [x] Windows and Linux CI repeat the same end-to-end test: [`session ci`](../reports/evidence-log.md#state-comparison-2026-11-01). The avatar is generated.
-- [x] With a real VRM and motion, pose, LookAt, expression and spring appear in committed state. Windows only, with real clips and [generated expression and gaze input](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/118-2026-11-01-live-vrm-face.md).
-- [x] A renderer consumer receives the values, and drawing and post-reset display have no serious breakage: [accepted by eye](../reports/evidence-log.md#release-dry-run-and-post-reset-display-2026-11-01) from the dry run's package. Windows only.
-- [x] Owner semantics and session values are compared automatically: `avatarVrmSessionCheck` in `scripts/check_session_fixture.py`, on both platforms.
-- [x] Public documents state supported and unsupported capabilities and their limits: the capability matrix and the [release record](../releases/v0.3.0.md).
-- [x] Existing core-only consumers keep working: the workspace lanes, `plain cmake`, and the package choice check.
+**Out of scope:** Hydra publication, several avatars in one world, seek, both formats in one
+process, and an ABI freeze.
 
-**Out of scope:** format-specific solvers in core, every rendering engine, a permanent
-ABI freeze and bindings for several languages at once.
-
-### C. Release decision
-
-Tag, inspect the draft and its pins, and publish.
-
-The MMD session's [package boundary and fixtures](../architecture/MMD_SESSION.md#package-boundary)
-are designed, and it waits on the owner publishing its libraries. The freeze stays deferred, with
-[change candidates classified](../contracts/ABI.md#4-change-candidates-reviewed-for-v030).
-
-## After v0.3.0
+## After v0.4.0
 
 ### VRM node constraints
 
@@ -66,16 +63,9 @@ in a renderer.
 
 ### MMD session
 
-Prove the runtime is not VRM-shaped through outside use of an MMD session: the minimal
-vertical path through PMX/VMD, morph, IK, append, physics feedback, shared world and
-reset. Publish a supported subset with fixtures and the capability matrix; do not claim
-full MMD compatibility. The owner library must be published first; `usd-mmd-plugins` 0.3.0
-pins bundles and tools only. The [package boundary](../architecture/MMD_SESSION.md#package-boundary)
-states what the trial needs.
-
-Also open for this track: complete non-bone morph output, including additional UV
-channels; resident UV mapping and coherent tangents; representative private-asset,
-spring and contact checks; and a world/non-MMD endpoint policy for joints.
+After the [package](#v040): complete non-bone morph output, including additional UV channels;
+resident UV mapping and coherent tangents; representative private-asset, spring and contact
+checks; and a world/non-MMD endpoint policy for joints.
 
 ### Renderer paths
 
@@ -213,4 +203,4 @@ These are runtime design questions, not reported upstream bugs.
 | RT-O6 | world handles and callbacks, fixed-tick and catch-up policy, tick/display separation, shared participants and sibling alignment | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), [dependencies](../architecture/DEPENDENCIES.md#3-integration-questions) | MMD session |
 | RT-O7 | C layout and calling convention, strings, allocator ownership, handles, provider lifetime and negotiation | [ABI](../contracts/ABI.md) | ABI freeze |
 | RT-O8 | capture envelope, checkpoint encoding and reuse of motion recording | [recording and replay](../design/RECORDING_AND_REPLAY.md) | recording; lifetime prerequisites by ABI freeze |
-| RT-O9 | direct-consumer binding and update costs, later Hydra locators and dirtiness, parity tolerances | [output paths](../architecture/OUTPUT_PATHS.md) | v0.3.0 for direct; Hydra agreement for the rest |
+| RT-O9 | direct-consumer binding and update costs, later Hydra locators and dirtiness, parity tolerances | [output paths](../architecture/OUTPUT_PATHS.md) | Hydra agreement |
