@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import math
 import os
 import pathlib
 import platform
@@ -22,6 +21,8 @@ import subprocess
 import sys
 import tempfile
 import urllib.request
+
+from compare_avatar_state import Comparison, Tolerances, compare_sequences, report
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 LIBRARY = ROOT / "libs" / "avatarVrmSession"
@@ -81,30 +82,6 @@ def environment(plugins: list[str], libraries: list[str]) -> tuple[pathlib.Path,
     return prefix / "bin" / "avatarVrmSessionCheck", env
 
 
-def compare(path: str, actual, expected, failures: list[str]) -> None:
-    if isinstance(expected, dict):
-        if set(actual) != set(expected):
-            failures.append(f"{path}: fields differ")
-            return
-        for key in expected:
-            compare(f"{path}.{key}", actual[key], expected[key], failures)
-    elif isinstance(expected, list):
-        if len(actual) != len(expected):
-            failures.append(f"{path}: {len(actual)} entries, expected {len(expected)}")
-            return
-        # A quaternion and its negation are the same rotation.
-        if path.endswith(".rotation"):
-            if sum(a * b for a, b in zip(actual, expected)) < 0:
-                actual = [-a for a in actual]
-        for i, entry in enumerate(expected):
-            compare(f"{path}[{i}]", actual[i], entry, failures)
-    elif isinstance(expected, float) or isinstance(actual, float):
-        if not math.isclose(actual, expected, abs_tol=TOLERANCE):
-            failures.append(f"{path}: {actual}, expected {expected}")
-    elif actual != expected:
-        failures.append(f"{path}: {actual}, expected {expected}")
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--update", action="store_true", help="rewrite the expected state")
@@ -135,12 +112,14 @@ def main() -> int:
         expected_path.write_text(json.dumps(actual, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
         print(f"wrote {expected_path}")
         return 0
-    failures: list[str] = []
-    compare("state", actual, json.loads(expected_path.read_text(encoding="utf-8")), failures)
-    for failure in failures[:40]:
-        print(failure)
-    print(f"{len(failures)} differences from {expected_path.name} at tolerance {TOLERANCE}")
-    return 1 if failures else 0
+    expected = json.loads(expected_path.read_text(encoding="utf-8"))
+    tolerances = Tolerances(TOLERANCE, TOLERANCE, TOLERANCE, TOLERANCE)
+    result = Comparison()
+    for name in EXPECTED_RUNS:
+        compare_sequences(actual[name], expected[name], tolerances, path=name, result=result)
+    report(result)
+    print(f"compared with {expected_path.name} at tolerance {TOLERANCE}")
+    return 1 if result.differences else 0
 
 
 if __name__ == "__main__":
