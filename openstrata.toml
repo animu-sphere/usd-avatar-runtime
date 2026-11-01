@@ -1,7 +1,7 @@
 [project]
 name = "usd-avatar-runtime"
 # Mirrors the repository-root VERSION file.
-version = "0.2.0"
+version = "0.3.0"
 
 [requires]
 platform = "cy2026"

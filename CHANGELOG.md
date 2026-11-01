@@ -7,6 +7,13 @@ the C ABI revision are separate numbers.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-01
+
+Completes the VRM session and connects it to a renderer: motion, LookAt, expression and spring
+evaluate in one session, and `hydra-toon` draws the result. The C ABI stays at experimental
+revision 5 and is not frozen. The `AvatarRuntime` CMake package moves to 0.3, and `SameMinorVersion`
+refuses a request for 0.2.
+
 ### Added
 
 - The VRM session selects expressions and LookAt through `SessionConfig`, with host
@@ -42,6 +49,14 @@ the C ABI revision are separate numbers.
   the choice between the two packages, which `scripts/check_package_choice.py` checks.
 - A change touching only documentation no longer runs the pull request lanes or the
   `plain cmake` push lane.
+
+### Known limitations
+
+- `avatarRuntime` and `avatarVrmSession` still provide the same CMake package and core files, so
+  a consumer pins one. Combining them is refused.
+- Node constraints are not evaluated, and scaled spring rigs are refused.
+- Real avatars and the renderer are measured on Windows only, with generated expression and gaze
+  input and no real-avatar material bind. No consumer feeds the state comparison yet.
 
 ## [0.2.0] - 2026-11-01
 
