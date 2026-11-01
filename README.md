@@ -48,8 +48,8 @@ Pin a package from the [release notes](docs/releases/README.md). A consumer pins
 two, since both provide the `AvatarRuntime` CMake package:
 
 ```cmake
-find_package(AvatarRuntime 0.2 REQUIRED)                         # the core
-find_package(AvatarRuntime 0.2 REQUIRED COMPONENTS vrm_session)  # the VRM session
+find_package(AvatarRuntime 0.3 REQUIRED)                         # the core
+find_package(AvatarRuntime 0.3 REQUIRED COMPONENTS vrm_session)  # the VRM session
 ```
 
 The session's API is described in the [native VRM session](docs/architecture/VRM_SESSION.md).

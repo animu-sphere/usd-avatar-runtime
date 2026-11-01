@@ -52,7 +52,7 @@ ctest --test-dir build/usd-binding --output-on-failure
 Installed consumers request the component explicitly:
 
 ```cmake
-find_package(AvatarRuntime 0.2.0 EXACT CONFIG REQUIRED COMPONENTS usd motion vrm)
+find_package(AvatarRuntime 0.3.0 EXACT CONFIG REQUIRED COMPONENTS usd motion vrm)
 target_link_libraries(host PRIVATE AvatarRuntime::avatarUsdBinding
     AvatarRuntime::avatarMotionAdapter AvatarRuntime::avatarVrmAdapter)
 ```

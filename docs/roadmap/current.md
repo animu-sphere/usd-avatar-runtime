@@ -33,14 +33,14 @@ consumer and appears on screen.
 
 ### Definition of done
 
-Reviewed 2026-11-01 at `317d8b3`. A checked item has evidence today, within the stated limit.
+Reviewed 2026-11-01. A checked item has evidence today, within the stated limit.
 
-- [ ] The published session builds and runs from a clean install tree. The lanes do this from the library prefix on both platforms; `release.yml` has not run with `ost` 0.23.18 or this content, and nothing is published.
+- [ ] The published session builds and runs from a clean install tree. The [release dry run](../reports/evidence-log.md#release-dry-run-and-post-reset-display-2026-11-01) does this from the library prefix on both platforms; it closes with the published 0.3.0.
 - [x] Windows and Linux CI repeat the same end-to-end test: [`session ci`](../reports/evidence-log.md#state-comparison-2026-11-01). The avatar is generated.
 - [x] With a real VRM and motion, pose, LookAt, expression and spring appear in committed state. Windows only, with real clips and [generated expression and gaze input](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/118-2026-11-01-live-vrm-face.md).
-- [ ] A renderer consumer receives the values, and drawing and post-reset display have no serious breakage. Drawing was watched, and reset replays exactly by the numbers, but the display after a reset has not been watched, and the renderer used a local session build.
+- [x] A renderer consumer receives the values, and drawing and post-reset display have no serious breakage: [accepted by eye](../reports/evidence-log.md#release-dry-run-and-post-reset-display-2026-11-01) from the dry run's package. Windows only.
 - [x] Owner semantics and session values are compared automatically: `avatarVrmSessionCheck` in `scripts/check_session_fixture.py`, on both platforms.
-- [ ] Public documents state supported and unsupported capabilities and their limits. The capability matrix does; the release record does not exist yet.
+- [x] Public documents state supported and unsupported capabilities and their limits: the capability matrix and the [release record](../releases/v0.3.0.md).
 - [x] Existing core-only consumers keep working: the workspace lanes, `plain cmake`, and the package choice check.
 
 **Out of scope:** format-specific solvers in core, every rendering engine, a permanent
@@ -48,12 +48,7 @@ ABI freeze and bindings for several languages at once.
 
 ### C. Release decision
 
-In order:
-
-1. Run `release.yml` by dispatch and inspect its dry-run bundle.
-2. Build `toon-viewport-vrm` from that prefix, and watch drawing and the display after a reset.
-3. Move the version to 0.3.0, date the changelog and add the release record.
-4. Tag, inspect the draft and its pins, and publish.
+Tag, inspect the draft and its pins, and publish.
 
 The MMD session's [package boundary and fixtures](../architecture/MMD_SESSION.md#package-boundary)
 are designed, and it waits on the owner publishing its libraries. The freeze stays deferred, with

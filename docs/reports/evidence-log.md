@@ -1821,3 +1821,23 @@ perturbation of each value kind, reordered records, a negated quaternion and mis
 
 This compares the session with its own recorded output. No consumer writes the format yet, so
 it says nothing about agreement with `hydra-toon` or Hydra.
+
+## Release dry run and post-reset display (2026-11-01)
+
+`release` run `41270997247` at `78a288a`, a dispatch on `main` before the version moved, passed every
+job with `ost` 0.23.18 on hosted Windows and Linux: the session's `verify-consumer` on both, with X11 and
+Xt declared on Linux, the package choice, installed consumer and fixture checks, and two packagings with
+one digest.
+
+`hydra-toon` at `a633e07` built `toon-viewport-vrm` and `toon-vrm-runtime-test` from that run's Windows
+`avatarVrmSession` archive, `sha256:4f52a528`, after checking its digest. Windows, MSVC Release, Vulkan,
+NVIDIA RTX A5000. It uses the same `lookdev` runtime as earlier reports and locally built VRM plugins.
+
+| Check | Result |
+| --- | --- |
+| `toon-vrm-runtime-resident`, AliciaSolid and `VRMA_01` | passes: exact cached and uncached streams, exact reset replay; pause, late delivery, stop/restart and loop; face with 17 expressions and 46 morph targets |
+| 120 presented frames with springs and face | 121 ticks, 0 mismatches and refusals, one generation, 120 of 120 late reads applied |
+| The window watched by the repository owner | accepted: no serious breakage in drawing or in the display after a reset |
+
+The acceptance is by eye: pixels were not compared numerically. The package was still 0.2.0 by version
+and had this release's content. Rebuilding at 0.3.0 changes the version, not the sources.
