@@ -142,8 +142,8 @@ Simulation tick time and display evaluation time are separate. A display
 request can require zero, one or several fixed ticks. Interpolation/publication
 reads committed simulation results and produces an immutable display snapshot;
 it must not mutate solver state or advance a world to satisfy a renderer retry.
-Interpolation method and tick/display provenance representation require
-contract review under RT-O4/RT-O6; no new revision-5 fields are implied.
+Interpolation method and tick/display provenance representation are
+[deferred](#rt-o6-one-world-one-session); no new revision-5 fields are implied.
 
 Required discontinuity behavior before physics integration:
 
@@ -160,16 +160,33 @@ For shared worlds, define the reset/seek scope with the physics owner: an
 avatar-local reset cannot silently restore the entire world or leave coupled
 participants with incompatible history. Adapter references must outlive
 in-flight callbacks, while published snapshots retain values without keeping
-mutable world handles. Exact destruction order and checkpoint/velocity restore
-are RT-O5/RT-O6 decisions to validate. Full replay to an arbitrary seek time
-is outside the physics MVP.
+mutable world handles. Checkpoint and velocity restore is an RT-O5 decision to
+validate. Full replay to an arbitrary seek time is outside the physics MVP.
 
 A failure after `Step` cannot be treated as an ordinary per-instance abort
 unless the world supports validated rollback. Specify world-group commit,
 recovery/invalidation and same-tick retry rules before admitting non-idempotent
-steps (RT-O5/RT-O6). Never publish mixed pre/post states or step again merely
+steps (RT-O5). Never publish mixed pre/post states or step again merely
 because a consumer failed; the last valid snapshot can remain displayed with
 its original identity.
+
+### RT-O6: one world, one session
+
+Decided for v0.4.0, for what the [MMD session](MMD_SESSION.md) ships. The rest is deferred with its reason.
+
+| Question | Decision |
+| --- | --- |
+| World handles and callbacks | The experimental `physics.h` table, as an extension apart from the revision-5 core. The session creates one world, and the host never steps it. Not frozen. |
+| Fixed tick and catch-up | The runtime has no default. The session selects 1/120 second and at most eight catch-up ticks per request, and retains the backlog. A host only reports elapsed time. |
+| Tick and display | A display shows the latest committed tick, and a request with no tick due yields no new result. |
+| Destruction | Close unregisters the world before solver resources, and Reset rebuilds the world. |
+| Sibling alignment | The MMD owner gives the barrier to the runtime and ticks to the host. The physics owner's six-DOF capability stays experimental. |
+
+- **Interpolation and tick/display provenance are deferred to the ABI freeze.** No consumer needs them yet:
+  ticks run faster than display, and adding them would change state fields, with RT-O4.
+- **Shared participants are deferred** to the [several-avatars gate](../roadmap/current.md#physics-orchestration-milestones).
+  v0.4.0 excludes several avatars in one world. The table and its membership extension are tested on generated
+  worlds, and the session binds one participant, with no non-avatar objects.
 
 ### Experimental fixed-tick requests
 

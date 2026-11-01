@@ -11,7 +11,7 @@ The C ABI is experimental revision 5, not frozen. Released packages target `cy20
 ## Delivery state
 
 A working adapter is not a shipped feature. **Adapter** is source-built against installed
-owners. **Package** ships in the `avatarVrmSession` package and the session selects it.
+owners. **Package** ships in a session's package and the session selects it.
 **Renderer** means a renderer consumes it from this repository's output.
 
 | Feature | Adapter | Package | Renderer | Open |
@@ -24,7 +24,7 @@ owners. **Package** ships in the `avatarVrmSession` package and the session sele
 | Native input expression and gaze | explicit attribute selection; generated fixtures | yes, sampled per tick in the session | no | captured input; automatic discovery |
 | Live UsdSkel pose, morph, UV, material output | yes | yes, optional for hosts | usdview | discardable session layer, not stage authoring |
 | MMD control and coupling | yes; generated PMX/VMD/Jolt | no | probe transport | representative assets |
-| Native MMD session | yes; [real models from the package](../reports/evidence-log.md#real-models-from-the-package-2026-11-01), headless, on Windows; [generated PMX/VMD](../reports/evidence-log.md#mmd-session-package-2026-11-01) on Windows and Linux | unreleased; `avatarMmdSession` needs a deterministic Jolt SDK | `hydra-toon` viewport, [generated material delivery](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/111-2026-10-29-live-mmd-materials.md) | full-motion and representative acceptance; several avatars |
+| Native MMD session | yes; [real models from the package](../reports/evidence-log.md#real-models-from-the-package-2026-11-01), headless, on Windows; [generated PMX/VMD](../reports/evidence-log.md#mmd-session-package-2026-11-01) on Windows and Linux | `avatarMmdSession`, a release member from v0.4.0; needs a deterministic Jolt SDK; [supported subset](#mmd-session-supported-subset) | `hydra-toon` viewport, [real models from the package](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/119-2026-11-01-avatar-sessions-from-packages.md) on Windows; no pixels compared | full-motion and representative acceptance; several avatars |
 | Live usdview MMD host | yes; [guide](../guides/live-mmd-physics.md) | no | usdview | full PMX/VMD |
 | Stage Runner session, USD physics resources | yes; generated | no | no | automatic world and participant binding; application wiring |
 | Hydra publication | no | no | no | not started |
@@ -32,9 +32,31 @@ owners. **Package** ships in the `avatarVrmSession` package and the session sele
 | OpenExec | no | no | no | not started |
 | Connector intake, multi-source selection | no | no | no | not started |
 
+## MMD session: supported subset
+
+This is what `avatarMmdSession` runs, not MMD compatibility, which is not claimed. Physics runs on Jolt, not MMD's
+Bullet, so how a model moves can differ from MMD. "Generated" is the
+[fixture](../../tests/assets/mmd-session/README.md) in the session and release lanes, on Windows and Linux. "Real" is
+24 local models on Windows.
+
+| Area | Runs | Measured by | Refused or not done |
+| --- | --- | --- | --- |
+| Input | one directly opened PMX with rigid bodies, and an original VMD | generated, real | a model with no rigid bodies is refused; several avatars, both formats in one process |
+| Playback | play, pause, reset, close; holds after the last key | generated, real | automatic loop, seek, speed |
+| Control | bone and morph keys, append and IK, in the owner's order | generated, real | bone morphs run in the owner and are not in the fixture |
+| After physics | after-physics bones evaluated on the bodies' feedback | generated only; no real model has one | |
+| Morph output | vertex, group, primary UV | generated, real | a motion reaching an additional UV channel, or a flip or impulse morph, which have no output here, is refused |
+| Materials | canonical inputs and sampled tints, delivered | real, not compared with the owner | a comparison with the owner |
+| Physics | static, dynamic and dynamic-with-bone bodies; `spring6Dof` joints | generated, real | PMX 2.1's other joint types; several bodies on a bone follow the owner's latest-body rule, not a claim of native equivalence |
+| Springs | off by default | not measured here | experimental |
+
+Owner values are compared within tolerance: the check feeds the owner the session's own bodies, so this covers
+composition, not the solver. Reset replay is exact. The state of the fixture is equal across platforms; other assets
+are not assumed to agree, and real models have not run on Linux.
+
 ## Core
 
-These ship in both packages and have no external provider dependency.
+These ship in all three packages and have no external provider dependency.
 
 | Surface | Implemented | Open | Owning document |
 | --- | --- | --- | --- |
@@ -55,10 +77,12 @@ not implemented.
 | --- | --- | --- | --- |
 | Core unit and installed consumer | hosted | hosted | hosted plain CMake; not a release target |
 | `avatarVrmSession` package and consumer | pull request and release lanes | pull request and release lanes | no |
+| `avatarMmdSession` package and consumer | pull request and release lanes | pull request and release lanes | no |
+| Generated PMX and VMD through published importers and the session | pull request and release lanes | pull request and release lanes | no |
 | Adapter integration outside the session | local only | no | no |
 | Generated VRM through published importers and the session | pull request and release lanes | pull request and release lanes | no |
 | Real-asset end-to-end | local only | no | no |
-| Renderer consumption | local only, `lookdev` renderer with `usd` package | no | no |
+| Renderer consumption | local only, `usd` runtime, from the packages | no | no |
 
 Web and XR are not targets.
 

@@ -1877,3 +1877,31 @@ NVIDIA RTX A5000. It uses the same `lookdev` runtime as earlier reports and loca
 
 The acceptance is by eye: pixels were not compared numerically. The package was still 0.2.0 by version
 and had this release's content. Rebuilding at 0.3.0 changes the version, not the sources.
+
+## After-physics bone in the MMD fixture (2026-11-01)
+
+The 24 local real models with rigid bodies have no bone with the deform-after-physics flag, counted by parsing the
+files. The fixture therefore gained one, which appends the simulated bone. Category: installed-package consumer
+over generated assets.
+
+- **Against the owner:** agrees at the fixture's tolerance on Windows and Linux, and only that joint is new in the
+  expected file.
+- **Broken input:** clearing the flag gives 32 differences, naming that joint.
+
+## Real models in the viewport from the package (2026-11-01)
+
+`toon-viewport-mmd` drew the same 41 private PMX files and one private VMD from an `avatarMmdSession` archive on a
+deterministic Jolt SDK, on the `usd` runtime, on Windows. Category: real-asset end-to-end, rendered. The
+[renderer report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/119-2026-11-01-avatar-sessions-from-packages.md) has the run.
+
+- **Outcome at 300 presented frames:** the 24 with rigid bodies draw, at 597 to 612 ticks, with 0 refusals and 0
+  mismatches. The other 17 are refused for having no rigid bodies.
+- **Cost:** at most 4.9 ms a tick in the runtime and 1.0 ms a result in resident conversion.
+- **Limits:** captures were looked at, not compared numerically. How physics looks is not judged.
+
+## VRM viewport from the published pin (2026-11-01)
+
+`hydra-toon` pulled `avatarVrmSession` 0.3.0 and its owners by the digests of the v0.3.0 release, and built
+`toon-viewport-vrm` from them with the published 0.12.0 plugins, on the `usd` runtime, on Windows. With AliciaSolid and
+`VRMA_01`, `toon-vrm-runtime-resident` passes, and 120 presented frames with springs and face have 0 mismatches and
+refusals. Pixels were not compared numerically.

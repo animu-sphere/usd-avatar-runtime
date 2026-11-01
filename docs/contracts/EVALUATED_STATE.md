@@ -157,7 +157,8 @@ the snapshot contains the final consolidated joint pose, morph weights,
 material overrides and visibility after all required feedback. Display-time
 interpolation uses committed solver results without exposing mutable world
 handles or changing simulation state. Tick/display identity and interpolation
-metadata remain RT-O4/RT-O6 review work; existing `evaluation_seconds`,
+metadata remain RT-O4 review work, [deferred](../architecture/FRAME_LIFECYCLE.md#rt-o6-one-world-one-session)
+to the freeze; existing `evaluation_seconds`,
 generation and layout/version retain their revision-4 meanings. Initial
 fast-path integration passes CPU snapshot buffers to the consumer; packing,
 copy reduction and GPU transport follow validated semantics.

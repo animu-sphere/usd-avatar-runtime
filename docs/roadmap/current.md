@@ -16,7 +16,7 @@ in its way, while Hydra publication still needs an agreed integration with its c
 
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
-| P0 | [MMD session package](#v040) | source-only session; [package](../architecture/MMD_SESSION.md#package-boundary) checked on Windows against the owners' pushed digests, with a generated PMX and VMD | the v0.4.0 definition of done is reviewed against its evidence |
+| P0 | [MMD session package](#v040) | a release member, with its lanes green; a dry run of the release lane has not run it | the v0.4.0 definition of done is reviewed against its evidence |
 | P1 | [Hydra/direct agreement](#renderer-paths) | a [state comparison](../architecture/OUTPUT_PATHS.md#4-parity-evidence) that no consumer feeds yet; no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
 | P1 | Diagnosability | bounded diagnostics, an opt-in parity host | trace, capability dump and deterministic replay locate the phase, failure and reproduction conditions |
 | P2 | [Connector path](#input-and-recording) | not started | external input reaches `AvatarInputFrame` with latency, loss and timestamps explicit |
@@ -31,27 +31,29 @@ package, compared with the owner, with no format-specific change to core.
 ### Definition of done
 
 - [x] `usd-mmd-plugins` 0.3.1 publishes `mmdPhysicsAdapter` and its closure.
-- [ ] `usd-physics-plugins` 0.1.2 and `usd-mmd-plugins` 0.3.2 carry what real models need:
+- [x] `usd-physics-plugins` 0.1.2 and `usd-mmd-plugins` 0.3.2 carry what real models need:
   `physicsJoltSixDof`, world capacity, disabled self-joints and a rule for several bodies per bone. Their
   drafts are published after the session lanes pass on their digests.
-- [ ] `avatarMmdSession` builds, tests and packages from those pins on Windows and Linux, and its
+- [x] `avatarMmdSession` builds, tests and packages from those pins on Windows and Linux, and its
   installed consumer runs from the package with the Jolt SDK the
   [package boundary](../architecture/MMD_SESSION.md#package-boundary) requires.
-- [ ] `avatarMmdSessionCheck` compares the session with the owner and writes state in the
+- [x] `avatarMmdSessionCheck` compares the session with the owner and writes state in the
   `--state-output` format, which gains primary vertex UVs. It does not compare material values with
   the owner, and reports how many it left out.
-- [ ] A generated PMX and VMD in the session lanes show morph, IK, append and physics feedback each
-  changing committed state, and each failing the comparison when broken.
+- [x] A generated PMX and VMD in the session lanes show morph, IK, append, physics feedback and an
+  after-physics bone each changing committed state, and each failing the comparison when broken.
 - [x] Jolt agreement across platforms is [measured](../reports/evidence-log.md#mmd-session-package-2026-11-01):
   this fixture's state has equal values on the deterministic SDK, so there is one expected file.
 - [x] Real PMX and VMD files [run locally](../reports/evidence-log.md#real-models-from-the-package-2026-11-01)
   from the package, on Windows. How physics looks is not checked by this.
-- [ ] `toon-viewport-mmd` draws them from the package, on the deterministic Jolt SDK.
-- [ ] [RT-O3 and RT-O6](#open-decisions) are resolved or deferred with a stated reason.
-- [ ] The capability matrix states the supported subset. Full MMD compatibility is not claimed.
-- [ ] The VRM package and core-only consumers keep working, and choosing between packages is enforced.
-- [ ] `hydra-toon`'s VRM host consumes the published `avatarVrmSession` by its pin. The v0.3.0 check
-  used the dry run's package, and `hydra-toon` does not pin the published one yet.
+- [x] `toon-viewport-mmd` [draws them from the package](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/119-2026-11-01-avatar-sessions-from-packages.md),
+  on the deterministic Jolt SDK.
+- [x] [RT-O3 and RT-O6](#open-decisions) are resolved or deferred with a stated reason.
+- [x] The capability matrix [states the supported subset](../reference/CAPABILITY_MATRIX.md#mmd-session-supported-subset).
+  Full MMD compatibility is not claimed.
+- [x] The VRM package and core-only consumers keep working, and choosing between packages is enforced.
+- [x] `hydra-toon`'s VRM host [consumes the published `avatarVrmSession` by its pin](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/119-2026-11-01-avatar-sessions-from-packages.md).
+- [ ] A dry run of the release lane passes with `avatarMmdSession` as a member.
 
 **Out of scope:** Hydra publication, several avatars in one world, seek, both formats in one
 process, and an ABI freeze.
@@ -111,7 +113,6 @@ and [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontin
 
 | Gate | Remaining work |
 | --- | --- |
-| Evaluator dependencies | validate DAGs against MMD pre/post control, morph, append, IK and model-specific post-physics IK before adding any generic phase value |
 | World integration | connect the session to application and stage lifecycle with automatic world and participant binding; selective unload with cross-avatar constraints |
 | Final-state consumers | Hydra and direct consume the same final joint and morph values, layout and spaces; no Step or IK in rendering |
 | Several avatars and seek | two avatars in one world with exactly one Step per tick for zero, one or several ticks per display request; coherent pause, reset, loop-wrap and unload; physics-disabled static and motion-only paths stay valid |
@@ -202,10 +203,10 @@ These are runtime design questions, not reported upstream bugs.
 | --- | --- | --- | --- |
 | RT-O1 | evaluation seconds, source clock, USD time-code mapping and gaze space descriptors | [input](../contracts/INPUT_FRAME.md) | ABI freeze |
 | RT-O2 | semantic intent vocabulary, custom and native channel names, mapping precedence; resolved expression identity, arbitration, provenance and availability. The session publishes effects only, under the [consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract) | [input](../contracts/INPUT_FRAME.md), [state](../contracts/EVALUATED_STATE.md) | ABI freeze |
-| RT-O3 | whether the DAG fits MMD morph, append, control and IK, model-specific pre/post-physics dependencies, gaze and expressions, before any phase extension | [evaluator](../contracts/EVALUATOR.md) | MMD session |
+| RT-O3 | **Decided for v0.4.0:** the [existing phases fit](../contracts/EVALUATOR.md#6-rt-o3-the-existing-phases-fit) MMD morph, append, control, IK and post-physics dependencies, and VRM gaze and expressions, with no phase extension. A third format reopens it | [evaluator](../contracts/EVALUATOR.md) | done; ABI freeze for a third format |
 | RT-O4 | typed gaze results, retained diagnostics and snapshot provenance, and real-provider layout conformance. Pose, spaces, layout identity and complete snapshots are in the [consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract) | [state](../contracts/EVALUATED_STATE.md) | ABI freeze |
-| RT-O5 | reset, checkpoint, commit and abort for stateful evaluators; shared-world discontinuity scope, post-Step recovery, publication failure | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | ABI freeze; world recovery for the MMD session |
-| RT-O6 | world handles and callbacks, fixed-tick and catch-up policy, tick/display separation, shared participants and sibling alignment | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), [dependencies](../architecture/DEPENDENCIES.md#3-integration-questions) | MMD session |
+| RT-O5 | reset, checkpoint, commit and abort for stateful evaluators; shared-world discontinuity scope, post-Step recovery, publication failure. The MMD session recovers by Reset, which rebuilds its world | [lifecycle](../architecture/FRAME_LIFECYCLE.md) | ABI freeze |
+| RT-O6 | **[Decided for v0.4.0](../architecture/FRAME_LIFECYCLE.md#rt-o6-one-world-one-session)** for one world per session: handles, fixed ticks and catch-up, tick/display and alignment. Interpolation and provenance are deferred to the freeze, and shared participants to the several-avatars gate | [evaluator](../contracts/EVALUATOR.md#5-shared-world-physics-orchestration), [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities), [dependencies](../architecture/DEPENDENCIES.md#3-integration-questions) | done for one session; deferred parts as stated |
 | RT-O7 | C layout and calling convention, strings, allocator ownership, handles, provider lifetime and negotiation | [ABI](../contracts/ABI.md) | ABI freeze |
 | RT-O8 | capture envelope, checkpoint encoding and reuse of motion recording | [recording and replay](../design/RECORDING_AND_REPLAY.md) | recording; lifetime prerequisites by ABI freeze |
 | RT-O9 | direct-consumer binding and update costs, later Hydra locators and dirtiness, parity tolerances | [output paths](../architecture/OUTPUT_PATHS.md) | Hydra agreement |
