@@ -76,7 +76,8 @@ def environment(plugins: list[str], libraries: list[str]) -> tuple[pathlib.Path,
     if os.name == "nt":
         env["PATH"] = os.pathsep.join([*libraries, *[str(p / d) for p in prefixes for d in ("bin", "lib")], env["PATH"]])
         return prefix / "bin" / "avatarVrmSessionCheck.exe", env
-    env["LD_LIBRARY_PATH"] = os.pathsep.join([*libraries, *[str(p / "lib") for p in prefixes]])
+    inherited = [env["LD_LIBRARY_PATH"]] if env.get("LD_LIBRARY_PATH") else []
+    env["LD_LIBRARY_PATH"] = os.pathsep.join([*libraries, *[str(p / "lib") for p in prefixes], *inherited])
     return prefix / "bin" / "avatarVrmSessionCheck", env
 
 
