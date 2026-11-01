@@ -16,10 +16,9 @@ are owned by the [frame lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-
 implement experimental registration, phase barriers and explicit predecessor
 dependencies. The [VRM session](../architecture/VRM_SESSION.md#expression-and-lookat) composes
 motion, expression with LookAt, and spring in the existing phases, with no phase extension,
-on real avatars. This does not freeze RT-O3: actual motion/VRM/MMD adapter plans
-still need conformance evidence.
+on real avatars. The MMD session does the same, which [decides RT-O3](#6-rt-o3-the-existing-phases-fit).
 
-Real providers must validate these dependencies before a freeze:
+Real providers validated these dependencies:
 
 ```text
 VRM: motion pose -> humanoid resolution -> LookAt -> expression arbitration
@@ -28,10 +27,8 @@ MMD: motion / retarget -> morph / append / IK -> bone-to-body update
      -> shared physics barrier -> body-to-bone feedback -> final state
 ```
 
-These dependencies validate or correct the proposed phases below. MMD is a
-second-family test of the scheduler's generality; do not freeze a VRM-only
-model. A physics boundary can be tested without integrating a full physics
-backend in the initial slice. Real owner calls may combine substeps atomically.
+MMD is a second-family test of the scheduler's generality; do not freeze a VRM-only
+model. Real owner calls may combine substeps atomically.
 
 ## 1. Initial phase sequence
 
@@ -42,9 +39,8 @@ the graph, dependency validation and deterministic handoff; format owners
 register calls without exposing their algorithms to core.
 
 The table below records the earlier proposal and current prototype mapping.
-Reconcile it with pre/post-physics provider requirements under RT-O3 before
-freeze. Preserve MMD bone-morph/control/IK dependencies and atomic owner calls;
-the conceptual graph does not require all control work to occur after physics.
+Preserve MMD bone-morph/control/IK dependencies and atomic owner calls; the
+conceptual graph does not require all control work to occur after physics.
 
 Numeric positions preserve a conceptual order. They are not frozen
 C ABI enum values.
@@ -70,12 +66,10 @@ phase 7; phase 10 consolidates appearance, rather than resolving expressions
 again. Final pose consolidation includes prior gaze, morph and secondary
 motion contributions exactly once.
 
-This order must be validated against format-specific dependency requirements
-before freezing. MMD bone morph/control dependencies can require work before
-IK; the runtime must not move them after IK merely because the general
-expression/morph label appears later. Decide whether staged contributions,
-explicit dependency substeps or a revised common sequence are appropriate
-with the format owner (`RT-O3`). Do not give the plugin an independent loop.
+MMD bone morph/control dependencies can require work before IK; the runtime must
+not move them after IK merely because the general expression/morph label appears
+later. The owner keeps them inside its atomic calls, under
+[RT-O3](#6-rt-o3-the-existing-phases-fit). Do not give the plugin an independent loop.
 
 Prototype phase constants cover provider positions 1–10; collection and
 publication remain runtime boundaries. Dependencies in `after` must name
@@ -100,8 +94,7 @@ parity tests validate both types, including working head pose from an earlier
 base-pose evaluator. The optional [motion adapter](../architecture/MOTION_ADAPTER.md)
 executes owner clip sampling/retarget atomically in `AR_PHASE_RETARGET` and
 supplies an explicit predecessor for VRM. Constructed-rig tests verify owner
-motion -> working head -> LookAt -> Expression numeric parity. MMD and actual
-motion/avatar bindings still require conformance evidence before freeze.
+motion -> working head -> LookAt -> Expression numeric parity.
 
 ## 2. Registration descriptor
 
@@ -210,10 +203,9 @@ world/Step/snapshot boundary; the MMD adapter calls owner bone/body coupling.
 Core does not implement PMX modes, body/bone mathematics, UsdPhysics import,
 Jolt solving or VRM SpringBone algorithms. Provider handles stay behind adapters.
 
-First validate whether existing evaluator dependencies can express owner
-pre/post-physics requirements, including model-dependent post-physics IK.
-Keep MMD ordering in the MMD evaluator's dependency graph. Do not encode model
-semantics in new generic phase enum values before that validation (RT-O3).
+Existing evaluator dependencies express the owners' pre/post-physics requirements
+([RT-O3](#6-rt-o3-the-existing-phases-fit)). Keep MMD ordering in the MMD evaluator's
+dependency graph, and do not encode model semantics in generic phase enum values.
 The current prohibition on backward phase dependencies still applies; any
 required scheduler extension needs explicit contract review and evidence.
 
@@ -265,5 +257,26 @@ world time. The host still owns external body/constraint/command teardown before
 further requests. Unbinding invalidates the removed instance until reset;
 retained snapshots survive. The
 [lifecycle](../architecture/FRAME_LIFECYCLE.md#5-physics-clock-and-discontinuities)
-owns clock acceptance and post-Step recovery. RT-O3/RT-O5/RT-O6 remain open for
-real owner adapters, checkpoint recovery and broader lifecycle evidence.
+owns clock acceptance and post-Step recovery, and
+[what RT-O6 decided](../architecture/FRAME_LIFECYCLE.md#rt-o6-one-world-one-session). RT-O5 remains
+open for checkpoint recovery.
+
+## 6. RT-O3: the existing phases fit
+
+Decided for v0.4.0: both sessions run on the existing phases and predecessor dependencies, and no phase
+value is added.
+
+| Session | Plan | Inside the owner's atomic call |
+| --- | --- | --- |
+| VRM | motion in `AR_PHASE_RETARGET`, then expression with LookAt, then spring in the secondary phase | LookAt before expression resolution; spring history |
+| MMD | a prefix and a suffix evaluator in `AR_PHASE_CONSTRAINTS`, the suffix naming the prefix, with the Step between them | `BeginPhysics`: motion, morph, append and IK in the owner's order up to physics. `ResumePhysics`: the same for after-physics bones, on the bodies' feedback |
+
+The runtime does not split either call or read its flags, so a model's own pre- and post-physics
+dependencies stay the owner's. Only VRM has gaze and expression evaluators. MMD morphs are the owner's
+channels, resolved once in the suffix.
+
+The [fixture](../reports/evidence-log.md#after-physics-bone-in-the-mmd-fixture-2026-11-01) shows morph, IK, append,
+feedback and an after-physics bone each changing committed state and each failing the comparison when
+broken, and real models run on this plan. None of the local real models has an after-physics bone, so that
+path rests on the fixture alone. The numeric positions in section 1 stay conceptual, and this decides nothing
+for a third format.

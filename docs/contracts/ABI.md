@@ -19,8 +19,7 @@ headers. `ArPhysicsWorld` is a scoped non-recycled handle. No provider, USD or
 backend types cross this table. The existing installed C consumer also checks
 the installed physics header and query symbol. Pre/post boundaries select
 existing evaluator IDs; no new `AR_PHASE_*` constants are introduced.
-Real-provider phase ordering, display provenance and checkpoint recovery remain
-RT-O3/RT-O4/RT-O5/RT-O6 work, and neither table is frozen.
+Display provenance and checkpoint recovery remain RT-O4/RT-O5 work, and neither table is frozen.
 
 ## 1. Representation
 
@@ -182,7 +181,7 @@ A change costs one of three things, because any different revision is rejected:
 | Gaze space descriptors and clock mapping | RT-O1 | Revision if `ArInputFrame` changes; otherwise None | freeze |
 | Checkpoint, restore and abort callbacks for stateful evaluators | RT-O5 | Revision, or Extension if registered separately | freeze |
 | Output capability negotiation | RT-O4, RT-O7 | undecided: Extension fits if it only adds queries | freeze |
-| Shared-world handles and callbacks | RT-O6 | Extension: the physics tables have their own versions | MMD session |
+| Shared-world handles and callbacks | [RT-O6](../architecture/FRAME_LIFECYCLE.md#rt-o6-one-world-one-session), for one session; not frozen | Extension: the physics tables have their own versions | freeze |
 | Provider unload | RT-O7 | Extension | freeze |
 | Compatible tail growth in place of rejecting other revisions | RT-O7 | Revision once, then later additions need no rebuild | freeze |
 | Layout, alignment and calling convention review with real providers | RT-O7 | Revision if anything changes | freeze |

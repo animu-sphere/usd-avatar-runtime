@@ -75,17 +75,18 @@ vocabulary, coordinate basis, sampler or recording format.
 - The renderer's existing authored-stage boundary and late-input interfaces
   need an agreed adapter for common evaluated state. A design here does not
   change the renderer's public API or prove output parity.
-- MMD control dependencies, including bone morphs before IK, must fit the
-  shared phase model without reimplementing the control evaluator. This is
-  `RT-O3` in the [roadmap](../roadmap/current.md#open-decisions).
+- MMD control dependencies, including bone morphs before IK, fit the shared phase
+  model without reimplementing the control evaluator, as
+  [RT-O3](../contracts/EVALUATOR.md#6-rt-o3-the-existing-phases-fit) records.
 - Avatar scheduling, shared-world barriers and fixed-step coordination belong to
   this runtime. The MMD owner's
   [physics integration sections 2 and 6](https://github.com/animu-sphere/usd-mmd-plugins/blob/main/docs/design/PHYSICS_INTEGRATION.md)
   assign the shared-world barrier to runtime and ticks to the host.
-  The scoped MMD adapter consumes that aligned boundary. Broader host binding,
-  shared non-avatar participation and checkpoint recovery remain RT-O6 work.
-- Owner versions are pinned in each package descriptor; only `avatarVrmSession` composes
-  them so far. The other adapters still need reproducible composition evidence.
+  The scoped MMD adapter consumes that aligned boundary. Broader host binding and
+  shared non-avatar participation are
+  [deferred](FRAME_LIFECYCLE.md#rt-o6-one-world-one-session), and checkpoint recovery is RT-O5.
+- Owner versions are pinned in each package descriptor. `avatarVrmSession` and
+  `avatarMmdSession` compose them; the other adapters still need reproducible composition evidence.
 
 When an owner lacks an output or a callable evaluator boundary, document the
 gap and extend that owner's contract. Do not fill it with a private second
