@@ -125,13 +125,13 @@ in both publication modes. Current evidence is in the
 
 ## Package boundary
 
-Planned; no package exists yet. The MMD session follows the
+Planned; no package is published yet. The MMD session follows the
 [VRM session's packaging](PROJECT_LAYOUT.md#packaging):
 
 - `libs/avatarMmdSession` packages the core with the `mmd`, `usd`, `stage_runner`, `physics_usd`
   and `mmd_session` targets in one prefix, and pins its owners by digest.
-- `AvatarMmdSession` is a thin package over the `mmd_session` component, for the library contract's
-  generated consumer. Targets keep the `AvatarRuntime::` namespace.
+- `AvatarMmdSession` is a thin package over the `mmd_session` component, so that a core already found
+  in another prefix is refused. Targets keep the `AvatarRuntime::` namespace.
 - A new `avatarMmdSessionCheck` ships in the prefix, compares the session with the owner and writes
   state in the `--state-output` format. No renderer is linked, and the MMD session has no such host today.
 - A consumer pins one package. The `mmd_session` component gets the same refusal as `vrm_session` in
@@ -141,13 +141,27 @@ Each session's prefix provides `AvatarRuntime`, so one process cannot use both. 
 the trial, because `toon-viewport-vrm` and `toon-viewport-mmd` are separate executables. A host that
 needs both formats in one process needs a combined package, to be decided when one exists.
 
-| Owner | Libraries the session needs | State at the latest release |
+| Owner | Libraries the session needs | State |
 | --- | --- | --- |
+| `usd-motion-plugins` 0.5.4 | `motionCore`, `motionSampling`, `motionRetarget`, `motionUsd` | published by digest for Windows and Linux |
 | `usd-physics-plugins` 0.1.0 | `physicsCore`, `physicsJolt`, `physicsUsd` | published by digest for Windows and Linux |
 | `usd-stage-runner` 0.1.0 | `runtimeCore` | published by digest for Windows and Linux |
-| `usd-mmd-plugins` 0.3.0 | `mmdPhysicsAdapter` and the libraries it requires, including `mmdControl`, `mmdMotionBinding`, `mmdModel` and `mmdPmx` | **not published**: the release pins bundles and tools only, and these build from the source archive |
+| `usd-mmd-plugins` | `mmdPhysicsAdapter`, `mmdControl`, `mmdMotionBinding`, `mmdModel`, `mmdPmx`, `motionVmd` | **not published**; [prepared as 0.3.1](https://github.com/animu-sphere/usd-mmd-plugins/pull/121) |
 
 The MMD owner publishing those libraries comes first; this repository does not vendor or rebuild them.
+A published MMD library names its siblings by version range, so the descriptor pins all six.
+
+A trial built this package on Windows from those six, packaged locally and imported by digest: it
+configured, built and packaged reproducibly, and its tests passed. Two things follow from it:
+
+- **A Jolt SDK is a prerequisite.** `physicsJolt` requires Jolt 5.5.0, and
+  [its owner](https://github.com/animu-sphere/usd-physics-plugins/blob/main/docs/architecture/DEPENDENCIES.md#3-jolt-physics)
+  leaves that build to the consumer, with options its release workflow names. The installed package
+  checks the exported definitions and refuses any other build. The session lanes build it the same
+  way and pass it through `CMAKE_PREFIX_PATH`, and every consumer of this package has to as well.
+- **The package has no `package_contract`.** `ost library verify-consumer` resolves only a declared
+  closure, which cannot name that SDK. `scripts/check_session_consumer.py` builds and runs the
+  repository's installed consumer instead.
 
 ### Fixtures
 
