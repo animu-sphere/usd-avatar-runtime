@@ -146,12 +146,24 @@ needs both formats in one process needs a combined package, to be decided when o
 | Owner | Libraries the session needs | State |
 | --- | --- | --- |
 | `usd-motion-plugins` 0.5.4 | `motionCore`, `motionSampling`, `motionRetarget`, `motionUsd` | published by digest for Windows and Linux |
-| `usd-physics-plugins` 0.1.1 | `physicsCore`, `physicsJoltSixDof`, `physicsUsd` | pushed by digest for Windows and Linux; its draft waits for the session lanes |
+| `usd-physics-plugins` 0.1.2 | `physicsCore`, `physicsJoltSixDof`, `physicsUsd` | by digest for Windows and Linux |
 | `usd-stage-runner` 0.1.0 | `runtimeCore` | published by digest for Windows and Linux |
-| `usd-mmd-plugins` 0.3.1 | `mmdPhysicsAdapter`, `mmdControl`, `mmdMotionBinding`, `mmdModel`, `mmdPmx`, `motionVmd` | published by digest for Windows and Linux |
+| `usd-mmd-plugins` 0.3.2 | `mmdPhysicsAdapter`, `mmdControl`, `mmdMotionBinding`, `mmdModel`, `mmdPmx`, `motionVmd` | by digest for Windows and Linux |
 
 This repository does not vendor or rebuild them. A published MMD library names its siblings by version
-range, so the descriptor pins all six. Two things follow from the owners' packages:
+range, so the descriptor pins all six. Real models also rest on three owner rules:
+
+- **World capacity.** The session selects 65,536 body pairs and contacts and 128 MiB of temporary memory,
+  because models with 349 to 571 bodies exhaust `physicsJolt`'s defaults.
+- **Self-joints.** A joint from a body to itself constrains nothing. The importer authors it disabled, with
+  `MMD_PHYSICS_JOINT_SELF`, and the session creates no constraint for it.
+- **Several bodies per bone.** The latest body in source order drives the bone, with
+  `MMD_PHYSICS_BONE_MULTIPLY_DRIVEN`, and the others keep simulating. This is the owner's deterministic rule,
+  not a claim of native MMD equivalence.
+
+A PMX joint names two bodies and the importer drops one whose body is missing, so world and non-MMD endpoints
+do not arise, and `ReadJointAdmission` still refuses them. A model with no rigid bodies is refused, as a session
+with nothing to simulate. Two things follow from the owners' packages:
 
 - **A deterministic Jolt SDK is a prerequisite.** MMD joints need six-DOF constraints, which published
   `physicsJolt` does not have: the session refuses any model with an admitted joint on it, with

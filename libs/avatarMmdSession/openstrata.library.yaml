@@ -58,31 +58,31 @@ requires:
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:4d7f9df38f8bc99c65c74320df6b905821e5d581653b765b2c8b81fafffc2c3d
-            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:35cd55f931ebb909e6b56daa38e8c42a6e7a678fe02fc96a8c05892b71e80313
+            digest: sha256:2b8aba4deb3f7bbe315e3b2252027122cf47bcd706318fd147645b7917907880
+            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:11f14667cae3b38ac55ca066885e26721e3ce079b748afee5128d94303a115f2
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:887ba6d4cb9c0b5489a7e80defee0a827cb3321342e590b81516a8c1ef4f3cee
-            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:314106fe906256cf6ce0062acf47d8d6936d2d9d43482b62afe645e711cccb76
+            digest: sha256:dc952791247aa9cfd70c85a1ecfb938f9ff4f62ccf7c9d8ad083267bb3e40a8e
+            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:4699dbc5950275d4ed8d0180b51b8498839e561c2e3c5212626e61750f544ead
     - id: physicsJoltSixDof
       version: ">=0.1,<0.2"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:ac6a125e6f54e39876fd527dfc78077b244de5433910f2381d4b28cbeca19eca
-            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:d4c83dace6e5656e2ad1a43cc2dba377254b531b9f07f1d9c97a6ec895b3cac1
+            digest: sha256:5916803b55c50e8a60bc258105dd5f404d2ea5ec74ce52c83024a9780a35c5ac
+            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:d78492f8348d3926ba8b4a9bdcf849646621b3f2a3806536b4f983fdd153d881
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:f041cb56f44570760227f25f80fcc0fee8ebdcdd2dabaade5fae16c66b21a467
-            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:76fb46b6976c1b3f1a918f1ccf284deebcbe35af8ddd2367ea7457c632501caf
+            digest: sha256:f0f6bd95852f34227ee0bd25f7c56eed6b2cee9e903cd050b387ea9c89699c85
+            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:f7b77f9aeac32a327c0e2c4e96510ca4ffaaa64d70b2603d33caad46ef18b28a
     - id: physicsUsd
       version: ">=0.1,<0.2"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:a6dcb3a0310dfa16cc5ce7694f6bfc0b0cf13ae0730a0560585c10e7ed1145d3
-            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:bbba4e230d9ad39089b02e0ef49822d261084fcb5cf937660b68dc14993814da
+            digest: sha256:86c252070eadc0d12a6c9f8a06cbbb2435ac2be27c4fe993355632b1c0ac91e7
+            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:20d390dc053ad3e5d03c1c77a95037ac282cb87345d1decee67f498eaa71a353
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:76fdc348656ee4ce4587493f62c7d6b7e540896285dafdea68702e5c8d0bc5b1
-            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:3ffecf3648e1a1e42716e261cf12ea6eb67209c4162a62a879fedae0f85f3c2f
+            digest: sha256:dbd523fc385d0948afa362677165fd44b691ae0d3010fc42a1b17b034d8652dc
+            source: oci://ghcr.io/animu-sphere/usd-physics-plugins@sha256:0227d5253e2024687f06a49cab832dd04eef5a7bb133e33843bf41b9e00a46ff
     - id: runtimeCore
       version: ">=0.1,<0.2"
       artifact:
@@ -94,65 +94,65 @@ requires:
             digest: sha256:f647eae0623c359b156d1d0cf5556a5a08bf78a946f7adf47a91f08e26e64c95
             source: oci://ghcr.io/animu-sphere/usd-stage-runner@sha256:1d147c7a19829815d2be4cd264e526fc49aaee7f485af6791e8c4084e72affc2
     - id: mmdPmx
-      version: ">=0.3.1,<0.4"
+      version: ">=0.3,<0.4"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:a17b37d68c0211fa6135056f934f9d0fad858bc2f22fc16dd2e3405f9a8491ee
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:65b35a21d4f0b77e645d1e6fc9a0164889b9b35327cfe0604d6e88dd6f8047b3
+            digest: sha256:463858cab0673afdffc7ca371b8ee9ac6fd8726bca1a2e6d5f3975aab4b2e44f
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:7d044efc8b3785bebd9475d347c751757e306fa5e5da9cb487cee3cc8ddfdd05
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:8bf26dd79f7aacaf71504974184c9e67eb8fa83122f8f89b728be6395ae38ea9
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:9b3d9a9052cb64fc097092a1ed98246a08610d69a28f5342d8bcd6736c1d6729
+            digest: sha256:8758a1add035a742030a83c492d07a7c9279a8e1b19e00ef0a5ed71628f01eee
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:5f053fdfcf3919e6a32cceb64298197afdb81d373a1e2c3c7138051854621da1
     - id: motionVmd
-      version: ">=0.3.1,<0.4"
+      version: ">=0.3,<0.4"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:748f5ec961514bab32ecff923c4c0020eeeb0a096680a5d748d98d667023cfb9
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:85aa124b476e1648a2bb2aa8957b9061cea1850e4d7f4205ff96b6f57902a7dc
+            digest: sha256:fb8a9d64231b551a256eb222b1d724bdeaf83cda2aee7e4792ef0273f3b0ecec
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:23a76f5866ee495c3fa8aee8d829548a4ca528ebed6474aa71f96a41a58d5f8c
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:8690b3c49c50d38c6d2814d59c93bccdca2c51fb2debdc93fcb856fffbf1c4df
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:d95380ac2852ac87b1578c04992b003e4c6bf31282dbc5b30954d0f9f6285832
+            digest: sha256:f196d5e855c6579479625b3a94209b0ccecc09dbdb1f0586516c66a31178281c
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:a6fc380e3cf65b16fd062d995f471b03af40411df94619c916d2d2aefe7cbbae
     - id: mmdModel
-      version: ">=0.3.1,<0.4"
+      version: ">=0.3,<0.4"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:fcade16fd09c2e8cf5bfd3e7612f219f7734e75470d76bd427d36697de4a55d9
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:4c381dcfe4f1706aaad7403f774ed537f744bd0d6c8db47d78aa7003ffe42828
+            digest: sha256:ff2f18462b6ef50cc87c6e9aad2a2c57a26cc7d2226df9786fc2bdd8938b6068
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:128964c10e88d780c7fad75c37fb8b9e72a78632f25a2b0a024b62dda3a8290f
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:0fb48fc53f30421114bd6d2e38993ec403989c1c902b0337a59fd13f3bf4f99c
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:eb065712bc8c59e8aa46b5cfb63625e127bb68f3615487687be72cb819eff1b2
+            digest: sha256:3cf1366378392eee121c6ec98c5dbfe276b0f4f9cf1f146ff6fecda2702d86f2
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:86414534f75c12ce0c1d0be1139e5e6cf51975bc1e4949f428267f470db9408e
     - id: mmdMotionBinding
-      version: ">=0.3.1,<0.4"
+      version: ">=0.3,<0.4"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:23d4f34f820122d225986ea744e1b792ad0ddf6f60aa54313287772af1ab659b
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:e0d6bcfb3ec3afe6e323752707d40dada7418527a643524250e0ad9630c1b407
+            digest: sha256:8159f764fb418809b6639f413703fe7c6fd100e3a148b7bf45bcb4f04cd60994
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:a9aab2fe8a268c76b821972d4b41c1c95ff91a761c00e216be1e27709b93f116
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:fc6c41a317ab87c38cd9dc7aa32c959d77db4799456ba8f4680cd6353c9bfdf8
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:52d18ce0ce96e62ee54ae6c76118279659e401d09f1091026496b6b6e757df71
+            digest: sha256:c45fbe0dc3e71d113c508a12ba572a863504d77296df00fed096f30d00165711
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:8ac1e3bc7625c9c52b2680a7cda3f36179222ef4608687d65e4552c1954b5778
     - id: mmdControl
-      version: ">=0.3.1,<0.4"
+      version: ">=0.3,<0.4"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:9ca3a0b30f1388b3792c6d222f2654f024c87059ad9827e100215a4909d2d6f5
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:16683a74d7373dbb230e9939ecf36deed4d94c5122d30f9bef75ef9feb19a1cb
+            digest: sha256:45e3efe8d7935c57eacd0c018bb04345938801d77c995b81f34e340e129ddbbc
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:1345583c2725062127a73e12a5cdc6ffc49ec92227a3a5f4942d68096fdb34cc
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:f982118e2594a872901e26a843f508802bdd4e34c2a832ce6710b789c2821cbb
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:d78ec5ce61d4994e3e5db2a2eb1e223aae85c89c3cec20d7f121ff592ca85176
+            digest: sha256:1bbd0665f8792d7af1606ad7f2f33ecc230d600de37615754305d3af9e6e855c
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:17eb7f7136d64b0802fec9ccb9e6223314c6e51e1597029f78021437b070bd1d
     - id: mmdPhysicsAdapter
-      version: ">=0.3.1,<0.4"
+      version: ">=0.3,<0.4"
       artifact:
         targets:
           cy2026-linux-x86_64-py313-usd:
-            digest: sha256:13921e4978f89f56291ffeaad1a63338ff7a33bacc18b17aab47ee0dbed5fb7c
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:3694b2b6bf0f656f2ebffd585f891ac8145c5c0418cdaf938276bdef88e87225
+            digest: sha256:a99574c684ddf9e78214c103b0ef6605792505558dfbb7f97f08f928421d06c0
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:eb9a0bc3ea175317a7488018052266cbf8656d89b6a3532a40724cadf37c6268
           cy2026-windows-x86_64-py313-usd:
-            digest: sha256:cb025c64d1e27f5b91bf4be35326a6c2aba8925eb40da2e097f90750572b26a6
-            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:a9ffac35fa3d94dc41d130b5fd6823a7405c99c1497644fc1cfbba3d2161dfa5
+            digest: sha256:d513c99cdae3fa6a5d74152c0961d26737390f4ff1d5a86c5216d36f6ed10cda
+            source: oci://ghcr.io/animu-sphere/usd-mmd-plugins@sha256:de50189e6e1f3efd02885981959ff84ebe842328f24e168b7676cd96c597b697
 cmake:
   package: AvatarMmdSession
   target: AvatarRuntime::avatarMmdSession

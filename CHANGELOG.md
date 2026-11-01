@@ -12,6 +12,8 @@ the C ABI revision are separate numbers.
 - `avatarMmdSession` as a package, pinning its owners by digest, with `avatarMmdSessionCheck` and a
   generated PMX and VMD in the session lane. Consumers supply the deterministic Jolt SDK that
   `physicsJoltSixDof` requires.
+- The MMD session selects a larger Jolt world capacity, and runs models with self-joints and bones several
+  bodies drive, on `usd-physics-plugins` 0.1.2 and `usd-mmd-plugins` 0.3.2.
 - A `uvs` channel in the `--state-output` format and `scripts/compare_avatar_state.py`.
 
 ### Changed

@@ -111,8 +111,12 @@ struct Session::Impl {
             // MMD owner contract section 7.1; immutable policy for this single-format world.
             using Rule = core::ContactCombineRule;
             const core::ContactMixing mixing{Rule::product, Rule::product, 10};
-            if (settings) return usd_physics::jolt::createWorld(mixing, settings->gravity);
-            return usd_physics::jolt::createWorld(mixing);
+            // Real avatars keep hundreds of bodies overlapping; the defaults suit small scenes.
+            usd_physics::jolt::WorldCapacity capacity;
+            capacity.bodyPairs = 65536; capacity.contactConstraints = 65536;
+            capacity.temporaryBytes = 128 * 1024 * 1024;
+            return usd_physics::jolt::createWorld(mixing,
+                settings ? settings->gravity : core::Vector3{0, -9.81, 0}, capacity);
         }, [&](const auto& body, auto& descriptor) {
             if (const auto found = initialBodies_.find(body.path); found != initialBodies_.end()) {
                 const auto& t = found->second;

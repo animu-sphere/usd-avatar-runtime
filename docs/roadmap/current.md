@@ -31,9 +31,9 @@ package, compared with the owner, with no format-specific change to core.
 ### Definition of done
 
 - [x] `usd-mmd-plugins` 0.3.1 publishes `mmdPhysicsAdapter` and its closure.
-- [ ] `usd-physics-plugins` 0.1.1 publishes `physicsJoltSixDof`. `physicsJolt` has no six-DOF, so it
-  refuses any model with an admitted joint. Its draft is published after the session lanes pass on its
-  digests.
+- [ ] `usd-physics-plugins` 0.1.2 and `usd-mmd-plugins` 0.3.2 carry what real models need:
+  `physicsJoltSixDof`, world capacity, disabled self-joints and a rule for several bodies per bone. Their
+  drafts are published after the session lanes pass on their digests.
 - [ ] `avatarMmdSession` builds, tests and packages from those pins on Windows and Linux, and its
   installed consumer runs from the package with the Jolt SDK the
   [package boundary](../architecture/MMD_SESSION.md#package-boundary) requires.
@@ -44,7 +44,9 @@ package, compared with the owner, with no format-specific change to core.
   changing committed state, and each failing the comparison when broken.
 - [x] Jolt agreement across platforms is [measured](../reports/evidence-log.md#mmd-session-package-2026-11-01):
   this fixture's state has equal values on the deterministic SDK, so there is one expected file.
-- [ ] A real PMX and VMD run locally from the package, and `toon-viewport-mmd` draws them from it.
+- [x] Real PMX and VMD files [run locally](../reports/evidence-log.md#real-models-from-the-package-2026-11-01)
+  from the package, on Windows. How physics looks is not checked by this.
+- [ ] `toon-viewport-mmd` draws them from the package, on the deterministic Jolt SDK.
 - [ ] [RT-O3 and RT-O6](#open-decisions) are resolved or deferred with a stated reason.
 - [ ] The capability matrix states the supported subset. Full MMD compatibility is not claimed.
 - [ ] The VRM package and core-only consumers keep working, and choosing between packages is enforced.
@@ -67,8 +69,8 @@ in a renderer.
 ### MMD session
 
 After the [package](#v040): complete non-bone morph output, including additional UV channels;
-resident UV mapping and coherent tangents; representative private-asset, spring and contact
-checks; and a world/non-MMD endpoint policy for joints.
+resident UV mapping and coherent tangents; and representative private-asset, spring and contact
+checks.
 
 ### Renderer paths
 
