@@ -381,6 +381,117 @@ int main(int argc, char** argv) {
             for (uint32_t i = 0; i < state(face).material_count; ++i) require(state(face).materials[i].overridden == 0, "expression gaze has no material bind here");
         }
         {
+            // Import failure refuses construction and leaves nothing behind.
+            const auto rejected = [&](const UsdStageRefPtr& s, const openstrata::motion::MotionStageRead& r, const char* message) {
+                avatarVrmSession::SessionConfig c; c.avatar = identity; c.clock = {0,1./60,2};
+                try { avatarVrmSession::Session unused(s,r,c); }
+                catch (const std::invalid_argument&) { return; }
+                throw std::runtime_error(message);
+            };
+            rejected(UsdStage::CreateInMemory(),read,"no avatar root");
+            auto noHumanoid = avatar(true); noHumanoid->RemovePrim(SdfPath("/Avatar/Human")); rejected(noHumanoid,read,"no humanoid");
+            auto zUp = avatar(true); UsdGeomSetStageUpAxis(zUp,UsdGeomTokens->z); rejected(zUp,read,"a stage that is not Y-up");
+            auto scaled = avatar(true); UsdGeomXformable(scaled->GetPrimAtPath(SdfPath("/Avatar"))).AddScaleOp().Set(GfVec3f(2)); rejected(scaled,read,"scaled placement");
+            rejected(avatar(true),openstrata::motion::MotionStageRead{},"an empty clip");
+            avatarVrmSession::SessionConfig c; c.avatar = identity; c.clock = {0,1./60,4};
+            require(avatarVrmSession::Session(avatar(true),read,c).Advance(0,&quiet) == AR_OK, "a session after refused ones");
+        }
+        {
+            // Evaluator failure: a gaze the owner cannot represent. It has no state until a
+            // seed commits, keeps the latest state and leaves the tick due for a retry.
+            static std::vector<std::string> codes;
+            ArDiagnosticSink record{}; record.emit = [](void*,const ArDiagnostic* d) { codes.push_back(d->code); };
+            avatarVrmSession::SessionConfig c; c.avatar = identity; c.clock = {0,1./60,4};
+            c.expressions = c.lookAt = true; c.gaze = {"host","actor","gaze:point"};
+            avatarVrmSession::Session s(avatar(true,Gaze::bone,true),read,c);
+            ArGazeInput g{"host","actor","gaze:point",AR_GAZE_POINT,AR_GAZE_RUNTIME_WORLD,AR_OBSERVATION_VALID};
+            g.value[0] = 1e300; g.value[1] = 6; g.value[2] = 5; g.clock_scale = 1;
+            ArInputFrame frame{AR_HEADER(ArInputFrame)}; frame.gazes = &g; frame.gaze_count = 1;
+            require(s.Advance(0,frame,&record) == AR_PROVIDER_ERROR && s.Snapshot() == 0 && !s.Stats().initialized, "failed seed");
+            require(std::find(codes.begin(),codes.end(),"VRM_ADAPTER_RANGE") != codes.end(), "owner range diagnostic");
+            require(s.Advance(0,&quiet) == AR_OK && state(s).frame_id == 1, "seed retry");
+            const auto seed = s.Snapshot(); s.Play();
+            require(s.Advance(1./60,frame,&record) == AR_PROVIDER_ERROR && s.Snapshot() == seed && s.Stats().tick == 0 && s.Stats().pendingSeconds > 0, "failed tick");
+            require(state(s).frame_id == 1, "latest state after failure");
+            require(s.Advance(0,&quiet) == AR_OK && s.Stats().tick == 1 && state(s).frame_id == 2 && s.Stats().pendingSeconds == 0, "retry runs the due tick once");
+            // A paused session keeps a due tick, without evaluating or losing it.
+            require(s.Advance(1./60,frame,&record) == AR_PROVIDER_ERROR, "due again");
+            const auto latest = s.Snapshot(); s.Pause();
+            require(s.Advance(0,&quiet) == AR_OK && s.Snapshot() == latest && s.Stats().tick == 1 && s.Stats().pendingSeconds > 0, "paused backlog");
+            s.Play(); require(s.Advance(0,&quiet) == AR_OK && s.Stats().tick == 2, "resumed backlog");
+            // Reset recovers from failure and clears what was due.
+            require(s.Advance(1./60,frame,&record) == AR_PROVIDER_ERROR, "due before reset");
+            require(s.Reset(0) == AR_OK && s.Snapshot() == 0 && s.Stats().pendingSeconds == 0, "reset clears failure");
+            require(s.Advance(0,&quiet) == AR_OK && state(s).generation == 2 && state(s).frame_id == 1, "seed after failure");
+        }
+        {
+            // Several avatars and destroy/recreate: identical runs agree exactly, whatever
+            // else runs, fails, resets or is destroyed between their calls.
+            struct Run { std::vector<double> rotations; std::vector<double> weights; };
+            const auto config = [&] {
+                avatarVrmSession::SessionConfig c; c.avatar = identity; c.clock = {0,1./60,4};
+                c.expressions = c.lookAt = true; c.gaze = {"host","actor","gaze:point"};
+                c.expressionInputs = {{{"host","actor","expr:happy"},"happy"}};
+                return c;
+            };
+            const auto input = [&](avatarVrmSession::Session& s, int tick, double weight, double side) {
+                ArScalarInput happy{"host","actor","expr:happy",weight*(tick%8)/8.}; happy.clock_scale = 1;
+                ArGazeInput g{"host","actor","gaze:point",AR_GAZE_POINT,AR_GAZE_RUNTIME_WORLD,AR_OBSERVATION_VALID};
+                g.value[0] = 3+side; g.value[1] = 5.3; g.value[2] = 7; g.clock_scale = 1;
+                ArInputFrame f{AR_HEADER(ArInputFrame)}; f.scalars = &happy; f.scalar_count = 1; f.gazes = &g; f.gaze_count = 1;
+                return s.Advance(tick ? 1./60 : 0,f,&quiet);
+            };
+            const auto capture = [&](const avatarVrmSession::Session& s) {
+                const auto v = state(s); Run r;
+                for (uint32_t i = 0; i < v.joint_count; ++i) r.rotations.insert(r.rotations.end(),v.joints[i].local.rotation,v.joints[i].local.rotation+4);
+                for (uint32_t i = 0; i < v.blend_shape_count; ++i) r.weights.push_back(v.blend_shapes[i].weight);
+                for (uint32_t i = 0; i < v.material_count; ++i) r.weights.insert(r.weights.end(),v.materials[i].value,v.materials[i].value+4);
+                return r;
+            };
+            const auto agree = [](const Run& a, const Run& b, const char* message) { require(a.rotations == b.rotations && a.weights == b.weights, message); };
+            std::vector<Run> solo; ArInstance soloInstance = 0;
+            {
+                avatarVrmSession::Session s(avatar(true,Gaze::bone,true),read,config()); s.Play();
+                for (int tick = 0; tick < 60; ++tick) { require(input(s,tick,1,1) == AR_OK, "solo tick"); solo.push_back(capture(s)); }
+                soloInstance = state(s).instance;
+                require(solo.front().rotations != solo.back().rotations && solo[5].weights != solo[6].weights, "the run changes");
+            }
+            // Retained state survives destruction of its session, using a copied table.
+            ArRuntimeApi api{}; ArSnapshot kept = 0; ArInstance keptInstance = 0;
+            {
+                avatarVrmSession::Session s(avatar(true,Gaze::bone,true),read,config()); s.Play();
+                for (int tick = 0; tick < 60; ++tick) require(input(s,tick,1,1) == AR_OK, "recreated tick");
+                agree(capture(s),solo.back(),"destroy and recreate replays exactly");
+                api = s.Api(); kept = s.Snapshot(); keptInstance = state(s).instance;
+                require(keptInstance != soloInstance && api.retain_snapshot(kept) == AR_OK, "a new instance, retained");
+            }
+            ArStateView retained{AR_HEADER(ArStateView)};
+            require(api.get_snapshot(kept,&retained) == AR_OK && retained.instance == keptInstance && retained.frame_id == 60, "retained after destruction");
+            for (uint32_t i = 0; i < retained.joint_count; ++i) for (uint32_t k = 0; k < 4; ++k)
+                require(retained.joints[i].local.rotation[k] == solo.back().rotations[4*i+k], "retained values after destruction");
+            require(api.release_snapshot(kept) == AR_OK, "released after destruction");
+            // Two live avatars with other inputs, in one thread. The other resets, fails and goes.
+            auto a = std::make_unique<avatarVrmSession::Session>(avatar(true,Gaze::bone,true),read,config());
+            auto b = std::make_unique<avatarVrmSession::Session>(avatar(true,Gaze::bone,true),read,config());
+            a->Play(); b->Play();
+            for (int tick = 0; tick < 60; ++tick) {
+                require(input(*b,tick%10,.5,-2) == AR_OK, "other avatar");
+                if (tick%10 == 9) require(b->Reset(0) == AR_OK, "other avatar reset"), b->Play();
+                require(input(*a,tick,1,1) == AR_OK, "first avatar");
+                agree(capture(*a),solo[size_t(tick)],"avatars do not interfere");
+            }
+            require(b->Advance(0,&quiet) == AR_OK && state(*a).instance != state(*b).instance, "separate instances");
+            ArGazeInput broken{"host","actor","gaze:point",AR_GAZE_POINT,AR_GAZE_RUNTIME_WORLD,AR_OBSERVATION_VALID};
+            broken.value[0] = 1e300; broken.clock_scale = 1;
+            ArInputFrame failing{AR_HEADER(ArInputFrame)}; failing.gazes = &broken; failing.gaze_count = 1;
+            const auto beforeFailure = capture(*a);
+            require(b->Advance(1./60,failing,&quiet) == AR_PROVIDER_ERROR, "other avatar fails");
+            agree(capture(*a),beforeFailure,"a failure stays with its avatar");
+            b.reset();
+            agree(capture(*a),beforeFailure,"destroying an avatar leaves the other");
+            require(a->Advance(1./60,&quiet) == AR_OK && state(*a).frame_id == 61, "the other avatar continues");
+        }
+        {
             const auto bad = [&](avatarVrmSession::SessionConfig c, const openstrata::motion::MotionStageRead& r, const char* message) {
                 try { avatarVrmSession::Session unused(avatar(true,Gaze::bone,true),r,c); }
                 catch (const std::invalid_argument&) { return; }

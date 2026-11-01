@@ -20,6 +20,8 @@ the C ABI revision are separate numbers.
   values. The C ABI is unchanged.
 - The evaluated-state contract states what a consumer can rely on: identity, units, spaces,
   absent values, gaze and snapshot lifetime. `hosts.vrm_session` checks it.
+- `hosts.vrm_session` covers import and evaluator failure, recovery, destroy/recreate and two
+  avatars in one thread.
 
 ### Changed
 

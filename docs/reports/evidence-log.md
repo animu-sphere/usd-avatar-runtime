@@ -1731,3 +1731,22 @@ The installed consumer runs in the pull request lane.
 `session ci` run `41226331665` on pull request #69 passed `hosts.vrm_session` and
 `installed.vrm_session` on hosted Windows and Linux, including the consumer contract checks on
 the generated bone and expression fixtures. Real avatars remain measured on Windows only.
+
+## Session failure and lifecycle (2026-11-01)
+
+`hosts.vrm_session` now covers these on generated avatars. Five import failures refuse construction,
+and a session constructs afterwards: no avatar root, no humanoid, a stage that is not Y-up, scaled
+placement and an empty clip. A gaze the owner cannot represent fails a seed and a tick with
+`AR_PROVIDER_ERROR` and `VRM_ADAPTER_RANGE`; the latest state stays, a retry runs the due tick once,
+pause keeps it due and reset clears it. Destroy and recreate replays 60 ticks exactly with a new
+instance, and a retained snapshot keeps its identity and values after its session is destroyed. One
+avatar's 60 ticks match a solo run exactly while a second in the same thread takes other inputs,
+resets every ten ticks, fails and is destroyed.
+
+15/15 library tests, 4/4 core tests and the installed consumer passed on Windows. The test failed, as
+it should, with a seed marked done before it commits, with paused requests running backlog, with
+reset keeping the clock, and with expression weights shared across frames and avatars. Earlier checks
+in the same test caught the last three, so the interference comparison has not failed on its own.
+
+The avatars are generated and evaluation is serial. Several avatars here means separate runtimes
+without a shared world, and Linux was not measured when this was written.

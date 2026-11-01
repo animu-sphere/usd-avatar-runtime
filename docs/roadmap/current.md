@@ -53,7 +53,6 @@ ABI freeze and bindings for several languages at once.
 ### B. VRM end to end
 
 - [ ] Add a redistributable small VRM, motion and expected state to CI. Private assets stay as additional evidence.
-- [ ] Test import failure, evaluator failure, reset, pause/resume, destroy/recreate, snapshot retention and several avatars.
 
 ### C. Renderer consumer
 
