@@ -58,6 +58,24 @@ not erase a library's actual dependencies.
 `libs/avatarVrmSession` packages the core with the session's adapters and pins their owners by
 digest. Other adapters stay source-built. See [how a release is cut](../releases/README.md).
 
+Pin one of the two:
+
+| A consumer that needs | Pins | Finds |
+| --- | --- | --- |
+| the core, with its own providers | `avatarRuntime` | `find_package(AvatarRuntime)` |
+| the VRM session | `avatarVrmSession` | `find_package(AvatarVrmSession)`, or the `vrm_session` component of `AvatarRuntime` |
+
+The session's prefix includes the core, so both provide the `AvatarRuntime` CMake package and the
+same core files, and the core's targets keep the `AvatarRuntime::` namespace in both. The session
+does not depend on a separately published core: it would have to pin a digest made by the same
+release, and the `vrm_session` component would have to span two prefixes.
+
+The two do not combine. `find_package(AvatarVrmSession)` uses the core in its own prefix, whatever
+the search order. A prefix without the session refuses the `vrm_session` component, and
+`AvatarVrmSession` refuses a core already found in such a prefix, each naming this choice.
+`scripts/check_package_choice.py` checks these orders in the session and release lanes. Composing
+both with `ost runtime compose` fails on their shared install paths.
+
 ## Tools and tests
 
 `tests/contracts` compiles a separate C11 provider DLL, C11 consumer and C++20

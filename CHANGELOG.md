@@ -35,6 +35,9 @@ the C ABI revision are separate numbers.
   on both.
 - The release lane and source CI move to `ost` 0.23.18, and `verify-consumer` now checks
   the session on Linux as well, declaring X11 and Xt as host packages of the consumer.
+- A prefix without the session now refuses the `vrm_session` component, and
+  `AvatarVrmSession` refuses a core already found in such a prefix. Both messages name
+  the choice between the two packages, which `scripts/check_package_choice.py` checks.
 - A change touching only documentation no longer runs the pull request lanes or the
   `plain cmake` push lane.
 

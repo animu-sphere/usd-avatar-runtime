@@ -197,6 +197,8 @@ jobs:
               echo "::error title=release packaging::two packagings of $name disagree ($first, $second)" ; exit 1
             fi
           done
+      - name: Check choosing between the core and the session package
+        run: python scripts/check_package_choice.py
       - name: Build and run the session's installed consumer
         run: python scripts/check_session_consumer.py
       - name: Run the VRM fixture through the importers and the session

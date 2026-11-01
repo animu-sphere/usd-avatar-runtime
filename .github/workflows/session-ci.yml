@@ -115,6 +115,12 @@ jobs:
           ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
           ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
           ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/avatarVrmSession.json
+      - name: Check choosing between the core and the session package
+        shell: bash
+        run: |
+          set -euo pipefail
+          ost library build libs/avatarRuntime --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          python scripts/check_package_choice.py
       - name: Verify the generated consumer
         shell: bash
         run: |
@@ -139,4 +145,5 @@ jobs:
           path: |
             .ost-ci/*.json
             libs/avatarVrmSession/.strata/targets/*/library-*.json
+            libs/avatarVrmSession/.strata/targets/*/consumer/library-consumer.json
           if-no-files-found: warn
