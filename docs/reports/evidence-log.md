@@ -12,6 +12,25 @@ means real VRM evaluation, a rendering `hydra-toon` consumer and real MMD evalua
 [physics gates](../roadmap/current.md#physics-orchestration-milestones). "L3" is the MMD
 owner's representative-acceptance level.
 
+## MMD session package (2026-11-01)
+
+`avatarMmdSession` built from the pushed `usd-mmd-plugins` 0.3.1 and `usd-physics-plugins` 0.1.1 digests,
+including `physicsJoltSixDof` on the deterministic Jolt 5.5.0 SDK, and ran the generated
+[PMX and VMD](../../tests/assets/mmd-session/README.md) for 240 ticks. Category: installed-package consumer
+over generated assets. A real PMX has not run from the package.
+
+- **Against the owner:** largest pose error `2.22e-16`, morph and UV `0`, on Windows and Linux. The check
+  feeds the owner the session's own bodies, so this covers composition, not the solver. Material values are
+  not compared, and this fixture has none.
+- **Reset:** exact replay over three generations on each platform, and retained output survives close.
+- **Broken inputs:** without IK, append, physics feedback, or morph and UV, the comparison reports 12, 6,
+  16 and 21 differences on Windows, each naming what was taken away.
+- **Across platforms:** the state from `windows-2022`, `ubuntu-24.04` and a local Visual Studio 18 build is
+  equal at every value, compared after parsing, so one expected file serves both. This covers this model
+  and duration. Other assets are not assumed to agree.
+- **Without six-DOF:** on published `physicsJolt` 0.1.0 the session refuses the model at construction, with
+  `SceneResources requires SixDofConstraints for admitted joints`.
+
 ## Native MMD application session evidence (2026-10-27)
 
 The optional installed `avatarMmdSession` (`mmd_session` component) shares the

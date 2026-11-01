@@ -72,7 +72,7 @@ def main() -> int:
                 failed = True
         evidence = ROOT / ".ost-ci"
         evidence.mkdir(exist_ok=True)
-        (evidence / "mmd-session-state.json").write_text(json.dumps(actual, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        (evidence / "mmd-session-state.json").write_text(json.dumps(actual, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
         if args.update:
             expected_path.write_text(json.dumps(actual, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n")
             print(f"wrote {expected_path}")
