@@ -1780,3 +1780,9 @@ The fixture's expressions bind material colours, so a material override from an 
 committed state here; no renderer received it. The motion is generated, not captured, and the expected
 file records this implementation's output, with owner agreement checked separately. Linux was not
 measured when this was written. The session lane runs it.
+
+## Generated VRM through the importers on Linux (2026-11-01)
+
+`session ci` run `41268810863` on pull request #74 ran the fixture check on hosted Windows and Linux. Both
+passed the owner comparisons and had 0 differences from the expected file, written on Windows, at `1e-5`.
+On Linux the maximum motion error was `9.38e-8` and the maximum spring error `9.56e-8`.
