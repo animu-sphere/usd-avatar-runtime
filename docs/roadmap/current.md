@@ -17,7 +17,7 @@ Order: VRM session integration -> direct rendering end to end -> Hydra/direct ag
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
 | P0 | [VRM session integration](#b-vrm-end-to-end) | the session selects pose, spring, expression and LookAt, with expression and gaze from the host or the clip; CI has only generated fixtures | a real VRM goes from input through evaluation to a committed snapshot with pose, expression, LookAt and spring |
-| P0 | [`hydra-toon` direct consumer](#c-renderer-consumer) | `toon-viewport-vrm` builds from the package; the resident check is headless and pose-only | one real VRM renders, updates, resets and tears down soundly |
+| P0 | [`hydra-toon` direct consumer](#c-renderer-consumer) | `toon-viewport-vrm` draws one real VRM with pose, spring, expression and gaze from generated input, on Windows; no real-avatar material bind measured | drawing and post-reset display are accepted, and the state comparison exists |
 | P1 | [Hydra/direct agreement](#renderer-paths) | no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
 | P1 | [MMD session trial package](#mmd-session) | source-only session | a real PMX/VMD loads, plays, resets and feeds physics back from a package |
 | P1 | [Package design](#a-package-quality) | two packages provide the same CMake package and core files | choosing core or session is clear and duplicate installs cannot collide |
@@ -56,8 +56,6 @@ ABI freeze and bindings for several languages at once.
 
 ### C. Renderer consumer
 
-- [ ] Settle the `hydra-toon` direct input contract, with no evaluation logic reimplemented there.
-- [ ] Render one real VRM and confirm motion and expression changes.
 - [ ] Build the state comparison that Hydra agreement will use.
 
 ### D. Release decision
