@@ -69,7 +69,7 @@ bool sameTransform(const mmd::control::JointTransform& a, const mmd::control::Jo
     return std::abs(std::abs(dot) - 1) <= 1e-9;
 }
 }
-int main(int argc, char** argv) {
+static int run(int argc, char** argv) {
     try {
         require(argc >= 4, "Usage: avatarMmdSessionCheck avatar.pmx motion.vmd ticks [--state-output file]");
         std::string stateOutput;
@@ -179,7 +179,7 @@ int main(int argc, char** argv) {
             std::to_string(maxMorphError) + " uv " + std::to_string(maxUvError));
         require(first.back() != base, "Nothing changed committed state");
         if (!stateOutput.empty()) {
-            std::ofstream file(stateOutput, std::ios::binary);
+            std::ofstream file(std::filesystem::u8path(stateOutput), std::ios::binary);
             file << '[';
             for (size_t i = 0; i < states.size(); ++i) file << (i ? "," : "") << '\n' << states[i];
             file << "]\n";
@@ -216,3 +216,19 @@ int main(int argc, char** argv) {
         return 0;
     } catch (const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }
+// Arguments are UTF-8, as the session and OpenUSD expect. On Windows char** holds the
+// system code page, which cannot name every model file.
+#ifdef _WIN32
+int wmain(int argc, wchar_t** wide) {
+    std::vector<std::string> storage;
+    std::vector<char*> argv;
+    for (int i = 0; i < argc; ++i) {
+        const auto text = std::filesystem::path(wide[i]).u8string();
+        storage.emplace_back(text.begin(), text.end());
+    }
+    for (auto& text : storage) argv.push_back(text.data());
+    return run(argc, argv.data());
+}
+#else
+int main(int argc, char** argv) { return run(argc, argv); }
+#endif
