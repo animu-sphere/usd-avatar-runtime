@@ -230,5 +230,24 @@ retained output lifetime. Parity criteria specify numeric tolerances per value
 kind and quaternion sign equivalence; they must not hide missing channels.
 Reuse motion-owner comparison rules for motion values.
 
+`scripts/compare_avatar_state.py` applies these rules to two files in the
+`--state-output` format, one state or a list. A consumer writes what it received in that format,
+and the script matches frames in order and records by identity.
+
+| Value | Agrees when |
+| --- | --- |
+| layout, layout version, generation, frame, joint parent, material type and override flag, sample kind, validity and resolution | equal |
+| translation, rotation, scale, morph weight, evaluation and source seconds | `abs(actual-expected)/max(1,abs(expected)) <= 2e-6`; a quaternion also agrees with its negation |
+| material value with `overridden = 1` | equal after conversion to `float`; with `overridden = 0` the value is ignored |
+| capabilities | the same set |
+
+A missing or unexpected target, a repeated identity and a missing channel are differences.
+`--unsupported <channel>` excludes a channel the consumer does not carry, and the report names it.
+`--tolerance` replaces every tolerance, for a comparison across platforms such as
+`scripts/check_session_fixture.py`, which uses `1e-5`. `scripts/test_compare_avatar_state.py` checks
+that each value kind is compared. No consumer writes this format yet. Hydra has no
+publication to compare, and joint values reach `hydra-toon` as palettes, which it would have to
+report before mapping them.
+
 Equivalent state does not by itself prove equivalent pixels or equal latency.
 Renderer evidence must state backend, configuration and hardware separately.

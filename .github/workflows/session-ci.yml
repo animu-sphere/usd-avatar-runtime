@@ -50,6 +50,8 @@ jobs:
           python-version: ${{ matrix.host_python }}
       - name: Check the workflows against the CI contract
         run: python scripts/check_workflows.py
+      - name: Check the state comparison
+        run: python scripts/test_compare_avatar_state.py
       - name: Install X11 dev headers required by MaterialX 1.39.5
         if: ${{ runner.os == 'Linux' }}
         shell: bash

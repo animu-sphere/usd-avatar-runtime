@@ -25,6 +25,8 @@ the C ABI revision are separate numbers.
   `tests/assets/session/expected.json`. `avatarVrmSessionCheck --state-output` writes that state.
 - `hosts.vrm_session` covers import and evaluator failure, recovery, destroy/recreate and two
   avatars in one thread.
+- `scripts/compare_avatar_state.py` compares two sequences of evaluated state by identity, with
+  tolerances per value kind and explicitly declared unsupported channels. The fixture check uses it.
 
 ### Changed
 
