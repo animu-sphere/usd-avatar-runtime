@@ -1,6 +1,11 @@
 @PACKAGE_INIT@
 # The session under a package name of its own, because a library contract's
 # generated consumer cannot request a component of AvatarRuntime.
+if(AvatarRuntime_DIR AND NOT EXISTS "${AvatarRuntime_DIR}/AvatarVrmSessionTargets.cmake")
+    set(AvatarVrmSession_FOUND FALSE)
+    set(AvatarVrmSession_NOT_FOUND_MESSAGE "AvatarRuntime is already resolved to ${AvatarRuntime_DIR}, which has no session. avatarVrmSession includes the core, so pin one package and clear AvatarRuntime_DIR.")
+    return()
+endif()
 include(CMakeFindDependencyMacro)
 find_dependency(AvatarRuntime @PROJECT_VERSION@ EXACT CONFIG COMPONENTS vrm_session
     PATHS "${CMAKE_CURRENT_LIST_DIR}/.." NO_DEFAULT_PATH)

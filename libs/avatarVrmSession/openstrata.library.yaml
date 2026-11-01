@@ -1,6 +1,7 @@
 # OpenStrata plain-library descriptor. The core and the native VRM session's
 # adapters, in one prefix. It provides the same AvatarRuntime CMake package as
-# avatarRuntime, so a consumer pins one of the two.
+# avatarRuntime, so a consumer pins one of the two; see
+# docs/architecture/PROJECT_LAYOUT.md#packaging.
 schema: openstrata.library/v1alpha1
 library:
   id: avatarVrmSession
