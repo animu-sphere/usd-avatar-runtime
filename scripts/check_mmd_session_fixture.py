@@ -36,6 +36,7 @@ BROKEN = {
     "IK": ("broken/no-ik.pmx", "motion.vmd", ["upper"]),
     "append": ("broken/no-append.pmx", "motion.vmd", ["follower"]),
     "physics feedback": ("broken/no-feedback.pmx", "motion.vmd", ["swing"]),
+    "evaluation after physics": ("broken/no-after-physics.pmx", "motion.vmd", ["afterSwing"]),
     "the later body on a bone": ("broken/earlier-body.pmx", "motion.vmd", ["swing"]),
     "morph and UV": ("avatar.pmx", "broken/no-morph.vmd", ["morphs[", "uvs["]),
 }
