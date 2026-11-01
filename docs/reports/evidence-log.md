@@ -1756,3 +1756,12 @@ without a shared world, and Linux was not measured when this was written.
 `session ci` run `41267332701` on pull request #71 passed `hosts.vrm_session` and
 `installed.vrm_session` on hosted Windows and Linux, including the failure, recovery,
 destroy/recreate and two-avatar checks on generated avatars.
+
+## Session face in a renderer (2026-11-01)
+
+`hydra-toon` pull request #151 draws session expressions and gaze in `toon-viewport-vrm`, on Windows
+with a local session build from this repository. Its
+[report 118](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/118-2026-11-01-live-vrm-face.md)
+holds the measurements. AliciaSolid and VRM1 Constraint Twist Sample passed the resident check with
+generated input; Seed-san is refused by the scaled spring limit. Neither passing avatar's expressions
+bind a material.
