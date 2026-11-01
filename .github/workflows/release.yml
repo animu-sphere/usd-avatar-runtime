@@ -5,7 +5,8 @@
 #
 # Pushing a tag `vX.Y.Z` -- equal to VERSION, with a dated CHANGELOG section --
 # builds and verifies the dependency-free `avatarRuntime` core and the
-# `avatarVrmSession` closure on Windows and Linux, pushes them to
+# `avatarVrmSession` and `avatarMmdSession` closures on Windows and Linux, on a Jolt
+# SDK this workflow builds for `physicsJoltSixDof`, pushes them to
 # ghcr.io/animu-sphere/usd-avatar-runtime tagged
 # `<library>-<version>-<target>`, generates the consumer pin table from the push
 # results and assembles a DRAFT GitHub release. Publishing the draft is a human
@@ -102,6 +103,48 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
+      - name: Check out pinned Jolt Physics 5.5.0
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: jrouwe/JoltPhysics
+          ref: 23dadd0e603f1b321142d4c74df07fce85064989
+          path: .ci/jolt
+      - name: Build and install the deterministic Jolt ABI set
+        shell: bash
+        run: |
+          set -euo pipefail
+          prefix="$GITHUB_WORKSPACE/.ci/jolt-install"
+          configure=(
+            -S .ci/jolt/Build
+            -B .ci/jolt-build
+            "-DCMAKE_INSTALL_PREFIX=$prefix"
+            -DCMAKE_BUILD_TYPE=Release
+            -DINTERPROCEDURAL_OPTIMIZATION=OFF
+            -DDOUBLE_PRECISION=OFF
+            -DCROSS_PLATFORM_DETERMINISTIC=ON
+            -DENABLE_ALL_WARNINGS=OFF
+            -DGENERATE_DEBUG_SYMBOLS=OFF
+            -DDEBUG_RENDERER_IN_DEBUG_AND_RELEASE=OFF
+            -DPROFILER_IN_DEBUG_AND_RELEASE=OFF
+            -DUSE_STATIC_MSVC_RUNTIME_LIBRARY=OFF
+            -DTARGET_UNIT_TESTS=OFF
+            -DTARGET_HELLO_WORLD=OFF
+            -DTARGET_PERFORMANCE_TEST=OFF
+            -DTARGET_SAMPLES=OFF
+            -DTARGET_VIEWER=OFF
+          )
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            configure+=(-A x64)
+          else
+            configure+=(-DCMAKE_POSITION_INDEPENDENT_CODE=ON)
+          fi
+          cmake "${configure[@]}"
+          cmake --build .ci/jolt-build --config Release --target Jolt
+          cmake --install .ci/jolt-build --config Release
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            prefix="$(cygpath -w "$prefix")"
+          fi
+          echo "JOLT_PREFIX=$prefix" >> "$GITHUB_ENV"
       - name: Bootstrap ost 0.23.18 (pinned release asset, checksum-verified)
         shell: bash
         run: |
@@ -197,19 +240,50 @@ jobs:
               echo "::error title=release packaging::two packagings of $name disagree ($first, $second)" ; exit 1
             fi
           done
-      - name: Check choosing between the core and the session package
-        run: python scripts/check_package_choice.py
+      - name: Build, test and package the MMD session library, twice
+        shell: bash
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.JOLT_PREFIX }}
+        run: |
+          set -euo pipefail
+          # No `verify-consumer`: it resolves only a declared closure, which cannot
+          # name the Jolt SDK. The installed consumer below runs from the package.
+          name=avatarMmdSession
+          library="libs/$name"
+          ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+          ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name.json"
+          ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name-second.json"
+          first="$(jq -er '.data.archive_digest' ".ost-ci/$name.json")"
+          second="$(jq -er '.data.archive_digest' ".ost-ci/$name-second.json")"
+          if [ "$first" != "$second" ]; then
+            echo "::error title=release packaging::two packagings of $name disagree ($first, $second)" ; exit 1
+          fi
+      - name: Check choosing between the core and the session packages
+        shell: bash
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.JOLT_PREFIX }}
+        run: |
+          set -euo pipefail
+          python scripts/check_package_choice.py --session vrm
+          python scripts/check_package_choice.py --session mmd
       - name: Build and run the session's installed consumer
         run: python scripts/check_session_consumer.py
       - name: Run the VRM fixture through the importers and the session
         run: python scripts/check_session_fixture.py
+      - name: Build and run the MMD session's installed consumer
+        env:
+          CMAKE_PREFIX_PATH: ${{ env.JOLT_PREFIX }}
+        run: python scripts/check_session_consumer.py --session mmd
+      - name: Run the MMD fixture through the importer and the session
+        run: python scripts/check_mmd_session_fixture.py
       - name: Stage the release artifacts
         shell: bash
         run: |
           set -euo pipefail
           version="${{ needs.preflight.outputs.version }}"
           mkdir -p release-stage/packages
-          for name in avatarRuntime avatarVrmSession; do
+          for name in avatarRuntime avatarVrmSession avatarMmdSession; do
             json=".ost-ci/$name.json"
             archive="$(jq -er '.data.archive' "$json")"
             digest="$(jq -er '.data.archive_digest' "$json")"

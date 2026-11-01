@@ -125,7 +125,7 @@ in both publication modes. Current evidence is in the
 
 ## Package boundary
 
-Not released yet. The MMD session follows the
+A release member from v0.4.0. The MMD session follows the
 [VRM session's packaging](PROJECT_LAYOUT.md#packaging):
 
 - `libs/avatarMmdSession` packages the core with the `mmd`, `usd`, `stage_runner`, `physics_usd`

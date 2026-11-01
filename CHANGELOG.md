@@ -15,6 +15,8 @@ the C ABI revision are separate numbers.
 - The MMD session selects a larger Jolt world capacity, and runs models with self-joints and bones several
   bodies drive, on `usd-physics-plugins` 0.1.2 and `usd-mmd-plugins` 0.3.2.
 - A `uvs` channel in the `--state-output` format and `scripts/compare_avatar_state.py`.
+- `avatarMmdSession` is a release member. The release lane builds the deterministic Jolt SDK, packages the
+  session twice, and runs its installed consumer and generated PMX and VMD on Windows and Linux.
 
 ### Changed
 

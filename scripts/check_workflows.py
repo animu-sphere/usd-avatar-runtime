@@ -4,7 +4,9 @@
 
 Regenerating the pull request lanes never updates the hand-written workflows, so a
 green generated lane says nothing about their pins. `ost ci generate` has no path
-filter, so regenerating `ost-source-ci.yml` drops the one added to its trigger.
+filter, so regenerating `ost-source-ci.yml` drops the one added to its trigger. The
+session lane is the only pull request check of the Jolt SDK a release builds, so the
+two must build the same one.
 """
 from __future__ import annotations
 
@@ -46,6 +48,17 @@ def main() -> int:
             failed = True
         else:
             print(f"{name} skips documentation-only changes.")
+    jolt = {}
+    for name in PINNED:
+        workflow = (WORKFLOWS / name).read_text(encoding="utf-8")
+        start = workflow.find("- name: Check out pinned Jolt Physics")
+        end = workflow.find("- name: Bootstrap ost")
+        jolt[name] = workflow[start:end] if start >= 0 else ""
+    if not all(jolt.values()) or len(set(jolt.values())) != 1:
+        print(f"{' and '.join(PINNED)} do not build the same Jolt SDK.")
+        failed = True
+    else:
+        print(f"{' and '.join(PINNED)} build the same Jolt SDK.")
     return 1 if failed else 0
 
 
