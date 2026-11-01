@@ -74,6 +74,9 @@ def model(pmx) -> dict:
         pmx.bone("tip", "tip", (-5.0, 5.0, 0.0), 5, flags, (0.0, -1.0, 0.0)),
         pmx.bone("target", "target", (-5.0, 5.0, 0.0), 0, flags | pmx.IK, (0.0, -1.0, 0.0),
                  ik={"target": 6, "loopCount": 40, "limitAngle": 2.0, "links": [(5, None), (4, None)]}),
+        # After physics: this append reads the swing the body fed back, not the keyed one.
+        pmx.bone("afterSwing", "afterSwing", (5.0, 20.0, 0.0), 0, flags | pmx.APPEND_ROTATION | pmx.DEFORM_AFTER_PHYSICS,
+                 (0.0, -1.0, 0.0), append=(1, 1.0)),
     ]
     faces = []
     for bone, (x, y) in ((1, (7.5, 20.0)), (3, (5.0, 10.0)), (5, (-5.0, 10.0))):
@@ -129,6 +132,8 @@ def outputs(pmx, vmd) -> dict[str, bytes]:
     no_ik["bones"][7]["flags"] &= ~pmx.IK
     no_append = copy.deepcopy(avatar)
     no_append["bones"][3]["flags"] &= ~pmx.APPEND_ROTATION
+    no_after_physics = copy.deepcopy(avatar)
+    no_after_physics["bones"][8]["flags"] &= ~pmx.DEFORM_AFTER_PHYSICS
     no_feedback = copy.deepcopy(avatar)
     no_feedback["rigidBodies"][1]["physicsMode"] = no_feedback["rigidBodies"][2]["physicsMode"] = 0
     # Without the later body, the earlier one drives the bone.
@@ -142,6 +147,7 @@ def outputs(pmx, vmd) -> dict[str, bytes]:
         "motion.vmd": clip.encode(),
         "broken/no-ik.pmx": pmx.encode(no_ik)[0],
         "broken/no-append.pmx": pmx.encode(no_append)[0],
+        "broken/no-after-physics.pmx": pmx.encode(no_after_physics)[0],
         "broken/no-feedback.pmx": pmx.encode(no_feedback)[0],
         "broken/earlier-body.pmx": pmx.encode(earlier_body)[0],
         "broken/no-morph.vmd": no_morph.encode(),

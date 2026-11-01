@@ -171,6 +171,27 @@
      -1.040000003623358,
      0
     ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     0.011809395822483382,
+     -0.023951750673055244,
+     -0.44558955513365467,
+     0.8948389800214313
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
+     0
+    ]
    }
   ],
   "layout": "live-mmd",
@@ -454,6 +475,27 @@
     "translation": [
      -0.0800000071525574,
      -0.8800000071525573,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     0.00416296291264868,
+     -0.051676160327940736,
+     -0.9631645444760082,
+     0.26386796785110633
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
      0
     ]
    }
@@ -741,6 +783,27 @@
      -1.0400000035291992,
      0
     ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     -0.01944653816103107,
+     -0.02190532281438179,
+     -0.9322385500223812,
+     0.36065672714940106
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
+     0
+    ]
    }
   ],
   "layout": "live-mmd",
@@ -1024,6 +1087,27 @@
     "translation": [
      -0.4,
      -1.2,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     -0.07133206066840278,
+     -0.00284003469822717,
+     -0.36827615351470044,
+     0.9269715993902559
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
      0
     ]
    }
@@ -1311,6 +1395,27 @@
      -1.2,
      0
     ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     -0.0012142235107401617,
+     -0.015357066737012422,
+     -0.029510847881825737,
+     0.9994457444102689
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
+     0
+    ]
    }
   ],
   "layout": "live-mmd",
@@ -1594,6 +1699,27 @@
     "translation": [
      -0.4,
      -1.2,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     0.0006660602179112861,
+     -0.0023898273636371713,
+     0.25336531717724897,
+     0.9673674902231468
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
      0
     ]
    }
@@ -1881,6 +2007,27 @@
      -1.2,
      0
     ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     0.00023474822946758334,
+     -0.00030682196149861394,
+     0.48735235632897095,
+     0.8732053203766869
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
+     0
+    ]
    }
   ],
   "layout": "live-mmd",
@@ -2164,6 +2311,27 @@
     "translation": [
      -0.4,
      -1.2,
+     0
+    ]
+   },
+   {
+    "joint": "anchor/afterSwing",
+    "parent": 0,
+    "rotation": [
+     5.654264962979876e-05,
+     -2.7721135083519895e-05,
+     0.6366891936053379,
+     0.7711205267535368
+    ],
+    "scale": [
+     1,
+     1,
+     1
+    ],
+    "skeleton": "/Asset/skel/Skeleton",
+    "translation": [
+     0.4,
+     0,
      0
     ]
    }
