@@ -177,9 +177,9 @@ run, and `scripts/check_mmd_session_fixture.py` runs them on both platforms:
   committed state, and each input in `broken/` must fail the comparison on the feature it took away.
 - Expected state through `scripts/compare_avatar_state.py`, which has a channel for primary vertex UVs.
 
-Jolt has not been compared across platforms here, so cross-platform agreement cannot be assumed.
-Measure it before committing one expected file: if the OSes differ beyond a stated tolerance, physics
-values take expected files per platform, and exact replay stays the per-platform check.
+On the deterministic SDK, this fixture's state has equal values on Windows and Linux, so one expected
+file serves both, at the script's stated tolerance. That is [measured](../reports/evidence-log.md#mmd-session-package-2026-11-01)
+for this small model and 240 ticks, not assumed for others, and exact replay stays the per-platform check.
 
 Acceptance still needs a real PMX and VMD, which stay local. Generated assets show the path, not
 MMD compatibility.

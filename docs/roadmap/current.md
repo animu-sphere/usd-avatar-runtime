@@ -42,8 +42,8 @@ package, compared with the owner, with no format-specific change to core.
   the owner, and reports how many it left out.
 - [ ] A generated PMX and VMD in the session lanes show morph, IK, append and physics feedback each
   changing committed state, and each failing the comparison when broken.
-- [ ] Jolt agreement across platforms is measured, and decides between one expected file and one per
-  platform.
+- [x] Jolt agreement across platforms is [measured](../reports/evidence-log.md#mmd-session-package-2026-11-01):
+  this fixture's state has equal values on the deterministic SDK, so there is one expected file.
 - [ ] A real PMX and VMD run locally from the package, and `toon-viewport-mmd` draws them from it.
 - [ ] [RT-O3 and RT-O6](#open-decisions) are resolved or deferred with a stated reason.
 - [ ] The capability matrix states the supported subset. Full MMD compatibility is not claimed.

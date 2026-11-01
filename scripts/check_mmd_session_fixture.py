@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
-import platform
 import re
 import subprocess
 import sys
@@ -48,7 +47,7 @@ def main() -> int:
     fixture = subprocess.run([sys.executable, str(ROOT / "tools" / "make_mmd_session_fixture.py"), "--check"])
     if fixture.returncode:
         return fixture.returncode
-    expected_path = ASSETS / f"expected-{platform.system().lower()}.json"
+    expected_path = ASSETS / "expected.json"
     tolerances = Tolerances(TOLERANCE, TOLERANCE, TOLERANCE, TOLERANCE)
     failed = False
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as temporary:
