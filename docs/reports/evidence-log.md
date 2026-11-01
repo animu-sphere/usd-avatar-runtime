@@ -1786,3 +1786,38 @@ measured when this was written. The session lane runs it.
 `session ci` run `41268810863` on pull request #74 ran the fixture check on hosted Windows and Linux. Both
 passed the owner comparisons and had 0 differences from the expected file, written on Windows, at `1e-5`.
 On Linux the maximum motion error was `9.38e-8` and the maximum spring error `9.56e-8`.
+
+## Session consumer on Linux with ost 0.23.18 (2026-11-01)
+
+`session ci` run `41269330025` on pull request #76 passed `ost library verify-consumer` for the
+session on hosted Linux and Windows, with the pinned runtime and owners. On Linux the check declares
+`apt:libx11-dev` and `apt:libxt-dev`, and the record keeps them apart from the runtime's empty
+requirements. `release.yml` has the same change and has not been run with 0.23.18.
+[OST report 01](ost/01-2026-11-01-v0.23.18-session-consumer-and-packages.md) has the details.
+
+## Choosing the core or the session package (2026-11-01)
+
+Measured on Windows before the change, with both prefixes on one search path and the core's first:
+
+| Find | Result |
+| --- | --- |
+| `AvatarVrmSession` | passes, with the core from the session's prefix |
+| `AvatarRuntime`, component `vrm_session` | fails, with no reason given |
+| `AvatarRuntime`, then `AvatarVrmSession` | fails the same way, because the cached `AvatarRuntime_DIR` wins |
+
+After the change, `session ci` run `41269886727` on pull request #78 passed
+`scripts/check_package_choice.py` on hosted Windows and Linux: the first find and the session package
+followed by the core package use the session's prefix, and the other two refuse with a message
+naming the choice. These configure only. Windows composition results are in the OST report above.
+[Issue #77](https://github.com/animu-sphere/usd-avatar-runtime/issues/77) holds the decision.
+
+## State comparison (2026-11-01)
+
+`session ci` run `41270282223` on pull request #79 ran `scripts/compare_avatar_state.py` through the
+fixture check on hosted Windows and Linux: 0 differences from the expected file, written on Windows,
+at `1e-5`, over 1,784 values in 40 states. The largest Linux errors were `4.66e-10` for rotation and
+`7.45e-9` for morph weight; the rest were 0. Its 14 self-tests passed on both, including a
+perturbation of each value kind, reordered records, a negated quaternion and missing channels.
+
+This compares the session with its own recorded output. No consumer writes the format yet, so
+it says nothing about agreement with `hydra-toon` or Hydra.

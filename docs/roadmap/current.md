@@ -17,10 +17,9 @@ Order: VRM session integration -> direct rendering end to end -> Hydra/direct ag
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
 | P0 | [VRM session integration](#c-release-decision) | CI runs a generated VRM and VRMA through the published importers and the session, and compares the state; private avatars run locally | the definition of done is reviewed against that evidence |
-| P0 | [`hydra-toon` direct consumer](#b-renderer-consumer) | `toon-viewport-vrm` draws one real VRM with pose, spring, expression and gaze from generated input, on Windows; no real-avatar material bind measured | drawing and post-reset display are accepted, and the state comparison exists |
-| P1 | [Hydra/direct agreement](#renderer-paths) | no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
+| P0 | [`hydra-toon` direct consumer](#c-release-decision) | `toon-viewport-vrm` draws one real VRM with pose, spring, expression and gaze from generated input, on Windows; no real-avatar material bind measured | drawing and post-reset display are accepted |
+| P1 | [Hydra/direct agreement](#renderer-paths) | a [state comparison](../architecture/OUTPUT_PATHS.md#4-parity-evidence) that no consumer feeds yet; no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
 | P1 | [MMD session trial package](#mmd-session) | source-only session | a real PMX/VMD loads, plays, resets and feeds physics back from a package |
-| P1 | [Package design](#a-package-quality) | two packages provide the same CMake package and core files | choosing core or session is clear and duplicate installs cannot collide |
 | P1 | Diagnosability | bounded diagnostics, an opt-in parity host | trace, capability dump and deterministic replay locate the phase, failure and reproduction conditions |
 | P2 | [Connector path](#input-and-recording) | not started | external input reaches `AvatarInputFrame` with latency, loss and timestamps explicit |
 | P2 | [Recording and publication](#input-and-recording) | not started | frame sequences reproduce and remain compatible |
@@ -44,16 +43,6 @@ consumer and appears on screen.
 
 **Out of scope:** format-specific solvers in core, every rendering engine, a permanent
 ABI freeze and bindings for several languages at once.
-
-### A. Package quality
-
-- [ ] Run `verify-consumer` for the session on Linux. `ost` 0.23.17 allows host X11 only for a runtime that declares it, and the pinned runtime declares nothing ([open-strata#289](https://github.com/animu-sphere/open-strata/issues/289), [measurement](../reports/evidence-log.md#ost-02317-and-the-session-consumer-on-linux-2026-11-01)). This needs either an `ost` change or a runtime that declares both packages, with the owners rebuilt against it. Keep the repository's consumer step until then.
-- [ ] File the package and target collisions as issues; decide targets and components.
-
-
-### B. Renderer consumer
-
-- [ ] Build the state comparison that Hydra agreement will use.
 
 ### C. Release decision
 
@@ -86,7 +75,8 @@ spring and contact checks; and a world/non-MMD endpoint policy for joints.
 
 Hydra and direct consume the same evaluated result. Compare at least transforms, morph
 weights, material overrides and lifetime/reset numerically, and make unsupported
-channels explicit. Exact pixel equality is not expected across shaders and rendering;
+channels explicit. `scripts/compare_avatar_state.py` does this for files in the state format, so
+each consumer first has to write what it received in that format. Exact pixel equality is not expected across shaders and rendering;
 it needs its own criterion if it is ever required. Also measure consumer latency, copies
 and allocations.
 
