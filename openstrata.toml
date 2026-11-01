@@ -7,7 +7,7 @@ version = "0.3.0"
 platform = "cy2026"
 profile = "usd"
 
-# The dependency-free core and the VRM session are release members. The other
+# The dependency-free core and the two sessions are release members. The other
 # optional adapters are source-built against installed owners; see
 # docs/releases/README.md.
 [workspace]
@@ -19,4 +19,5 @@ members = [
 release_members = [
   "avatarRuntime",
   "avatarVrmSession",
+  "avatarMmdSession",
 ]

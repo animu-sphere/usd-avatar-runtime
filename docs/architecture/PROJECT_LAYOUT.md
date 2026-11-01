@@ -75,8 +75,7 @@ release, and its component would have to span two prefixes.
 They do not combine. A session's package uses the core in its own prefix, whatever the search order.
 A prefix without a session refuses its component, and a session's package refuses a core already
 found in such a prefix, each naming this choice. `scripts/check_package_choice.py` checks these
-orders, including the other session's package found first, in the session lanes, and the VRM session's
-in the release lane. Composing them with `ost runtime compose` fails on their shared install paths.
+orders, including the other session's package found first, in the session and release lanes. Composing them with `ost runtime compose` fails on their shared install paths.
 
 ## Tools and tests
 
