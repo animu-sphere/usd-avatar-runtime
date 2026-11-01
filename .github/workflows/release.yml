@@ -102,7 +102,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.23.16 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.18 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -113,7 +113,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no release cell for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.16"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.18"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$(sha256sum "$asset" | cut -d' ' -f1)"
@@ -140,8 +140,8 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.23.16" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.23.16', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.23.18" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.23.18', got '$version'" ; exit 1
           fi
       - name: Pull, verify and materialize the pinned runtime SDK
         shell: bash
@@ -175,18 +175,19 @@ jobs:
             library="libs/$name"
             ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
             ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
-            # On Linux, verify-consumer hides the system prefix from the consumer, so
-            # OpenUSD's MaterialX dependency cannot find X11. The next step runs the
-            # session's own consumer on both.
-            if [ "$name" = "avatarRuntime" ] || [ "${RUNNER_OS}" = "Windows" ]; then
-              verified=0
-              ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} || verified=$?
-              record="$(find "$library/.strata/targets" -name library-consumer.json | head -n 1)"
-              if [ -n "$record" ]; then cp "$record" ".ost-ci/$name-consumer.json"; fi
-              if [ "$verified" -ne 0 ]; then
-                if [ -n "$record" ]; then jq -r '.checks | to_entries[] | "\(.key): \(.value.status // "")\n\(.value.stderr // "")"' "$record"; fi
-                exit "$verified"
-              fi
+            # The Linux runtime declares no host packages, and the session's OpenUSD
+            # MaterialX dependency needs X11 (open-strata#289).
+            host_packages=()
+            if [ "$name" = "avatarVrmSession" ] && [ "${RUNNER_OS}" = "Linux" ]; then
+              host_packages=(--host-package apt:libx11-dev --host-package apt:libxt-dev)
+            fi
+            verified=0
+            ost library verify-consumer "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} "${host_packages[@]}" || verified=$?
+            record="$(find "$library/.strata/targets" -name library-consumer.json | head -n 1)"
+            if [ -n "$record" ]; then cp "$record" ".ost-ci/$name-consumer.json"; fi
+            if [ "$verified" -ne 0 ]; then
+              if [ -n "$record" ]; then jq -r '.checks | to_entries[] | "\(.key): \(.value.status // "")\n\(.value.stderr // "")"' "$record"; fi
+              exit "$verified"
             fi
             ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name.json"
             ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > ".ost-ci/$name-second.json"
@@ -260,12 +261,12 @@ jobs:
         with:
           pattern: release-*
           path: staged
-      - name: Bootstrap ost 0.23.16 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.18 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
           asset="ost-cli-x86_64-unknown-linux-musl.tar.xz"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.16"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.18"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$(sha256sum "$asset" | cut -d' ' -f1)"

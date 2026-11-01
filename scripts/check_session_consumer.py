@@ -2,10 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 """Build and run the session's installed consumer against its library prefix.
 
-`ost library verify-consumer` links a generated consumer and runs nothing, and
-cannot configure the session on Linux (open-strata#289). This runs the repository's
-consumer, including the session contract tests, from the prefix `ost library build`
-installed, using the owners that build record names.
+`ost library verify-consumer` links a generated consumer and runs nothing. This runs
+the repository's consumer, including the session contract tests, from the prefix
+`ost library build` installed, using the owners that build record names.
 """
 from __future__ import annotations
 

@@ -32,7 +32,9 @@ the C ABI revision are separate numbers.
   expression and LookAt adapters.
 - A session pull request lane builds, tests and packages `avatarVrmSession` on Windows
   and Linux. It and the release lane build and run the repository's installed consumer
-  on both, and `verify-consumer` still runs on Windows only.
+  on both.
+- The release lane and source CI move to `ost` 0.23.18, and `verify-consumer` now checks
+  the session on Linux as well, declaring X11 and Xt as host packages of the consumer.
 - A change touching only documentation no longer runs the pull request lanes or the
   `plain cmake` push lane.
 

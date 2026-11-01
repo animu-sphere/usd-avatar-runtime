@@ -57,7 +57,7 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends libx11-dev libxt-dev
-      - name: Bootstrap ost 0.23.16 (pinned release asset, checksum-verified)
+      - name: Bootstrap ost 0.23.18 (pinned release asset, checksum-verified)
         shell: bash
         run: |
           set -euo pipefail
@@ -68,7 +68,7 @@ jobs:
             *) echo "::error title=ost bootstrap::no session cell for ${RUNNER_OS}-${RUNNER_ARCH}" ; exit 1 ;;
           esac
           asset="ost-cli-${triple}.${ext}"
-          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.16"
+          base="https://github.com/animu-sphere/open-strata/releases/download/v0.23.18"
           curl -fsSLo "$asset" "$base/$asset"
           curl -fsSLo "$asset.sha256" "$base/$asset.sha256"
           actual="$(sha256sum "$asset" | cut -d' ' -f1)"
@@ -95,8 +95,8 @@ jobs:
           set -euo pipefail
           version="$(ost --version)"
           echo "$version"
-          if [ "$version" != "ost 0.23.16" ]; then
-            echo "::error title=ost bootstrap::expected 'ost 0.23.16', got '$version'" ; exit 1
+          if [ "$version" != "ost 0.23.18" ]; then
+            echo "::error title=ost bootstrap::expected 'ost 0.23.18', got '$version'" ; exit 1
           fi
       - name: Pull, verify and materialize the pinned runtime SDK
         shell: bash
@@ -115,12 +115,17 @@ jobs:
           ost library build "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
           ost library test "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
           ost library package "$library" --target ${{ matrix.platform }} --profile ${{ matrix.profile }} --json > .ost-ci/avatarVrmSession.json
-      - name: Verify the generated consumer (Windows)
-        # On Linux, verify-consumer hides the system prefix from the consumer, so
-        # OpenUSD's MaterialX dependency cannot find X11 (open-strata#289).
-        if: ${{ runner.os == 'Windows' }}
+      - name: Verify the generated consumer
         shell: bash
-        run: ost library verify-consumer libs/avatarVrmSession --target ${{ matrix.platform }} --profile ${{ matrix.profile }}
+        run: |
+          set -euo pipefail
+          # The Linux runtime declares no host packages, and OpenUSD's MaterialX
+          # dependency needs X11 (open-strata#289).
+          host_packages=()
+          if [ "${RUNNER_OS}" = "Linux" ]; then
+            host_packages=(--host-package apt:libx11-dev --host-package apt:libxt-dev)
+          fi
+          ost library verify-consumer libs/avatarVrmSession --target ${{ matrix.platform }} --profile ${{ matrix.profile }} "${host_packages[@]}"
       - name: Build and run the installed consumer
         run: python scripts/check_session_consumer.py
       - name: Run the VRM fixture through the importers and the session
