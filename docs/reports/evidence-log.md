@@ -1750,3 +1750,9 @@ in the same test caught the last three, so the interference comparison has not f
 
 The avatars are generated and evaluation is serial. Several avatars here means separate runtimes
 without a shared world, and Linux was not measured when this was written.
+
+## Session failure and lifecycle on Linux (2026-11-01)
+
+`session ci` run `41267332701` on pull request #71 passed `hosts.vrm_session` and
+`installed.vrm_session` on hosted Windows and Linux, including the failure, recovery,
+destroy/recreate and two-avatar checks on generated avatars.
