@@ -1,65 +1,25 @@
 # Roadmap
 
-Adopted 2026-11-01 from v0.2.0, and rescoped after v0.3.0. This page holds incomplete work
+Adopted 2026-11-01 from v0.2.0, and rescoped after v0.3.0 and v0.4.0. This page holds incomplete work
 only: what comes next, in what order and how it is accepted. What exists is in the
 [capability matrix](../reference/CAPABILITY_MATRIX.md). Version assignments are
 targets; recheck them against the code and released owners when work starts.
 
-The next release is about **showing that the runtime is not VRM-shaped**: an MMD session
-ships as a package and runs from it, as the VRM session did in v0.3.0.
+v0.4.0 showed that the runtime is not VRM-shaped: the [MMD session](../releases/v0.4.0.md) ships as a
+package. The next release's scope is not defined yet; the priorities below say where it starts.
 
 ## Priorities
 
-Order: MMD session package -> Hydra/direct agreement -> external input and bindings. The
-MMD session comes first because its boundary is designed and only an owner release stands
-in its way, while Hydra publication still needs an agreed integration with its consumer.
+Order: Hydra/direct agreement -> external input and bindings. Hydra publication still needs an
+agreed integration with its consumer.
 
 | Priority | Work | Starting point | Accepted when |
 | --- | --- | --- | --- |
-| P0 | [MMD session package](#v040) | a release member; the [release dry run](../reports/evidence-log.md#release-dry-run-with-the-mmd-session-2026-11-01) passes | the draft and its pins are inspected and published |
 | P1 | [Hydra/direct agreement](#renderer-paths) | a [state comparison](../architecture/OUTPUT_PATHS.md#4-parity-evidence) that no consumer feeds yet; no Hydra publication | the same state gives agreeing pose and expression values within tolerance |
 | P1 | Diagnosability | bounded diagnostics, an opt-in parity host | trace, capability dump and deterministic replay locate the phase, failure and reproduction conditions |
 | P2 | [Connector path](#input-and-recording) | not started | external input reaches `AvatarInputFrame` with latency, loss and timestamps explicit |
 | P2 | [Recording and publication](#input-and-recording) | not started | frame sequences reproduce and remain compatible |
 | P2 | [Python, JavaScript and Web](#bindings-and-web) | not started | begins only after the native ABI is stable |
-
-## v0.4.0
-
-**Goal:** a real PMX and VMD load, play, reset and feed physics back from an installed
-package, compared with the owner, with no format-specific change to core.
-
-### Definition of done
-
-- [x] `usd-mmd-plugins` 0.3.1 publishes `mmdPhysicsAdapter` and its closure.
-- [x] `usd-physics-plugins` 0.1.2 and `usd-mmd-plugins` 0.3.2 carry what real models need:
-  `physicsJoltSixDof`, world capacity, disabled self-joints and a rule for several bodies per bone. Their
-  drafts are published after the session lanes pass on their digests.
-- [x] `avatarMmdSession` builds, tests and packages from those pins on Windows and Linux, and its
-  installed consumer runs from the package with the Jolt SDK the
-  [package boundary](../architecture/MMD_SESSION.md#package-boundary) requires.
-- [x] `avatarMmdSessionCheck` compares the session with the owner and writes state in the
-  `--state-output` format, which gains primary vertex UVs. It does not compare material values with
-  the owner, and reports how many it left out.
-- [x] A generated PMX and VMD in the session lanes show morph, IK, append, physics feedback and an
-  after-physics bone each changing committed state, and each failing the comparison when broken.
-- [x] Jolt agreement across platforms is [measured](../reports/evidence-log.md#mmd-session-package-2026-11-01):
-  this fixture's state has equal values on the deterministic SDK, so there is one expected file.
-- [x] Real PMX and VMD files [run locally](../reports/evidence-log.md#real-models-from-the-package-2026-11-01)
-  from the package, on Windows. How physics looks is not checked by this.
-- [x] `toon-viewport-mmd` [draws them from the package](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/119-2026-11-01-avatar-sessions-from-packages.md),
-  on the deterministic Jolt SDK.
-- [x] [RT-O3 and RT-O6](#open-decisions) are resolved or deferred with a stated reason.
-- [x] The capability matrix [states the supported subset](../reference/CAPABILITY_MATRIX.md#mmd-session-supported-subset).
-  Full MMD compatibility is not claimed.
-- [x] The VRM package and core-only consumers keep working, and choosing between packages is enforced.
-- [x] `hydra-toon`'s VRM host [consumes the published `avatarVrmSession` by its pin](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/119-2026-11-01-avatar-sessions-from-packages.md).
-- [x] A [dry run of the release lane](../reports/evidence-log.md#release-dry-run-with-the-mmd-session-2026-11-01) passes
-  with `avatarMmdSession` as a member.
-
-Tag, inspect the draft and its pins, and publish. Then add the MMD session to `hydra-toon`'s pins.
-
-**Out of scope:** Hydra publication, several avatars in one world, seek, both formats in one
-process, and an ABI freeze.
 
 ## After v0.4.0
 
@@ -73,7 +33,7 @@ in a renderer.
 
 ### MMD session
 
-After the [package](#v040): complete non-bone morph output, including additional UV channels;
+After the [package](../releases/v0.4.0.md): complete non-bone morph output, including additional UV channels;
 resident UV mapping and coherent tangents; and representative private-asset, spring and contact
 checks.
 
