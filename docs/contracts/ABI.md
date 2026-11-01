@@ -155,3 +155,39 @@ runtime. No frozen C++ session layout or provider-unload capability is implied.
 WASM-friendly representation is a design objective. It still needs decisions
 about pointer width, host memory, optional dependencies and provider loading;
 native dynamic loading cannot be presumed to work unchanged in a browser.
+
+## 4. Change candidates, reviewed for v0.3.0
+
+**The freeze stays deferred, and v0.3.0 keeps revision 5.** Work since 0.2.0 changed no table or
+layout. Against the [freeze gates](../roadmap/current.md#abi-freeze): failure recovery and install-tree
+CI exist for the VRM session only, and these do not hold:
+
+- a second format in a package, and a second kind of external consumer; `hydra-toon` is the only one
+- provider checkpoint restore
+- output capability negotiation
+- compatibility evidence across toolchains
+- a stated compatibility policy per surface
+
+A change costs one of three things, because any different revision is rejected:
+
+- **Revision:** a new core revision, so every provider and consumer rebuilds, and a new minor version.
+- **Extension:** a separately queried table, as `ArPhysicsMembershipApi` is, so nothing else rebuilds.
+- **None:** a contract or source-level change with no binary layout change.
+
+| Candidate | Open decision | Cost | Needed by |
+| --- | --- | --- | --- |
+| Typed gaze results and resolved expression records in `ArStateView` | RT-O2, RT-O4 | Revision | freeze |
+| Retained diagnostics and snapshot provenance | RT-O4 | Revision | freeze |
+| Additional UV channels and other deformation in `ArStateView` | MMD session | Revision | a consumer that needs them |
+| Gaze space descriptors and clock mapping | RT-O1 | Revision if `ArInputFrame` changes; otherwise None | freeze |
+| Checkpoint, restore and abort callbacks for stateful evaluators | RT-O5 | Revision, or Extension if registered separately | freeze |
+| Output capability negotiation | RT-O4, RT-O7 | undecided: Extension fits if it only adds queries | freeze |
+| Shared-world handles and callbacks | RT-O6 | Extension: the physics tables have their own versions | MMD session |
+| Provider unload | RT-O7 | Extension | freeze |
+| Compatible tail growth in place of rejecting other revisions | RT-O7 | Revision once, then later additions need no rebuild | freeze |
+| Layout, alignment and calling convention review with real providers | RT-O7 | Revision if anything changes | freeze |
+| Parallel scheduling and cancellation, in place of serialized calls | [execution](../roadmap/current.md#execution-and-scheduling) | None for layout; a contract change callers must adopt | after freeze is acceptable |
+| `avatarVrmSession::Session` and `FixedTickSession` | compatibility policy | None: C++ source API, not part of this ABI | freeze, as a stated policy |
+
+Decide compatible tail growth first of these. Until it lands, each state or input addition rebuilds
+every provider and consumer, and doing it first makes the later rows cheaper.

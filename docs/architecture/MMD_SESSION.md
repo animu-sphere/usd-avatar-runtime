@@ -122,3 +122,50 @@ The runtime test checks direct owner values, independent tint coefficients, cano
 values, zero restoration, pause, three reset generations and retained unload
 in both publication modes. Current evidence is in the
 [capability matrix](../reports/evidence-log.md#live-mmd-material-evidence-2026-10-29).
+
+## Package boundary
+
+Planned; no package exists yet. The MMD session follows the
+[VRM session's packaging](PROJECT_LAYOUT.md#packaging):
+
+- `libs/avatarMmdSession` packages the core with the `mmd`, `usd`, `stage_runner`, `physics_usd`
+  and `mmd_session` targets in one prefix, and pins its owners by digest.
+- `AvatarMmdSession` is a thin package over the `mmd_session` component, for the library contract's
+  generated consumer. Targets keep the `AvatarRuntime::` namespace.
+- A new `avatarMmdSessionCheck` ships in the prefix, compares the session with the owner and writes
+  state in the `--state-output` format. No renderer is linked, and the MMD session has no such host today.
+- A consumer pins one package. The `mmd_session` component gets the same refusal as `vrm_session` in
+  a prefix without it, and `scripts/check_package_choice.py` covers the new orders.
+
+Each session's prefix provides `AvatarRuntime`, so one process cannot use both. That is enough for
+the trial, because `toon-viewport-vrm` and `toon-viewport-mmd` are separate executables. A host that
+needs both formats in one process needs a combined package, to be decided when one exists.
+
+| Owner | Libraries the session needs | State at the latest release |
+| --- | --- | --- |
+| `usd-physics-plugins` 0.1.0 | `physicsCore`, `physicsJolt`, `physicsUsd` | published by digest for Windows and Linux |
+| `usd-stage-runner` 0.1.0 | `runtimeCore` | published by digest for Windows and Linux |
+| `usd-mmd-plugins` 0.3.0 | `mmdPhysicsAdapter` and the libraries it requires, including `mmdControl`, `mmdMotionBinding`, `mmdModel` and `mmdPmx` | **not published**: the release pins bundles and tools only, and these build from the source archive |
+
+The MMD owner publishing those libraries comes first; this repository does not vendor or rebuild them.
+
+### Fixtures
+
+The trial uses generated assets that CI can run, in the same shape as `tests/assets/session`:
+
+- Committed PMX and VMD files with a `--check` generator, so CI needs no owner checkout. They are
+  written with the owner's encoders at a pinned tag. `usdMmdFileFormat` and `mmdSchema` are published,
+  and pinned by digest as the VRM importers are.
+- One model that exercises the whole path. The owner's `live-physics-morph.pmx` has morphs, bodies
+  and a joint but no IK or append, and its `sample-*.pmx` models have IK and append but are not
+  checked as live physics input. A new owner-encoded model must show morph, IK, append and physics
+  feedback each changing committed state, and each must be shown to fail the comparison when broken.
+- Expected state through `scripts/compare_avatar_state.py`, which needs a channel for primary vertex
+  UVs, as `--state-output` does.
+
+Jolt has not been compared across platforms here, so cross-platform agreement cannot be assumed.
+Measure it before committing one expected file: if the OSes differ beyond a stated tolerance, physics
+values take expected files per platform, and exact replay stays the per-platform check.
+
+Acceptance still needs a real PMX and VMD, which stay local. Generated assets show the path, not
+MMD compatibility.
