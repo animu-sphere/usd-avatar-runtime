@@ -279,9 +279,11 @@ matrix does not say `yes` before the code does.
 | 9 | external input adapter prototype | explicit clock, validity and packet loss |
 | 10 | ABI freeze readiness review | evidence for the open decisions, and the freeze decision |
 
-Before slice 1: open issues for the consumer contract's undefined points, add identity,
-absence and reset negative fixtures to the state comparison, separate headless CI from GPU
-and real-asset checks, and choose the performance measures and first environment. Each slice
+Before slice 1: open issues for the consumer contract's undefined points, separate headless CI
+from GPU and real-asset checks, and choose the performance measures and first environment.
+The state comparison already carries identity, absence and reset negative cases
+([parity evidence](../architecture/OUTPUT_PATHS.md#4-parity-evidence)); its remaining gaps are
+listed there. Each slice
 touching `hydra-toon` states in its pull request which repository owns which test.
 
 ## ABI freeze

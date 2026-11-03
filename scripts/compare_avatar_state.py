@@ -5,7 +5,9 @@
 Implements the parity rules in docs/architecture/OUTPUT_PATHS.md#4-parity-evidence.
 Records are matched by identity, so a consumer may hold them in its own order. A
 missing channel or target is a difference; a consumer that does not carry a channel
-declares it with --unsupported, and the report names it.
+declares it with --unsupported, and the report names it. Each sequence is also checked
+against the consumer contract on its own: snapshot order, fixed layout and capabilities
+per instance, and the shape of every value.
 
 The exit status is 0 when the states agree, 1 when they differ.
 """
@@ -17,13 +19,14 @@ import json
 import math
 import struct
 
-IDENTITY_FIELDS = ("layout", "layout_version", "generation", "frame")
+IDENTITY_FIELDS = ("layout", "layout_version", "generation", "frame", "input_revision")
 # Channel -> the fields that identify one record of it.
 CHANNELS = {
     "joints": ("skeleton", "joint"),
     "morphs": ("mesh", "target"),
     "uvs": ("mesh", "vertex"),
     "materials": ("material", "input"),
+    "visibility": ("target",),
     "samples": ("channel",),
 }
 OPTIONAL_CHANNELS = (*CHANNELS, "capabilities")
@@ -150,8 +153,99 @@ def compare_state(path: str, actual: dict, expected: dict, tolerances: Tolerance
                 _values(f"{where}.value", "uv", found[key]["value"], wanted[key]["value"], tolerances.weight, result)
             elif channel == "materials":
                 _material(where, found[key], wanted[key], tolerances, result)
+            elif channel == "visibility":
+                if found[key]["visible"] != wanted[key]["visible"]:
+                    result.differences.append(f"{where}.visible: {found[key]['visible']}, expected {wanted[key]['visible']}")
             else:
                 _sample(where, found[key], wanted[key], tolerances, result)
+
+
+# Squared-norm error a published rotation may have (docs/contracts/EVALUATED_STATE.md).
+UNIT_QUATERNION = 1e-6
+
+
+def validate_state(path: str, state: dict, result: Comparison, layout_order: bool) -> None:
+    """The rules every snapshot keeps, whoever wrote it.
+
+    A consumer may hold records in its own order, while `parent` stays an index into the
+    producer's layout, so parent order is checked only where records are in layout order.
+    """
+    if not state["layout"] or state["layout_version"] < 1:
+        result.differences.append(f"{path}: layout {state['layout']!r} version {state['layout_version']} is not an identity")
+    if state["frame"] < 1 or state["generation"] < 1:
+        result.differences.append(f"{path}: frame {state['frame']} generation {state['generation']} must be nonzero")
+    if not state.get("instance"):
+        result.differences.append(f"{path}.instance: {state.get('instance', 'missing')} is not an instance")
+    if "capabilities" in state and len(set(state["capabilities"])) != len(state["capabilities"]):
+        result.differences.append(f"{path}.capabilities: an identity appears twice")
+    first: dict[str, int] = {}
+    for i, joint in enumerate(state.get("joints", ())):
+        where = f"{path}.joints[{joint['skeleton']}/{joint['joint']}]"
+        first.setdefault(joint["skeleton"], i)
+        parent = joint["parent"]
+        if layout_order and parent != -1 and not (first[joint["skeleton"]] <= parent < i and state["joints"][parent]["skeleton"] == joint["skeleton"]):
+            result.differences.append(f"{where}.parent: {parent} is not -1 or an earlier joint of the same skeleton")
+        if abs(sum(value * value for value in joint["rotation"]) - 1) > UNIT_QUATERNION:
+            result.differences.append(f"{where}.rotation: not a unit quaternion")
+    for material in state.get("materials", ()):
+        where = f"{path}.materials[{material['material']}/{material['input']}]"
+        if material["overridden"] not in (0, 1):
+            result.differences.append(f"{where}.overridden: {material['overridden']} is not 0 or 1")
+        if material["type"] not in (1, 2, 3, 4):
+            result.differences.append(f"{where}.type: {material['type']} is not a value type")
+        elif any(material["value"][material["type"]:]):
+            result.differences.append(f"{where}.value: components past type {material['type']} are not zero")
+    for visibility in state.get("visibility", ()):
+        if visibility["visible"] not in (0, 1):
+            result.differences.append(f"{path}.visibility[{visibility['target']}].visible: {visibility['visible']} is not 0 or 1")
+
+
+def _layout(state: dict) -> tuple:
+    """What a binding depends on: identities, their order, joint parents and value types."""
+    channels = []
+    for channel, fields in CHANNELS.items():
+        if channel == "samples" or channel not in state:
+            continue
+        extra = {"joints": ("parent",), "materials": ("type",)}.get(channel, ())
+        channels.append((channel, sorted(tuple(record[f] for f in (*fields, *extra)) for record in state[channel])))
+    return state["layout"], state["layout_version"], tuple(channels)
+
+
+def validate_sequence(path: str, states: list[dict], result: Comparison, layout_order: bool = False) -> None:
+    """Snapshots in the order a consumer received them, under the lifecycle rules.
+
+    Per instance, (generation, frame) increases strictly, and the layout tuple, the
+    channels it names and the capabilities stay fixed: a reset keeps them, and a change
+    of binding needs a new instance.
+    """
+    seen: dict[object, tuple[int, dict]] = {}
+    for i, state in enumerate(states):
+        where = f"{path}[{i}]"
+        validate_state(where, state, result, layout_order)
+        instance = state.get("instance")
+        if instance not in seen:
+            seen[instance] = (i, state)
+            continue
+        j, last = seen[instance]
+        seen[instance] = (i, state)
+        if (state["generation"], state["frame"]) <= (last["generation"], last["frame"]):
+            result.differences.append(f"{where}: generation {state['generation']} frame {state['frame']} does not follow "
+                                      f"generation {last['generation']} frame {last['frame']} of {path}[{j}]")
+        if _layout(state) != _layout(last):
+            result.differences.append(f"{where}: the layout changed within instance {instance}")
+        if sorted(state.get("capabilities", ())) != sorted(last.get("capabilities", ())):
+            result.differences.append(f"{where}.capabilities: changed within instance {instance}")
+
+
+def _instances(path: str, actual: list[dict], expected: list[dict], result: Comparison) -> None:
+    """Instance handles differ between runs; they must correspond one to one, never cross."""
+    forward: dict[object, object] = {}
+    backward: dict[object, object] = {}
+    for i, (found, wanted) in enumerate(zip(actual, expected)):
+        a, e = found.get("instance"), wanted.get("instance")
+        if forward.setdefault(a, e) != e or backward.setdefault(e, a) != a:
+            result.differences.append(f"{path}[{i}].instance: {a} corresponds to expected {e}, "
+                                      f"but earlier {a} was {forward[a]} and {e} was {backward[e]}")
 
 
 def compare_sequences(actual: list[dict], expected: list[dict], tolerances: Tolerances = Tolerances(),
@@ -159,6 +253,9 @@ def compare_sequences(actual: list[dict], expected: list[dict], tolerances: Tole
     result = result or Comparison(unsupported=unsupported)
     if len(actual) != len(expected):
         result.differences.append(f"{path}: {len(actual)} states, expected {len(expected)}")
+    validate_sequence(path, actual, result)
+    validate_sequence(f"expected {path}", expected, result, layout_order=True)
+    _instances(path, actual, expected, result)
     for i, (found, wanted) in enumerate(zip(actual, expected)):
         compare_state(f"{path}[{i}]", found, wanted, tolerances, result)
     return result
