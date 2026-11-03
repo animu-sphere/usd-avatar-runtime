@@ -125,4 +125,4 @@ Normal CI should cover core units and
 headless smoke in the applicable configuration, with heavy asset/backend/render
 end-to-end checks opt-in. Optional integration dependencies must not leak into
 core-only build/install/import. Planned work and acceptance gates live in the
-[physics orchestration roadmap](../roadmap/current.md#physics-orchestration-milestones).
+[several-avatars roadmap](../roadmap/current.md#several-avatars-and-a-shared-world).

@@ -9,7 +9,7 @@ Older entries use labels that the release-based roadmap retired on 2026-11-01. "
 Phase A" means the [ABI freeze gates](../roadmap/current.md#abi-freeze), "milestone A/B/C"
 means real VRM evaluation, a rendering `hydra-toon` consumer and real MMD evaluation, and
 "physics milestone B/D/E" means the
-[physics gates](../roadmap/current.md#physics-orchestration-milestones). "L3" is the MMD
+[physics gates](../roadmap/current.md#several-avatars-and-a-shared-world). "L3" is the MMD
 owner's representative-acceptance level.
 
 ## Real models from the package (2026-11-01)
