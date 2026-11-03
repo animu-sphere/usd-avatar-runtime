@@ -7,6 +7,18 @@ the C ABI revision are separate numbers.
 
 ## [Unreleased]
 
+### Added
+
+- `instance`, `input_revision` and a `visibility` channel in the `--state-output` format, with JSON escaping
+  of identities. `scripts/compare_avatar_state.py` compares them, matching instances one to one.
+- The state comparison checks each sequence against the consumer contract: `(generation, frame)` order per
+  instance, a layout and capabilities fixed per instance, and the shape of every value. Negative tests cover
+  identity, absence and reset, and `contracts.state_json` checks the writer.
+
+### Changed
+
+- The committed VRM and MMD session fixtures carry the new fields.
+
 ## [0.4.0] - 2026-11-01
 
 The MMD session ships as a package and runs real models from it, as the VRM session did in v0.3.0. The C ABI stays

@@ -3,6 +3,8 @@
   "capabilities": [],
   "frame": 30,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -303,12 +305,15 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  },
  {
   "capabilities": [],
   "frame": 60,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -609,12 +614,15 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  },
  {
   "capabilities": [],
   "frame": 90,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -915,12 +923,15 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  },
  {
   "capabilities": [],
   "frame": 120,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -1221,12 +1232,15 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  },
  {
   "capabilities": [],
   "frame": 150,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -1527,12 +1541,15 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  },
  {
   "capabilities": [],
   "frame": 180,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -1833,12 +1850,15 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  },
  {
   "capabilities": [],
   "frame": 210,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -2139,12 +2159,15 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  },
  {
   "capabilities": [],
   "frame": 240,
   "generation": 1,
+  "input_revision": 0,
+  "instance": 1,
   "joints": [
    {
     "joint": "anchor",
@@ -2445,6 +2468,7 @@
     ],
     "vertex": 11
    }
-  ]
+  ],
+  "visibility": []
  }
 ]

@@ -45,6 +45,11 @@ add_executable(sessionContracts session_contracts.cpp)
 target_link_libraries(sessionContracts PRIVATE avatarRuntime)
 target_compile_features(sessionContracts PRIVATE cxx_std_17)
 add_test(NAME contracts.fixed_tick_session COMMAND sessionContracts)
+# The consumer state export format; header-only, so it needs no runtime library.
+add_executable(stateJsonContracts state_json.cpp)
+target_include_directories(stateJsonContracts PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_compile_features(stateJsonContracts PRIVATE cxx_std_17)
+add_test(NAME contracts.state_json COMMAND stateJsonContracts)
 if(WIN32)
     add_custom_command(TARGET sessionContracts POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:sessionContracts>)

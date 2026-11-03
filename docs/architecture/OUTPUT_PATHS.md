@@ -231,12 +231,17 @@ kind and quaternion sign equivalence; they must not hide missing channels.
 Reuse motion-owner comparison rules for motion values.
 
 `scripts/compare_avatar_state.py` applies these rules to two files in the
-`--state-output` format, one state or a list. A consumer writes what it received in that format,
-and the script matches frames in order and records by identity.
+`--state-output` format, one state or a list in the order the consumer received them. A consumer
+writes what it received in that format, and the script matches frames in order and records by
+identity. Each state carries `instance`, `layout`, `layout_version`, `generation`, `frame`,
+`input_revision`, `seconds`, `capabilities` and the channels `joints`, `morphs`, `uvs`,
+`materials`, `visibility` and `samples`. An empty channel is not an output of the layout; a missing
+one is a channel the writer did not carry. Identities are opaque UTF-8 with JSON escaping only.
 
 | Value | Agrees when |
 | --- | --- |
-| layout, layout version, generation, frame, joint parent, material type and override flag, sample kind, validity and resolution | equal |
+| layout, layout version, generation, frame, input revision, joint parent, material type and override flag, visibility, sample kind, validity and resolution | equal |
+| instance | one to one: handles differ between runs, but two instances never cross |
 | translation, rotation, scale, morph weight, primary vertex UV, evaluation and source seconds | `abs(actual-expected)/max(1,abs(expected)) <= 2e-6`; a quaternion also agrees with its negation |
 | material value with `overridden = 1` | equal after conversion to `float`; with `overridden = 0` the value is ignored |
 | capabilities | the same set |
@@ -244,10 +249,31 @@ and the script matches frames in order and records by identity.
 A missing or unexpected target, a repeated identity and a missing channel are differences.
 `--unsupported <channel>` excludes a channel the consumer does not carry, and the report names it.
 `--tolerance` replaces every tolerance, for a comparison across platforms such as
-`scripts/check_session_fixture.py`, which uses `1e-5`. `scripts/test_compare_avatar_state.py` checks
-that each value kind is compared. No consumer writes this format yet. Hydra has no
-publication to compare, and joint values reach `hydra-toon` as palettes, which it would have to
-report before mapping them.
+`scripts/check_session_fixture.py`, which uses `1e-5`.
+
+Each sequence is also checked on its own against the
+[consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract), so a consumer cannot
+agree with a producer that breaks it:
+
+- per instance, `(generation, frame)` increases strictly: a reset restarts frames in a later
+  generation, and an older generation is a difference
+- per instance, the layout tuple, the identities of each channel, joint parents, material types
+  and capabilities stay fixed; a change of binding needs a new instance
+- instance, frame and generation are nonzero and the layout ID is not empty
+- rotations are unit quaternions within a squared-norm error of `1e-6`, override and visibility
+  flags are 0 or 1, material components past the value type are zero, and capabilities do not repeat
+- in the expected file, which keeps the producer's order, each parent is -1 or an earlier joint of
+  the same skeleton. A consumer may reorder records, so its parents are compared by joint identity
+  only
+
+`scripts/test_compare_avatar_state.py` checks that each value kind is compared and that identity,
+absence, reset and shape violations are caught; `contracts.state_json` checks the writer the check
+hosts share. No consumer writes this format yet. Hydra has no publication to compare, and joint
+values reach `hydra-toon` as palettes, which it would have to report before mapping them.
+
+Not yet exported or compared: a sample's source, actor and evaluator identity, its clock mapping
+and runtime seconds, and capability versions. Samples are therefore matched by channel alone. A
+consumer declares an unsupported channel only on the command line, not in its file.
 
 Equivalent state does not by itself prove equivalent pixels or equal latency.
 Renderer evidence must state backend, configuration and hardware separately.
