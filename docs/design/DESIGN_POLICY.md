@@ -52,7 +52,8 @@ seek, adapter lifetime, publication and diagnostics. Other owners are listed in
 Add something here when it coordinates several avatar subsystems, defines cross-format
 order, defines a common contract, publishes evaluated state or provides runtime-wide
 lifecycle or diagnostics. Do not add it when it is specific to a format, generic motion
-mathematics, a device or protocol connector, or a renderer realization.
+mathematics, a device or protocol connector, or a renderer realization. A contract that
+others can observe arrives with its documentation, a negative test and consumer evidence.
 
 ## Thin adapters
 

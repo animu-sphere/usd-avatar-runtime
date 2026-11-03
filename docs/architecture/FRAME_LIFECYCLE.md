@@ -184,7 +184,7 @@ Decided for v0.4.0, for what the [MMD session](MMD_SESSION.md) ships. The rest i
 
 - **Interpolation and tick/display provenance are deferred to the ABI freeze.** No consumer needs them yet:
   ticks run faster than display, and adding them would change state fields, with RT-O4.
-- **Shared participants are deferred** to the [several-avatars gate](../roadmap/current.md#physics-orchestration-milestones).
+- **Shared participants are deferred** to the [several-avatars gate](../roadmap/current.md#several-avatars-and-a-shared-world).
   v0.4.0 excludes several avatars in one world. The table and its membership extension are tested on generated
   worlds, and the session binds one participant, with no non-avatar objects.
 
