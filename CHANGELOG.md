@@ -17,6 +17,10 @@ the C ABI revision are separate numbers.
 
 ### Changed
 
+- State exports carry full source/actor/evaluator and affine-clock provenance, and
+  versioned capability records. The comparison matches samples by source/actor/channel,
+  checks clock consistency and detects capability version changes. Older incomplete
+  diagnostic exports must be regenerated or declare the affected channel unsupported.
 - The committed VRM and MMD session fixtures carry the new fields.
 
 ## [0.4.0] - 2026-11-01

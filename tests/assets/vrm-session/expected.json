@@ -2,10 +2,22 @@
  "bone": [
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.bone",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.bone",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 1,
    "generation": 1,
@@ -507,30 +519,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 2,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     }
@@ -541,10 +577,22 @@
   },
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.bone",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.bone",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 31,
    "generation": 1,
@@ -1046,30 +1094,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 2,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     }
@@ -1080,10 +1152,22 @@
   },
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.bone",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.bone",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 61,
    "generation": 1,
@@ -1585,30 +1669,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 2,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     }
@@ -1619,10 +1727,22 @@
   },
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.bone",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.bone",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 91,
    "generation": 1,
@@ -2124,30 +2244,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 3
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 3,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     }
@@ -2160,10 +2304,22 @@
  "expression": [
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.expression",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.expression",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 1,
    "generation": 1,
@@ -2665,30 +2821,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 2,
+     "runtime_seconds": 0,
+     "source": "vrm.session.motion",
      "source_seconds": 0,
      "validity": 1
     }
@@ -2699,10 +2879,22 @@
   },
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.expression",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.expression",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 31,
    "generation": 1,
@@ -3204,30 +3396,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 2,
+     "runtime_seconds": 0.5,
+     "source": "vrm.session.motion",
      "source_seconds": 0.5,
      "validity": 1
     }
@@ -3238,10 +3454,22 @@
   },
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.expression",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.expression",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 61,
    "generation": 1,
@@ -3743,30 +3971,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 2,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     }
@@ -3777,10 +4029,22 @@
   },
   {
    "capabilities": [
-    "avatar.motion.clipPose",
-    "avatar.vrm.expression.effects",
-    "avatar.vrm.lookAt.expression",
-    "avatar.vrm.springBone"
+    {
+     "id": "avatar.motion.clipPose",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.expression.effects",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.lookAt.expression",
+     "version": 1
+    },
+    {
+     "id": "avatar.vrm.springBone",
+     "version": 1
+    }
    ],
    "frame": 91,
    "generation": 1,
@@ -4282,30 +4546,54 @@
    ],
    "samples": [
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:blink",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "clip:vrm:happy",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 1,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:lookAtTarget",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "",
      "kind": 2,
      "resolution": 1,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 3
     },
     {
+     "actor": "/Asset/skel/Skeleton",
      "channel": "motion:pose",
+     "clock_offset": 0,
+     "clock_scale": 1,
+     "evaluator": "vrm.session.motion",
      "kind": 3,
      "resolution": 3,
+     "runtime_seconds": 1,
+     "source": "vrm.session.motion",
      "source_seconds": 1,
      "validity": 1
     }

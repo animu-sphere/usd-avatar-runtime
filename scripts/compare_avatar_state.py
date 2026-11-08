@@ -28,9 +28,10 @@ CHANNELS = {
     "uvs": ("mesh", "vertex"),
     "materials": ("material", "input"),
     "visibility": ("target",),
-    "samples": ("channel",),
+    "samples": ("source", "actor", "channel"),
 }
 OPTIONAL_CHANNELS = (*CHANNELS, "capabilities")
+SAMPLE_NUMBERS = ("source_seconds", "clock_scale", "clock_offset", "runtime_seconds")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -127,15 +128,25 @@ def _material(path: str, actual: dict, expected: dict, tolerances: Tolerances, r
 
 
 def _sample(path: str, actual: dict, expected: dict, tolerances: Tolerances, result: Comparison) -> None:
-    for field in ("kind", "validity", "resolution"):
+    for field in ("evaluator", "kind", "validity", "resolution"):
+        if field not in actual or field not in expected:
+            continue  # validate_state reports incomplete provenance, even on both sides.
         if actual[field] != expected[field]:
             result.differences.append(f"{path}.{field}: {actual[field]}, expected {expected[field]}")
-    _close(f"{path}.source_seconds", "seconds", actual["source_seconds"], expected["source_seconds"], tolerances.seconds, result)
+    for field in SAMPLE_NUMBERS:
+        if _number(actual.get(field)) and _number(expected.get(field)):
+            _close(f"{path}.{field}", "clock" if field == "clock_scale" else "seconds",
+                   actual[field], expected[field], tolerances.seconds, result)
 
 
 def _keyed(path: str, channel: str, records: list[dict], result: Comparison) -> dict[tuple, dict]:
     keyed: dict[tuple, dict] = {}
     for record in records:
+        missing = [field for field in CHANNELS[channel] if field not in record
+                   or (channel == "samples" and not isinstance(record[field], str))]
+        if missing:
+            result.differences.append(f"{path}.{channel}: missing or invalid identity fields {missing}")
+            continue
         key = tuple(record[field] for field in CHANNELS[channel])
         if key in keyed:
             result.differences.append(f"{path}.{channel}: {key} appears twice")
@@ -155,8 +166,9 @@ def compare_state(path: str, actual: dict, expected: dict, tolerances: Tolerance
             result.differences.append(f"{path}.{channel}: missing, and not declared unsupported")
             continue
         if channel == "capabilities":
-            if sorted(actual[channel]) != sorted(expected[channel]):
-                result.differences.append(f"{path}.capabilities: {sorted(actual[channel])}, expected {sorted(expected[channel])}")
+            found, wanted = _capability_set(actual), _capability_set(expected)
+            if found != wanted:
+                result.differences.append(f"{path}.capabilities: {found}, expected {wanted}")
             continue
         found = _keyed(path, channel, actual[channel], result)
         wanted = _keyed(path, channel, expected[channel], result)
@@ -185,6 +197,19 @@ def compare_state(path: str, actual: dict, expected: dict, tolerances: Tolerance
 UNIT_QUATERNION = 1e-6
 
 
+def _number(value: object) -> bool:
+    return type(value) in (int, float)
+
+
+def _valid_capability(record: object) -> bool:
+    return (isinstance(record, dict) and isinstance(record.get("id"), str) and bool(record["id"])
+            and type(record.get("version")) is int and 0 < record["version"] <= 0xffffffff)
+
+
+def _capability_set(state: dict) -> list[tuple[str, int]]:
+    return sorted((r["id"], r["version"]) for r in state.get("capabilities", ()) if _valid_capability(r))
+
+
 def validate_state(path: str, state: dict, result: Comparison, layout_order: bool) -> None:
     """The rules every snapshot keeps, whoever wrote it.
 
@@ -197,8 +222,33 @@ def validate_state(path: str, state: dict, result: Comparison, layout_order: boo
         result.differences.append(f"{path}: frame {state['frame']} generation {state['generation']} must be nonzero")
     if not state.get("instance"):
         result.differences.append(f"{path}.instance: {state.get('instance', 'missing')} is not an instance")
-    if "capabilities" in state and len(set(state["capabilities"])) != len(state["capabilities"]):
+    capabilities = state.get("capabilities", ())
+    for record in capabilities:
+        if not _valid_capability(record):
+            result.differences.append(f"{path}.capabilities: expected a nonempty id and nonzero uint32 version, got {record!r}")
+    ids = [r[0] for r in _capability_set(state)]
+    if len(set(ids)) != len(ids):
         result.differences.append(f"{path}.capabilities: an identity appears twice")
+    for i, sample in enumerate(state.get("samples", ())):
+        where = f"{path}.samples[{i}]"
+        for field in ("source", "actor", "channel", "evaluator"):
+            if not isinstance(sample.get(field), str) or (field != "evaluator" and not sample[field]):
+                result.differences.append(f"{where}.{field}: missing or invalid identity")
+        for field, allowed in (("kind", (1, 2, 3)), ("validity", (1, 2, 3)), ("resolution", (1, 2, 3, 4))):
+            if type(sample.get(field)) is not int or sample[field] not in allowed:
+                result.differences.append(f"{where}.{field}: missing or invalid enum value")
+        for field in SAMPLE_NUMBERS:
+            value = sample.get(field)
+            if not _number(value):
+                result.differences.append(f"{where}.{field}: missing or invalid number")
+            elif not math.isfinite(value):
+                result.differences.append(f"{where}.{field}: nonfinite value")
+        if all(_number(sample.get(f)) and math.isfinite(sample[f]) for f in SAMPLE_NUMBERS):
+            if sample["clock_scale"] <= 0:
+                result.differences.append(f"{where}.clock_scale: must be positive")
+            mapped = sample["source_seconds"] * sample["clock_scale"] + sample["clock_offset"]
+            if not math.isfinite(mapped) or not math.isclose(sample["runtime_seconds"], mapped, rel_tol=1e-12, abs_tol=1e-12):
+                result.differences.append(f"{where}.runtime_seconds: does not match the clock mapping")
     first: dict[str, int] = {}
     for i, joint in enumerate(state.get("joints", ())):
         where = f"{path}.joints[{joint['skeleton']}/{joint['joint']}]"
@@ -254,7 +304,7 @@ def validate_sequence(path: str, states: list[dict], result: Comparison, layout_
                                       f"generation {last['generation']} frame {last['frame']} of {path}[{j}]")
         if _layout(state) != _layout(last):
             result.differences.append(f"{where}: the layout changed within instance {instance}")
-        if sorted(state.get("capabilities", ())) != sorted(last.get("capabilities", ())):
+        if _capability_set(state) != _capability_set(last):
             result.differences.append(f"{where}.capabilities: changed within instance {instance}")
 
 

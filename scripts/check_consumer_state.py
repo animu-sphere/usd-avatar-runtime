@@ -30,7 +30,7 @@ def expected_states() -> list[dict]:
             "layout": 'capture."\\日', "layout_version": 1,
             "frame": (1, 2, 1, 1, 2, 3)[step], "generation": 2 if step == 2 else 1,
             "input_revision": (1, 2, 1, 1, 2, 3)[step] * 10,
-            "seconds": t, "capabilities": ["test.resolved"],
+            "seconds": t, "capabilities": [{"id": "test.resolved", "version": 7}],
             "joints": [
                 {"skeleton": "rig", "joint": 'root"\\', "parent": -1,
                  "translation": [.05 * t, 0, 0], "rotation": [0, 0, math.sin(.1 * t), math.cos(.1 * t)], "scale": [1, 1, 1]},
@@ -46,7 +46,17 @@ def expected_states() -> list[dict]:
                 {"material": "surface", "input": "owner:shade", "type": 3, "overridden": t, "value": [.2, .1 + .05 * t, .05, 0]},
             ],
             "visibility": [{"target": "face", "visible": 0 if animated else 1}],
-            "samples": [{"channel": 'pose:clip"\\', "kind": 3, "validity": 1, "resolution": 3, "source_seconds": .25}],
+            "samples": [
+                {"source": 'source"\\', "actor": "actor", "channel": 'pose:clip"\\', "evaluator": 'test.provider"\\日',
+                 "kind": 3, "validity": 1, "resolution": 3, "source_seconds": .25,
+                 "clock_scale": 2, "clock_offset": -.125, "runtime_seconds": .375},
+                {"source": "other", "actor": "actor", "channel": 'pose:clip"\\', "evaluator": "test.other",
+                 "kind": 3, "validity": 1, "resolution": 2, "source_seconds": .5,
+                 "clock_scale": .5, "clock_offset": -2, "runtime_seconds": -1.75},
+                {"source": 'source"\\', "actor": "other actor", "channel": 'pose:clip"\\', "evaluator": "",
+                 "kind": 1, "validity": 1, "resolution": 1, "source_seconds": 0,
+                 "clock_scale": 1, "clock_offset": 0, "runtime_seconds": 0},
+            ],
         })
     return states
 
@@ -81,7 +91,20 @@ def main() -> int:
     broken[1]["visibility"][0]["visible"] = 1
     if not compare_sequences(broken, expected).differences:
         raise AssertionError("changed visibility was not detected")
-    print("6 accepted consumer states agree; 10 delivery omission/identity/visibility controls refused")
+    controls = 10
+    for field in ("source", "actor", "evaluator", "clock_scale", "clock_offset", "runtime_seconds"):
+        broken = copy.deepcopy(actual)
+        record = broken[1]["samples"][0]
+        record[field] = "changed" if isinstance(record[field], str) else record[field] + .125
+        if not compare_sequences(broken, expected).differences:
+            raise AssertionError(f"changed sample {field} was not detected")
+        controls += 1
+    broken = copy.deepcopy(actual)
+    broken[1]["capabilities"][0]["version"] += 1
+    if not compare_sequences(broken, expected).differences:
+        raise AssertionError("changed capability version was not detected")
+    controls += 1
+    print(f"6 accepted consumer states agree; {controls} delivery/identity/provenance controls refused")
     return 0
 
 

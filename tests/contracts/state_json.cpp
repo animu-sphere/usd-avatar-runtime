@@ -5,7 +5,7 @@
 #include <string>
 
 int main() {
-    const ArCapability capabilities[] = {{"avatar.a", 1}, {"avatar.b", 1}};
+    const ArCapability capabilities[] = {{"avatar.a", 2}, {"avatar.b", 7}};
     ArJoint joints[] = {
         {"/Skel", "root", -1, {{0, 1, 0}, {0, 0, 0, 1}, {1, 1, 1}}},
         {"/Skel", "root/\xe9\xab\xaa \"q\"\\", 0, {{0, 0.5, 0}, {0, 0, 0, 1}, {1, 1, 1}}},
@@ -14,8 +14,8 @@ int main() {
     const ArVertexUv uvs[] = {{"/Mesh", 3, {0.25, 0.5}}};
     const ArMaterialInput materials[] = {{"/Mat", "inputs:alpha", AR_VALUE_SCALAR, 1, {0, 0, 0, 0}}};
     const ArVisibility visibility[] = {{"/Mesh\t1", 0}};
-    ArSourceSample sample{"host", "actor", "motion:pose", "motion.body", AR_SOURCE_POSE, AR_OBSERVATION_VALID,
-        AR_SAMPLE_HELD, 1.5, 1, 0, 1.5};
+    ArSourceSample sample{"host\"\\", "actor\t", "motion:pose", "motion.body", AR_SOURCE_POSE, AR_OBSERVATION_VALID,
+        AR_SAMPLE_HELD, 1.5, 2, -1, 2};
 
     ArStateView v{AR_HEADER(ArStateView)};
     v.instance = 42; v.frame_id = 3; v.generation = 2; v.evaluation_seconds = 0.25;
@@ -30,7 +30,7 @@ int main() {
 
     const std::string expected =
         "{\"instance\":42,\"layout\":\"layout\",\"layout_version\":7,\"frame\":3,\"generation\":2,\"input_revision\":9,"
-        "\"seconds\":0.25,\"capabilities\":[\"avatar.a\",\"avatar.b\"],\"joints\":["
+        "\"seconds\":0.25,\"capabilities\":[{\"id\":\"avatar.a\",\"version\":2},{\"id\":\"avatar.b\",\"version\":7}],\"joints\":["
         "{\"skeleton\":\"/Skel\",\"joint\":\"root\",\"parent\":-1,\"translation\":[0,1,0],\"rotation\":[0,0,0,1],\"scale\":[1,1,1]},"
         "{\"skeleton\":\"/Skel\",\"joint\":\"root/\xe9\xab\xaa \\\"q\\\"\\\\\",\"parent\":0,\"translation\":[0,0.5,0],"
         "\"rotation\":[0,0,0,1],\"scale\":[1,1,1]}],"
@@ -38,7 +38,8 @@ int main() {
         "\"uvs\":[{\"mesh\":\"/Mesh\",\"vertex\":3,\"value\":[0.25,0.5]}],"
         "\"materials\":[{\"material\":\"/Mat\",\"input\":\"inputs:alpha\",\"type\":1,\"overridden\":1,\"value\":[0,0,0,0]}],"
         "\"visibility\":[{\"target\":\"/Mesh\\u00091\",\"visible\":0}],"
-        "\"samples\":[{\"channel\":\"motion:pose\",\"kind\":3,\"validity\":1,\"resolution\":3,\"source_seconds\":1.5}]}";
+        "\"samples\":[{\"source\":\"host\\\"\\\\\",\"actor\":\"actor\\u0009\",\"channel\":\"motion:pose\",\"evaluator\":\"motion.body\","
+        "\"kind\":3,\"validity\":1,\"resolution\":3,\"source_seconds\":1.5,\"clock_scale\":2,\"clock_offset\":-1,\"runtime_seconds\":2}]}";
     const auto actual = avatarCheck::StateJson(v);
     if (actual != expected) {
         std::fprintf(stderr, "state JSON differs\n actual:   %s\n expected: %s\n", actual.c_str(), expected.c_str());

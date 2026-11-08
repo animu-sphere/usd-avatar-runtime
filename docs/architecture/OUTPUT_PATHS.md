@@ -240,15 +240,30 @@ one is a channel the writer did not carry. Identities are opaque UTF-8 with JSON
 
 | Value | Agrees when |
 | --- | --- |
-| layout, layout version, generation, frame, input revision, joint parent, material type and override flag, visibility, sample kind, validity and resolution | equal |
+| layout, layout version, generation, frame, input revision, joint parent, material type and override flag, visibility, sample evaluator, kind, validity and resolution | equal |
 | instance | one to one: handles differ between runs, but two instances never cross |
-| translation, rotation, scale, morph weight, primary vertex UV, evaluation and source seconds | `abs(actual-expected)/max(1,abs(expected)) <= 2e-6`; a quaternion also agrees with its negation |
+| translation, rotation, scale, morph weight, primary vertex UV, evaluation/source/runtime seconds, clock scale and offset | `abs(actual-expected)/max(1,abs(expected)) <= 2e-6`; a quaternion also agrees with its negation |
 | material value with `overridden = 1` | equal after conversion to `float`; with `overridden = 0` the value is ignored |
-| capabilities | the same set |
+| capabilities | the same set of `(id, version)` pairs |
+
+`capabilities` contains objects with a nonempty `id` and nonzero uint32 `version`.
+`samples` contains `source`, `actor`, `channel`, `evaluator`, `kind`, `validity`,
+`resolution`, `source_seconds`, `clock_scale`, `clock_offset` and `runtime_seconds`.
+Samples match by `(source, actor, channel)`, the runtime's unique sample identity;
+different sources or actors may report the same channel. `evaluator` compares exactly
+but does not make a repeated sample identity distinct. Selected inputs use an empty
+evaluator string. Identities are opaque and may be reordered by the consumer.
+
+Every sample's four clock numbers must be finite, scale must be positive, and runtime
+seconds must equal `source_seconds * clock_scale + clock_offset` within `1e-12` absolute
+or relative error. This internal consistency check is independent of the comparison
+tolerance. It validates supplied mappings; the comparison reads no clock.
+Legacy exports with capability strings or incomplete sample provenance fail validation;
+regenerate them with current writers, or omit the channel and declare it unsupported.
 
 A missing or unexpected target, a repeated identity and a missing channel are differences.
 `--unsupported <channel>` excludes a channel the consumer does not carry, and the report names it.
-`--tolerance` replaces every tolerance, for a comparison across platforms such as
+`--tolerance` replaces each between-file tolerance, for a comparison across platforms such as
 `scripts/check_session_fixture.py`, which uses `1e-5`.
 
 Tolerances must be finite and nonnegative. JSON nonfinite values, including exponent
@@ -262,7 +277,7 @@ agree with a producer that breaks it:
 
 - per instance, `(generation, frame)` increases strictly: a reset restarts frames in a later
   generation, and an older generation is a difference
-- per instance, the layout tuple, the identities of each channel, joint parents, material types
+- per instance, the layout tuple, the identities of each layout channel, joint parents, material types
   and capabilities stay fixed; a change of binding needs a new instance
 - instance, frame and generation are nonzero and the layout ID is not empty
 - rotations are unit quaternions within a squared-norm error of `1e-6`, override and visibility
@@ -276,9 +291,9 @@ absence, reset and shape violations are caught; `contracts.state_json` checks th
 hosts share. The generated Direct consumer export below feeds this format. Resident VRM/MMD
 host exports and Hydra publication/export remain open; no Direct/Hydra comparison is established.
 
-Not yet exported or compared: a sample's source, actor and evaluator identity, its clock mapping
-and runtime seconds, and capability versions. Samples are therefore matched by channel alone. A
-consumer declares an unsupported channel only on the command line, not in its file.
+A consumer declares an unsupported channel only on the command line, not in its file.
+Typed expression/gaze results and retained diagnostics remain outside the state ABI and
+this diagnostic format.
 
 ### Direct consumer export
 
@@ -295,9 +310,11 @@ channel unsupported; the complete probe below requires ABI 5.
 host. `scripts/check_consumer_state.py <consumer-executable>` compares six accepted states
 with an independent Python oracle, including input revision, reset, recreated instance,
 visibility, UVs, baseline restoration, escaped identities and handles larger than 2^53.
+The probe also carries versioned capabilities and three samples sharing a channel across
+different sources/actors, with nonidentity clocks and an empty selected-input evaluator.
 Instance handles use the canonical JSON integer representation and are read without loss
 by Python; readers using double-precision numbers must preserve those integers separately.
-Ten deliberate delivery omissions/identity/visibility changes must fail comparison.
+Seventeen deliberate delivery omissions and identity/visibility/provenance changes must fail comparison.
 
 The runtime owns the common-format oracle; the renderer owns conversion, rejection and
 capture tests. Setting `AVATAR_STATE_CONSUMER_EXECUTABLE` when configuring the runtime adds
