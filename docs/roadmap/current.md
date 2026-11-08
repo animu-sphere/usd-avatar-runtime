@@ -283,7 +283,7 @@ matrix does not say `yes` before the code does.
 Before slice 1: open issues for the consumer contract's undefined points, extend identity,
 absence and reset negative fixtures to resident VRM/MMD delivery, and choose the performance
 measures and first environment.
-The state comparison already carries identity, absence and reset negative cases
+The state comparison covers identity, absence, reset, source-clock provenance and capability versions
 ([parity evidence](../architecture/OUTPUT_PATHS.md#4-parity-evidence)); its remaining gaps are
 listed there. Each slice
 touching `hydra-toon` states in its pull request which repository owns which test.

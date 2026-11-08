@@ -218,8 +218,9 @@ class CompareAvatarState(unittest.TestCase):
             self.assertDiffers("layout changed")
 
     def test_a_layout_change_with_a_new_instance_is_allowed(self) -> None:
+        new_instance = max(s["instance"] for s in self.actual) + 1
         for states in (self.actual, self.expected):
-            states[-1]["instance"] = 2
+            states[-1]["instance"] = new_instance
             states[-1]["layout_version"] = 2
             states[-1]["morphs"].pop()
         self.assertEqual(self.differences(), [])
@@ -228,6 +229,99 @@ class CompareAvatarState(unittest.TestCase):
         for states in (self.actual, self.expected):
             states[-1]["capabilities"].pop()
         self.assertDiffers("capabilities: changed")
+
+    def test_capability_versions_are_compared_and_fixed_per_instance(self) -> None:
+        self.state["capabilities"][0]["version"] += 1
+        self.assertDiffers("capabilities:")
+        self.expected[-1]["capabilities"][0]["version"] += 1
+        self.assertDiffers("capabilities: changed")
+
+    def test_capabilities_require_versioned_records(self) -> None:
+        for record in ("legacy.id", {"id": "test.id"}, {"id": "", "version": 1},
+                       *({"id": "test.id", "version": v} for v in (0, -1, 1.5, True, "1", 1 << 32))):
+            with self.subTest(record=record):
+                self.setUp()
+                for states in (self.actual, self.expected):
+                    for state in states:
+                        state["capabilities"] = [record]
+                self.assertDiffers("nonzero uint32 version")
+
+    def test_a_duplicate_capability_id_with_another_version_is_invalid(self) -> None:
+        self.state["capabilities"].append(self.state["capabilities"][0] | {"version": 99})
+        self.assertDiffers("identity appears twice")
+
+    def test_samples_with_the_same_channel_from_different_sources_or_actors_agree(self) -> None:
+        for states in (self.actual, self.expected):
+            for state in states:
+                sample = state["samples"][0]
+                state["samples"] = [sample, sample | {"source": "other", "source_seconds": 2,
+                                                       "clock_scale": 2, "clock_offset": -1, "runtime_seconds": 3},
+                                    sample | {"actor": "other actor"}]
+        self.state["samples"].reverse()
+        self.assertEqual(self.differences(), [])
+
+    def test_sample_identity_and_evaluator_are_compared(self) -> None:
+        for field in ("source", "actor", "channel", "evaluator", "kind", "validity", "resolution"):
+            with self.subTest(field=field):
+                self.setUp()
+                record = self.state["samples"][0]
+                record[field] = "changed" if isinstance(record[field], str) else record[field] + 1
+                self.assertDiffers("samples")
+
+    def test_evaluator_does_not_make_a_duplicate_sample_distinct(self) -> None:
+        self.state["samples"].append(self.state["samples"][0] | {"evaluator": "other.evaluator"})
+        self.assertDiffers("appears twice")
+
+    def test_sample_clock_fields_are_compared(self) -> None:
+        for field in ("source_seconds", "clock_scale", "clock_offset", "runtime_seconds"):
+            with self.subTest(field=field):
+                self.setUp()
+                sample = self.state["samples"][0]
+                sample[field] += .125
+                # Keep each side internally valid: these differences must be
+                # found by delivery comparison, not only by clock validation.
+                if field == "runtime_seconds":
+                    sample["source_seconds"] = (sample[field] - sample["clock_offset"]) / sample["clock_scale"]
+                else:
+                    sample["runtime_seconds"] = sample["source_seconds"] * sample["clock_scale"] + sample["clock_offset"]
+                self.assertDiffers(field)
+
+    def test_incomplete_sample_provenance_never_agrees_even_with_itself(self) -> None:
+        for field in ("source", "actor", "channel", "evaluator", "kind", "validity", "resolution",
+                      "source_seconds", "clock_scale", "clock_offset", "runtime_seconds"):
+            with self.subTest(field=field):
+                self.setUp()
+                for states in (self.actual, self.expected):
+                    del states[-1]["samples"][0][field]
+                self.assertDiffers(field)
+
+    def test_invalid_sample_identity_and_numbers_are_differences(self) -> None:
+        for field, values in (("source", (None, "", 3)), ("actor", (None, "", 3)),
+                              ("evaluator", (None, 3)), ("clock_scale", (None, "2", True))):
+            for value in values:
+                with self.subTest(field=field, value=value):
+                    self.setUp()
+                    for states in (self.actual, self.expected):
+                        states[-1]["samples"][0][field] = value
+                    self.assertDiffers(field)
+
+    def test_invalid_sample_flags_never_agree_even_with_themselves(self) -> None:
+        for field in ("kind", "validity", "resolution"):
+            for value in (0, 99, True, "1"):
+                with self.subTest(field=field, value=value):
+                    self.setUp()
+                    for states in (self.actual, self.expected):
+                        states[-1]["samples"][0][field] = value
+                    self.assertDiffers(field)
+
+    def test_invalid_clock_mapping_never_agrees_even_with_itself(self) -> None:
+        for changes in ({"clock_scale": 0}, {"clock_scale": -1}, {"runtime_seconds": 99},
+                        {"source_seconds": 1e308, "clock_scale": 2}):
+            with self.subTest(changes=changes):
+                self.setUp()
+                for states in (self.actual, self.expected):
+                    states[-1]["samples"][0].update(changes)
+                self.assertDiffers("samples")
 
     # Absence: an empty channel, a missing one, zero and no override stay apart.
 
@@ -273,7 +367,8 @@ class CompareAvatarState(unittest.TestCase):
                 for channel, field in (("joints", "translation"), ("joints", "rotation"),
                                        ("joints", "scale"), ("morphs", "weight"),
                                        ("uvs", "value"), ("materials", "value"),
-                                       ("samples", "source_seconds"), (None, "seconds")):
+                                       *(("samples", f) for f in ("source_seconds", "clock_scale", "clock_offset", "runtime_seconds")),
+                                       (None, "seconds")):
                     with self.subTest(value=value, side=side, channel=channel, field=field):
                         self.setUp()
                         sequence = self.actual if side == "actual" else self.expected

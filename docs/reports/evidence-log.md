@@ -2038,3 +2038,52 @@ The rebuilt canonical VRM/MMD check hosts also reproduced their existing golden
 files with 0 differences at `1e-5` after integration; all six MMD omission variants
 still differed on their expected subjects. No golden values were changed by the
 integrated change.
+
+## State export provenance and capability versions (2026-11-08)
+
+Category: unit, adapter integration and generated-asset session check hosts on
+Windows x86_64, MSVC 19.51 Release, Python 3.13.14, experimental runtime ABI 5.
+No C ABI or evaluator behavior changed. The diagnostic JSON exports capability
+`id`/`version` records and every retained sample's source, actor, channel,
+evaluator, kind, validity, resolution and four affine-clock numbers.
+
+All 48 Python comparison tests passed. They cover samples with the same channel
+from different sources/actors, record reordering, repeated sample identities
+despite different evaluators, changed or missing provenance, invalid clock
+mappings, legacy capability strings, missing/invalid versions, duplicate IDs
+with different versions and version changes within an instance. Invalid
+provenance on both sides is still a difference. A layout-recreation test also
+uses a fresh handle relative to its fixture rather than assuming handle 2 is free.
+
+The renderer-owned headless Direct export produced six accepted states with
+version 7 of its generated capability and three samples sharing a channel,
+including an empty selected-input evaluator, escaped UTF-8 identities and
+nonidentity mappings. The independent runtime oracle found 0 differences at
+default tolerances; all 17 delivery/identity/visibility/provenance controls
+were detected. All seven runtime CTests and all four renderer avatar-state
+CTests passed, including separate installed consumers and retained capture
+from the freshly built runtime DLL through reset/destruction. The native JSON
+writer contract checks nontrivial versions, escaped provenance and clock mapping.
+
+Both native session check hosts were rebuilt against the existing local owner
+installs (motion 0.5.4, VRM 0.12.0, MMD 0.3.2 and deterministic Jolt). Fixed
+release importer bundles and the MMD fixture-generator source were fetched via
+the official GitHub asset API after release-download URLs returned HTTP 504.
+Their SHA-256 values match the committed importer pins. The unchanged fixture
+scripts consumed those cached archives and verified the hashes again.
+
+Regenerated VRM bone/expression and MMD golden outputs then compared with 0
+differences at `1e-5`. All six MMD omission variants still differed on their
+expected subjects. Golden instance handles were preserved through verified
+one-to-one correspondence. After projecting out the added metadata and capability
+versions, every preexisting field exactly matches the prior committed fixtures.
+The MMD golden file is unchanged: its sample and capability arrays are empty.
+Fixture asset generation checks passed.
+
+Workflow checks, Markdown relative links/fragments and `git diff --check` passed.
+The renderer owns capture/conversion/rejection evidence in
+[report 123](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/123-2026-11-08-avatar-state-provenance-export.md);
+this runtime owns the format, validation, independent oracle and session writers.
+Linux, hosted CI, resident viewport exports, Hydra publication/parity, pixels and
+consumer performance were not measured. Unsupported-channel declarations remain
+CLI arguments rather than records in the diagnostic files.

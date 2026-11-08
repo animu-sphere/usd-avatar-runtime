@@ -1,6 +1,7 @@
 #pragma once
 #include <avatarRuntime/api.h>
 #include <cstdio>
+#include <locale>
 #include <sstream>
 #include <string>
 
@@ -10,6 +11,7 @@ namespace avatarCheck {
 // docs/architecture/OUTPUT_PATHS.md#4-parity-evidence.
 inline std::string StateJson(const ArStateView& v) {
     std::ostringstream o; o.precision(17);
+    o.imbue(std::locale::classic());
     const auto numbers = [&](const double* values, int count) {
         o << '['; for (int k = 0; k < count; ++k) o << (k ? "," : "") << values[k]; o << ']';
     };
@@ -28,7 +30,10 @@ inline std::string StateJson(const ArStateView& v) {
     o << ",\"layout_version\":" << v.layout_version << ",\"frame\":" << v.frame_id
       << ",\"generation\":" << v.generation << ",\"input_revision\":" << v.input_revision
       << ",\"seconds\":" << v.evaluation_seconds << ",\"capabilities\":[";
-    for (uint32_t i = 0; i < v.capability_count; ++i) { o << (i ? "," : ""); text(v.capabilities[i].id); }
+    for (uint32_t i = 0; i < v.capability_count; ++i) {
+        o << (i ? "," : "") << "{\"id\":"; text(v.capabilities[i].id);
+        o << ",\"version\":" << v.capabilities[i].version << '}';
+    }
     o << "],\"joints\":[";
     for (uint32_t i = 0; i < v.joint_count; ++i) {
         const auto& j = v.joints[i];
@@ -60,9 +65,13 @@ inline std::string StateJson(const ArStateView& v) {
     o << "],\"samples\":[";
     for (uint32_t i = 0; i < v.sample_count; ++i) {
         const auto& r = v.samples[i];
-        o << (i ? "," : "") << "{\"channel\":"; text(r.channel_id);
+        o << (i ? "," : "") << "{\"source\":"; text(r.source_id);
+        o << ",\"actor\":"; text(r.actor_id); o << ",\"channel\":"; text(r.channel_id);
+        o << ",\"evaluator\":"; text(r.evaluator_id);
         o << ",\"kind\":" << r.kind << ",\"validity\":" << r.validity
-          << ",\"resolution\":" << r.resolution << ",\"source_seconds\":" << r.source_seconds << '}';
+          << ",\"resolution\":" << r.resolution << ",\"source_seconds\":" << r.source_seconds
+          << ",\"clock_scale\":" << r.clock_scale << ",\"clock_offset\":" << r.clock_offset
+          << ",\"runtime_seconds\":" << r.runtime_seconds << '}';
     }
     o << "]}";
     return o.str();
