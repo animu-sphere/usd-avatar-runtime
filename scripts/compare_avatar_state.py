@@ -9,7 +9,8 @@ declares it with --unsupported, and the report names it. Each sequence is also c
 against the consumer contract on its own: snapshot order, fixed layout and capabilities
 per instance, and the shape of every value.
 
-The exit status is 0 when the states agree, 1 when they differ.
+The exit status is 0 when the states agree, 1 when they differ, and 2 for
+invalid arguments or an unreadable/nonfinite JSON input.
 """
 from __future__ import annotations
 
@@ -41,6 +42,14 @@ class Tolerances:
     material: float | None = None
     seconds: float = 2e-6
 
+    def __post_init__(self) -> None:
+        for field in dataclasses.fields(self):
+            value = getattr(self, field.name)
+            if field.name == "material" and value is None:
+                continue
+            if not math.isfinite(value) or value < 0:
+                raise ValueError(f"{field.name} tolerance must be finite and nonnegative")
+
 
 @dataclasses.dataclass
 class Comparison:
@@ -55,6 +64,9 @@ class Comparison:
 
 
 def _close(path: str, kind: str, actual: float, expected: float, tolerance: float, result: Comparison) -> None:
+    if not math.isfinite(actual) or not math.isfinite(expected):
+        result.differences.append(f"{path}: nonfinite value ({actual}, expected {expected})")
+        return
     error = abs(actual - expected) / max(1.0, abs(expected))
     result.count(kind, error)
     if error > tolerance:
@@ -100,9 +112,18 @@ def _material(path: str, actual: dict, expected: dict, tolerances: Tolerances, r
         result.differences.append(f"{path}.value: {len(actual['value'])} components, expected {len(expected['value'])}")
         return
     for i, value in enumerate(expected["value"]):
-        result.count("material", abs(_float32(actual["value"][i]) - _float32(value)))
-        if _float32(actual["value"][i]) != _float32(value):
-            result.differences.append(f"{path}.value[{i}]: {actual['value'][i]}, expected {value}")
+        found = actual["value"][i]
+        if not math.isfinite(found) or not math.isfinite(value):
+            result.differences.append(f"{path}.value[{i}]: nonfinite value ({found}, expected {value})")
+            continue
+        try:
+            narrowed, wanted = _float32(found), _float32(value)
+        except OverflowError:
+            result.differences.append(f"{path}.value[{i}]: value outside float32 range ({found}, expected {value})")
+            continue
+        result.count("material", abs(narrowed - wanted))
+        if narrowed != wanted:
+            result.differences.append(f"{path}.value[{i}]: {found}, expected {value}")
 
 
 def _sample(path: str, actual: dict, expected: dict, tolerances: Tolerances, result: Comparison) -> None:
@@ -243,7 +264,12 @@ def _instances(path: str, actual: list[dict], expected: list[dict], result: Comp
     backward: dict[object, object] = {}
     for i, (found, wanted) in enumerate(zip(actual, expected)):
         a, e = found.get("instance"), wanted.get("instance")
-        if forward.setdefault(a, e) != e or backward.setdefault(e, a) != a:
+        # Populate both directions even when the forward correspondence fails.
+        # A reused handle at the first frame of a recreated instance must be a
+        # difference, not a KeyError while formatting its diagnostic.
+        mapped = forward.setdefault(a, e)
+        reverse = backward.setdefault(e, a)
+        if mapped != e or reverse != a:
             result.differences.append(f"{path}[{i}].instance: {a} corresponds to expected {e}, "
                                       f"but earlier {a} was {forward[a]} and {e} was {backward[e]}")
 
@@ -265,9 +291,16 @@ def _reject_constant(name: str) -> None:
     raise ValueError(f"nonfinite value {name}")
 
 
+def _finite_float(value: str) -> float:
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"nonfinite value {value}")
+    return number
+
+
 def load(path: str) -> list[dict]:
     with open(path, encoding="utf-8") as file:
-        states = json.load(file, parse_constant=_reject_constant)
+        states = json.load(file, parse_constant=_reject_constant, parse_float=_finite_float)
     return states if isinstance(states, list) else [states]
 
 
@@ -291,8 +324,12 @@ def main() -> int:
                         help="a channel the consumer does not carry")
     parser.add_argument("--tolerance", type=float, help="use this relative tolerance for every value, materials included")
     args = parser.parse_args()
-    tolerances = Tolerances() if args.tolerance is None else Tolerances(args.tolerance, args.tolerance, args.tolerance, args.tolerance)
-    result = compare_sequences(load(args.actual), load(args.expected), tolerances, tuple(args.unsupported))
+    try:
+        tolerances = Tolerances() if args.tolerance is None else Tolerances(args.tolerance, args.tolerance, args.tolerance, args.tolerance)
+        actual, expected = load(args.actual), load(args.expected)
+    except (OSError, ValueError) as error:
+        parser.error(str(error))
+    result = compare_sequences(actual, expected, tolerances, tuple(args.unsupported))
     report(result)
     return 1 if result.differences else 0
 

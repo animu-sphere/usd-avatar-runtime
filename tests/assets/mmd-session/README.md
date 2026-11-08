@@ -9,4 +9,6 @@ no third-party art. They are test inputs: one quad per moving bone, not a model 
 Each file in `broken/` takes away one feature. [`scripts/check_mmd_session_fixture.py`](../../../scripts/check_mmd_session_fixture.py)
 runs them through the owner's published importer and `avatarMmdSessionCheck`, and each must fail the
 comparison on what it took away. `expected.json` holds the committed state at every 30th tick, on both platforms.
-Change it only with `--update`, and review what moved.
+It includes instance identity, input revision and an explicit empty visibility layout.
+The comparison checks one-to-one instance correspondence across separate runs, including
+broken inputs. Change it only with `--update`, and review what moved.

@@ -1936,3 +1936,105 @@ runtime, on Windows.
 The generated resident and viewport tests pass. The 24 private models with rigid bodies draw 300 presented frames at 597
 to 635 ticks, with 0 refusals and mismatches, at most 5.5 ms a tick and 1.0 ms a result. See the
 [renderer report](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/120-2026-11-01-mmd-session-from-published-pin.md).
+
+## Headless state comparison negatives (2026-11-08)
+
+Category: tool unit tests, Windows x86_64, Python 3.13.14, without an SDK, provider,
+renderer or GPU. `python scripts/test_compare_avatar_state.py` passed 25 tests over
+the committed generated VRM output and synthetic delivery cases. Defaults remain
+`2e-6` relative error and exact float32 material comparison; explicit tolerances
+must be finite and nonnegative.
+
+The checks distinguish empty from missing channels, zero morph weights from absent
+targets, zero material overrides from removed overrides and absent targets, changed
+layout identity/version, and stale pre-reset snapshots when values and frame IDs
+repeat. Each test copies its fixture, so UV or appearance edits cannot affect later
+tests. These are comparison fixtures, not evidence that a consumer delivered or
+retained a native snapshot correctly.
+
+Negative numeric checks cover NaN and both infinities on either side for every
+numeric value kind, material float32 overflow, JSON exponent overflow, and invalid
+tolerances. Before the fix, NaN weights could compare equal, JSON `1e999` loaded as
+infinity, and material float32 overflow raised an uncaught exception. The CLI checks
+agreement (exit 0), changed weights (exit 1), and invalid tolerance or nonfinite JSON
+(exit 2).
+
+`python scripts/check_workflows.py`, the relative-link/fragment check over 42
+documents, and `git diff --check` passed locally. The plain CMake workflow includes
+the Python tests independently of session SDK builds on Windows, Linux and macOS;
+that hosted workflow has not been run for this change. No native session,
+installed-package or renderer test was run here. The file format still lacks
+instance identity and visibility, and no consumer-side export or Direct/Hydra
+parity is established.
+
+## Instance, visibility and Direct consumer export (2026-11-08)
+
+Category: tool unit tests and adapter integration, Windows x86_64, MSVC 19.51
+Release, Python 3.13.14. The comparison requires string instance identity and
+target-keyed 0/1 visibility records. Independent executions use an explicit
+one-to-one instance map; the default is exact identity. The 30 Python tests passed,
+including missing identity, unmapped recreation, ambiguous mappings and visibility
+loss. The format remains a diagnostic subset, not a recording envelope.
+
+The renderer-owned `toon-avatar-state-test --state-output` captured six accepted
+ABI-5 inputs through the opt-in `AvatarStateAdapter::Apply` overload. The
+runtime-owned `scripts/check_consumer_state.py` compared them with an independent
+Python oracle: 0 differences at the defaults (`2e-6`, exact float32 materials).
+Seven channel omissions, stale-reset and recreated-instance substitutions, and a
+visibility change all failed comparison (10 controls). This covers pose, morphs,
+primary UVs, material overrides, visibility and the format's capability/sample
+fields, with 64-bit instance strings and escaped UTF-8 identities. It is generated
+Direct consumer receipt; no native VRM/MMD consumer delivery is inferred.
+
+The dependency-free runtime built and passed all six configured CTests: the five
+core/installed-consumer tests and opt-in `consumers.direct_state_export`.
+The renderer's four headless avatar-state CTests passed, including its installed
+consumer and capture from the freshly built real runtime through reset, rejected
+stale delivery and retained use after runtime destruction. The generated C++
+evaluator supplies that runtime test; no format owner or GPU is involved there.
+The first local compiler probes hit a PDB manager mismatch; Release probes and
+embedded debug information avoided the tooling issue for the successful checks.
+
+Both native session check hosts were rebuilt against the existing local owner
+installs (motion 0.5.4, VRM 0.12.0, MMD 0.3.2 and the deterministic Jolt SDK).
+The pinned importer fixtures were regenerated with `--update`, then rerun:
+VRM bone/expression and MMD output each had 0 differences at `1e-5`, with explicit
+single-instance pairing. All six MMD omission variants still differed on their
+expected subjects. Comparing the regenerated JSON with the prior files, after
+removing the new instance/visibility fields, was exactly equal. These are local
+check-host runs over generated assets, not newly published package verification.
+
+Workflow checks, Markdown relative links/fragments and `git diff --check` passed.
+The renderer owns capture/conversion/rejection checks; this runtime owns the
+format, independent oracle and session writer checks. See
+[renderer report 122](https://github.com/animu-sphere/hydra-toon/blob/main/docs/reports/renderer/122-2026-11-08-avatar-state-export.md).
+Hosted CI and Linux were not run. Resident VRM/MMD viewport exports, Hydra
+publication/export, Direct/Hydra parity, pixel parity and consumer costs remain
+outside this evidence.
+
+## Canonical export integration after PR #95 (2026-11-08)
+
+The final change is based on `d6c3e09` (PR #95). Its numeric instance handles,
+input revision, one-to-one instance correspondence and independent sequence/layout
+validation are retained. This supersedes the prototype string/explicit-map format
+described in the preceding measurement; no explicit instance-map CLI ships.
+The Direct consumer writer and independent oracle use the canonical integer
+representation, with handles larger than 2^53 preserved by Python's JSON reader.
+
+All 37 Python tests passed after integration, retaining every upstream test.
+The consumer recreation control exposed an upstream short-circuit bug: a reused
+actual handle at the first expected frame of a new instance raised `KeyError`
+instead of reporting a difference. Both directions of the correspondence are
+populated before that diagnostic, with a dedicated regression test.
+
+The final six-state Direct output has 0 differences and all 10 omission/identity/
+visibility controls are detected. Seven runtime CTests, including the upstream
+native JSON writer contract and the optional consumer export comparison, and the
+renderer's four headless avatar-state CTests passed on Windows. The native session
+writers and golden files remain those of PR #95. Linux, hosted CI and Hydra parity
+remain unmeasured here.
+
+The rebuilt canonical VRM/MMD check hosts also reproduced their existing golden
+files with 0 differences at `1e-5` after integration; all six MMD omission variants
+still differed on their expected subjects. No golden values were changed by the
+integrated change.

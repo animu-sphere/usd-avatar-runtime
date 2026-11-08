@@ -251,6 +251,11 @@ A missing or unexpected target, a repeated identity and a missing channel are di
 `--tolerance` replaces every tolerance, for a comparison across platforms such as
 `scripts/check_session_fixture.py`, which uses `1e-5`.
 
+Tolerances must be finite and nonnegative. JSON nonfinite values, including exponent
+overflow, are refused. Compared nonfinite values and material float32 overflow are
+differences rather than agreement or an uncaught conversion error. The headless plain
+CMake CI lane runs the comparison's Python tests independently of provider SDK builds.
+
 Each sequence is also checked on its own against the
 [consumer contract](../contracts/EVALUATED_STATE.md#4-consumer-contract), so a consumer cannot
 agree with a producer that breaks it:
@@ -268,12 +273,37 @@ agree with a producer that breaks it:
 
 `scripts/test_compare_avatar_state.py` checks that each value kind is compared and that identity,
 absence, reset and shape violations are caught; `contracts.state_json` checks the writer the check
-hosts share. No consumer writes this format yet. Hydra has no publication to compare, and joint
-values reach `hydra-toon` as palettes, which it would have to report before mapping them.
+hosts share. The generated Direct consumer export below feeds this format. Resident VRM/MMD
+host exports and Hydra publication/export remain open; no Direct/Hydra comparison is established.
 
 Not yet exported or compared: a sample's source, actor and evaluator identity, its clock mapping
 and runtime seconds, and capability versions. Samples are therefore matched by channel alone. A
 consumer declares an unsupported channel only on the command line, not in its file.
+
+### Direct consumer export
+
+The optional diagnostic overload of `hydra-toon`'s
+[`AvatarStateAdapter::Apply`](https://github.com/animu-sphere/hydra-toon/blob/main/include/toon/fast/avatar_state.hpp)
+fills a host-supplied `std::string*` with one JSON object after all binding and conversion
+checks succeed. It reports the input values the adapter accepted, including parent-local
+joints before palette mapping. Failure leaves the prior capture unchanged. The ordinary
+overload does no serialization and keeps no capture buffers. The host owns file I/O and
+collects these objects in a JSON array. ABI-4 consumers omit `uvs` and must declare that
+channel unsupported; the complete probe below requires ABI 5.
+
+`toon-avatar-state-test --state-output <file>` is the renderer-owned headless diagnostic
+host. `scripts/check_consumer_state.py <consumer-executable>` compares six accepted states
+with an independent Python oracle, including input revision, reset, recreated instance,
+visibility, UVs, baseline restoration, escaped identities and handles larger than 2^53.
+Instance handles use the canonical JSON integer representation and are read without loss
+by Python; readers using double-precision numbers must preserve those integers separately.
+Ten deliberate delivery omissions/identity/visibility changes must fail comparison.
+
+The runtime owns the common-format oracle; the renderer owns conversion, rejection and
+capture tests. Setting `AVATAR_STATE_CONSUMER_EXECUTABLE` when configuring the runtime adds
+the opt-in `consumers.direct_state_export` CTest. Core builds without that option need no
+Python or renderer dependency. This establishes generated Direct consumer receipt;
+resident VRM/MMD viewport export, Hydra and pixel comparison remain outside this probe.
 
 Equivalent state does not by itself prove equivalent pixels or equal latency.
 Renderer evidence must state backend, configuration and hardware separately.

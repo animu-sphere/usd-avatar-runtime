@@ -56,3 +56,11 @@ if(WIN32)
     add_custom_command(TARGET physicsContracts POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:avatarRuntime> $<TARGET_FILE_DIR:physicsContracts>)
 endif()
+
+set(AVATAR_STATE_CONSUMER_EXECUTABLE "" CACHE FILEPATH "Optional toon-avatar-state-test for headless consumer export comparison")
+if(AVATAR_STATE_CONSUMER_EXECUTABLE)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    add_test(NAME consumers.direct_state_export COMMAND ${Python3_EXECUTABLE}
+        ${PROJECT_SOURCE_DIR}/scripts/check_consumer_state.py ${AVATAR_STATE_CONSUMER_EXECUTABLE}
+        --output ${CMAKE_CURRENT_BINARY_DIR}/direct-consumer-state.json)
+endif()
