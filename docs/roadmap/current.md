@@ -49,7 +49,8 @@ under the [quality gates](#quality-gates).
 ## Renderer contract and parity
 
 Target v0.5.0. Starting point: a [state comparison](../architecture/OUTPUT_PATHS.md#4-parity-evidence)
-that no consumer feeds; `hydra-toon` draws through its resident direct path; the
+fed by a generated headless Direct consumer probe; resident VRM/MMD hosts still need exports.
+`hydra-toon` draws through its resident direct path; the
 [live UsdSkel output](../architecture/USD_POSE_OUTPUT.md) carries pose only, for usdview; no
 Hydra publication.
 
@@ -269,7 +270,7 @@ matrix does not say `yes` before the code does.
 | Order | Slice | Expected change |
 | --- | --- | --- |
 | 1 | consumer state contract gaps | identity, space, absence, lifetime and capability rules, with negative tests |
-| 2 | consumer state export | Direct and Hydra write the values they received in one format |
+| 2 | resident consumer state export | resident VRM/MMD Direct hosts and Hydra write the values they received in one format |
 | 3 | Direct and Hydra parity harness | tolerances, a table of unsupported channels, a CI lane |
 | 4 | minimal Hydra publication | opt-in adapter, diff and dirtiness, lifetime tests |
 | 5 | trace and inspect host | a bounded event contract, failure localization |
@@ -279,8 +280,9 @@ matrix does not say `yes` before the code does.
 | 9 | external input adapter prototype | explicit clock, validity and packet loss |
 | 10 | ABI freeze readiness review | evidence for the open decisions, and the freeze decision |
 
-Before slice 1: open issues for the consumer contract's undefined points, separate headless CI
-from GPU and real-asset checks, and choose the performance measures and first environment.
+Before slice 1: open issues for the consumer contract's undefined points, extend identity,
+absence and reset negative fixtures to resident VRM/MMD delivery, and choose the performance
+measures and first environment.
 The state comparison already carries identity, absence and reset negative cases
 ([parity evidence](../architecture/OUTPUT_PATHS.md#4-parity-evidence)); its remaining gaps are
 listed there. Each slice

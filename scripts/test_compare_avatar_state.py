@@ -6,9 +6,12 @@ from __future__ import annotations
 import copy
 import json
 import pathlib
+import subprocess
+import sys
+import tempfile
 import unittest
 
-from compare_avatar_state import OPTIONAL_CHANNELS, Tolerances, compare_sequences
+from compare_avatar_state import OPTIONAL_CHANNELS, Tolerances, compare_sequences, load
 
 EXPECTED = pathlib.Path(__file__).resolve().parents[1] / "tests" / "assets" / "vrm-session" / "expected.json"
 
@@ -179,6 +182,10 @@ class CompareAvatarState(unittest.TestCase):
         self.actual[-1]["instance"], self.actual[-2]["instance"] = 1, 2
         self.assertDiffers("corresponds to expected")
 
+    def test_recreation_with_a_reused_actual_handle_is_a_difference(self) -> None:
+        self.expected[-1]["instance"] = 99
+        self.assertDiffers("corresponds to expected")
+
     def test_frames_of_an_instance_must_advance(self) -> None:
         self.actual[1]["frame"] = self.actual[0]["frame"]
         self.assertDiffers("does not follow")
@@ -258,6 +265,83 @@ class CompareAvatarState(unittest.TestCase):
             for states in (self.actual, self.expected):
                 change(states[-1])
             self.assertDiffers(text)
+
+
+    def test_nonfinite_numeric_values_never_agree(self) -> None:
+        for value in (float("nan"), float("inf"), -float("inf")):
+            for side in ("actual", "expected"):
+                for channel, field in (("joints", "translation"), ("joints", "rotation"),
+                                       ("joints", "scale"), ("morphs", "weight"),
+                                       ("uvs", "value"), ("materials", "value"),
+                                       ("samples", "source_seconds"), (None, "seconds")):
+                    with self.subTest(value=value, side=side, channel=channel, field=field):
+                        self.setUp()
+                        sequence = self.actual if side == "actual" else self.expected
+                        state = sequence[-1]
+                        if channel == "uvs":
+                            for states in (self.actual, self.expected):
+                                states[-1]["uvs"] = [{"mesh": "/m", "vertex": 0, "value": [0, 0]}]
+                        if channel == "materials":
+                            record = next(m for m in state[channel] if m["overridden"])
+                        else:
+                            record = state[channel][0] if channel else state
+                        if isinstance(record[field], list):
+                            record[field][0] = value
+                        else:
+                            record[field] = value
+                        for tolerances in (Tolerances(), Tolerances(material=1e-5)):
+                            self.assertTrue(any("nonfinite" in d for d in self.differences(tolerances)))
+
+    def test_material_float_overflow_is_a_difference(self) -> None:
+        for side in ("actual", "expected"):
+            with self.subTest(side=side):
+                self.setUp()
+                sequence = self.actual if side == "actual" else self.expected
+                next(m for m in sequence[-1]["materials"] if m["overridden"])["value"][0] = 1e100
+                self.assertIn("float32", self.differences()[0])
+
+    def test_json_nonfinite_values_are_refused_including_exponent_overflow(self) -> None:
+        for value in ("NaN", "Infinity", "-Infinity", "1e999", "-1e999"):
+            with self.subTest(value=value), tempfile.TemporaryDirectory(dir=EXPECTED.parents[3]) as directory:
+                path = pathlib.Path(directory) / "state.json"
+                path.write_text('{"seconds": ' + value + '}', encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "nonfinite"):
+                    load(path)
+
+    def test_tolerances_must_be_finite_and_nonnegative(self) -> None:
+        for field in ("transform", "weight", "material", "seconds"):
+            for value in (-1, float("nan"), float("inf")):
+                with self.subTest(field=field, value=value):
+                    with self.assertRaisesRegex(ValueError, field):
+                        Tolerances(**{field: value})
+
+    def test_cli_reports_agreement_difference_and_invalid_input(self) -> None:
+        script = pathlib.Path(__file__).with_name("compare_avatar_state.py")
+        with tempfile.TemporaryDirectory(dir=EXPECTED.parents[3]) as directory:
+            actual, expected = (pathlib.Path(directory) / name for name in ("actual.json", "expected.json"))
+            expected.write_text(json.dumps(self.fixture[:1]), encoding="utf-8")
+            # Exercise both the single-state and sequence forms of the format.
+            state = copy.deepcopy(self.fixture[0])
+            actual.write_text(json.dumps(state), encoding="utf-8")
+
+            def run(*arguments: str) -> subprocess.CompletedProcess:
+                return subprocess.run([sys.executable, str(script), str(actual), str(expected), *arguments],
+                                      capture_output=True, text=True)
+
+            self.assertEqual(run("--tolerance", "0").returncode, 0)
+            state["morphs"][0]["weight"] += .01
+            actual.write_text(json.dumps(state), encoding="utf-8")
+            changed = run()
+            self.assertEqual(changed.returncode, 1)
+            self.assertIn("weight", changed.stdout)
+            for tolerance in ("-1", "nan", "inf"):
+                invalid = run("--tolerance", tolerance)
+                self.assertEqual(invalid.returncode, 2)
+                self.assertIn("finite and nonnegative", invalid.stderr)
+            actual.write_text('{"seconds": 1e999}', encoding="utf-8")
+            invalid = run()
+            self.assertEqual(invalid.returncode, 2)
+            self.assertIn("nonfinite", invalid.stderr)
 
 
 if __name__ == "__main__":

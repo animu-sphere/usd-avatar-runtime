@@ -28,6 +28,12 @@ jobs:
         os: [windows-2022, ubuntu-24.04, macos-15]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up Python for headless state comparison
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.13"
+      - name: Check the state comparison without providers or a renderer
+        run: python scripts/test_compare_avatar_state.py
       - name: Configure
         run: cmake -S . -B build/direct -DCMAKE_BUILD_TYPE=Release
       - name: Build
